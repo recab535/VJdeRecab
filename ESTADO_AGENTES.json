@@ -1,12 +1,18 @@
 {
-  "estado": "ACTIVO",
-  "turno_actual": "A2",
-  "rondas_completadas": 3,
+  "estado": "COMPLETADO",
+  "turno_actual": "G1",
+  "rondas_completadas": 1,
   "max_rondas_limite": 4,
   "orden_agentes": [
     "G1",
     "G2",
     "A1",
     "A2"
-  ]
+  ],
+  "ultimo_ciclo": {
+    "G1": "Especificaciones de escena principal, cámara/rotación horizontal, HUD 1920x1080 y flujo del Capítulo 1 PvE en docs/game_design_base.md.",
+    "G2": "Verificación cruzada de docs/db_y_catalogo.sql y data/especies_68.json documentada en docs/contrato_datos_godot.md.",
+    "A1": "Creación de project.godot (1920x1080), .gitignore, scenes/main.tscn, scripts/main.gd, scripts/world/camera_rig.gd y scripts/ui/hud_basic.gd.",
+    "A2": "Creación de scripts/autoload/game_core.gd (carga de especies_68.json y persistencia en user://savegame.json) e integración como autoload."
+  }
 }
