@@ -14,6 +14,8 @@ signal catalog_loaded(total_species: int)
 signal save_loaded
 signal resources_changed(oro: int, comida: int, gemas: int)
 signal dragon_leveled_up(dragon_uid: int, new_nivel: int, new_etapa: String)
+signal nest_updated
+signal breeding_started(egg: Dictionary)
 
 var elementos_by_id: Dictionary = {}
 var especies_by_id: Dictionary = {}
@@ -31,11 +33,35 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_tick_nest_incubation(delta)
 	_passive_accum_sec += delta
 	if _passive_accum_sec >= PASSIVE_TICK_SEC:
 		var elapsed: float = _passive_accum_sec
 		_passive_accum_sec = 0.0
 		_tick_passive_gold(elapsed)
+
+
+func _tick_nest_incubation(delta: float) -> void:
+	var huevos: Array = player_state.get("nido_huevos", [])
+	if huevos.is_empty():
+		return
+
+	var completed_any: bool = false
+	for egg_var: Variant in huevos:
+		if not (egg_var is Dictionary):
+			continue
+		var egg: Dictionary = egg_var
+		if bool(egg.get("listo", false)):
+			continue
+		var rem: float = maxf(0.0, float(egg.get("tiempo_restante_seg", 0.0)) - delta)
+		egg["tiempo_restante_seg"] = rem
+		if rem <= 0.0:
+			egg["listo"] = true
+			completed_any = true
+
+	if completed_any:
+		save_game()
+		nest_updated.emit()
 
 
 func _tick_passive_gold(elapsed_sec: float) -> void:
@@ -139,6 +165,8 @@ func load_game() -> void:
 		player_state = parsed
 		if not player_state.has("nido_huevos"):
 			player_state["nido_huevos"] = []
+		else:
+			_normalize_nest_eggs()
 		if not player_state.has("estructuras"):
 			player_state["estructuras"] = []
 		if not player_state.has("islas_desbloqueadas"):
@@ -265,34 +293,123 @@ func unlock_island(island_id: int, cost_oro: int = 2500) -> Dictionary:
 	}
 
 
+func _normalize_nest_eggs() -> void:
+	var huevos: Array = player_state.get("nido_huevos", [])
+	for egg_var: Variant in huevos:
+		if not (egg_var is Dictionary):
+			continue
+		var egg: Dictionary = egg_var
+		var total_sec: int = maxi(5, int(egg.get("tiempo_incubacion_seg", 300)))
+		egg["tiempo_incubacion_seg"] = total_sec
+		if not egg.has("tiempo_restante_seg"):
+			egg["tiempo_restante_seg"] = float(total_sec)
+		var rem: float = maxf(0.0, float(egg.get("tiempo_restante_seg", total_sec)))
+		egg["tiempo_restante_seg"] = rem
+		egg["listo"] = bool(egg.get("listo", false)) or rem <= 0.0
+
+
+func get_nest_eggs() -> Array:
+	return player_state.get("nido_huevos", [])
+
+
+func get_breeding_preview(parent_a_id: int, parent_b_id: int) -> Dictionary:
+	var candidates: Array[int] = _get_breeding_candidates(parent_a_id, parent_b_id)
+	var min_time: int = 0
+	var max_time: int = 0
+	for sp_id: int in candidates:
+		var sp: Dictionary = get_species(sp_id)
+		var t: int = maxi(5, int(sp.get("tiempo_incubacion_seg", 300)))
+		if min_time == 0 or t < min_time:
+			min_time = t
+		if t > max_time:
+			max_time = t
+	return {
+		"candidates": candidates,
+		"min_time_seg": min_time,
+		"max_time_seg": max_time
+	}
+
+
 func start_breeding(parent_a_id: int, parent_b_id: int) -> Dictionary:
 	var huevos: Array = player_state.get("nido_huevos", [])
 	if huevos.size() >= 3:
 		return {"ok": false, "msg": "El Nido está lleno (máx. 3 huevos). Eclosiona uno primero."}
 
+	if not especies_by_id.has(parent_a_id) or not especies_by_id.has(parent_b_id):
+		return {"ok": false, "msg": "Selecciona dos especies válidas para cruzar."}
+
 	var result_id: int = _resolve_breeding_species(parent_a_id, parent_b_id)
 	var sp: Dictionary = get_species(result_id)
+	var total_sec: int = maxi(5, int(sp.get("tiempo_incubacion_seg", 300)))
 	var egg: Dictionary = {
 		"especie_id": result_id,
 		"nombre": str(sp.get("nombre", "Dragón")),
-		"tiempo_incubacion_seg": int(sp.get("tiempo_incubacion_seg", 300))
+		"tiempo_incubacion_seg": total_sec,
+		"tiempo_restante_seg": float(total_sec),
+		"padre_a_id": parent_a_id,
+		"padre_b_id": parent_b_id,
+		"listo": false
 	}
 	huevos.append(egg)
 	player_state["nido_huevos"] = huevos
 	save_game()
+	breeding_started.emit(egg)
+	nest_updated.emit()
 	return {"ok": true, "egg": egg, "msg": "Cruce iniciado: huevo de %s enviado al Nido." % egg["nombre"]}
 
 
-func hatch_next_egg() -> Dictionary:
+func accelerate_egg(egg_index: int, cost_gemas: int = 1) -> Dictionary:
+	var huevos: Array = player_state.get("nido_huevos", [])
+	if egg_index < 0 or egg_index >= huevos.size():
+		return {"ok": false, "msg": "Huevo no encontrado en el Nido."}
+
+	var egg: Dictionary = huevos[egg_index]
+	if bool(egg.get("listo", false)):
+		return {"ok": false, "msg": "Este huevo ya está listo para eclosionar."}
+
+	var res: Dictionary = get_resources()
+	var gemas_actuales: int = int(res.get("gemas", 0))
+	if gemas_actuales < cost_gemas:
+		return {"ok": false, "msg": "Gemas insuficientes (%d/%d)." % [gemas_actuales, cost_gemas]}
+
+	res["gemas"] = gemas_actuales - cost_gemas
+	player_state["recursos"] = res
+	egg["tiempo_restante_seg"] = 0.0
+	egg["listo"] = true
+	huevos[egg_index] = egg
+	player_state["nido_huevos"] = huevos
+
+	save_game()
+	_emit_resources()
+	nest_updated.emit()
+	return {
+		"ok": true,
+		"egg": egg,
+		"msg": "¡%s listo para eclosionar (-%d Gema)!" % [str(egg.get("nombre", "Huevo")), cost_gemas]
+	}
+
+
+func hatch_egg_at(egg_index: int) -> Dictionary:
 	var huevos: Array = player_state.get("nido_huevos", [])
 	if huevos.is_empty():
 		return {"ok": false, "msg": "No hay huevos en el Nido. Usa Cruce primero."}
+	if egg_index < 0 or egg_index >= huevos.size():
+		return {"ok": false, "msg": "Huevo inválido en el Nido."}
 
-	var egg: Dictionary = huevos.pop_front()
+	var egg: Dictionary = huevos[egg_index]
+	if not bool(egg.get("listo", false)):
+		return {"ok": false, "msg": "El huevo de %s aún está incubando." % str(egg.get("nombre", "Dragón"))}
+
+	huevos.remove_at(egg_index)
 	player_state["nido_huevos"] = huevos
 
 	var dragones: Array = player_state.get("dragones", [])
-	var next_uid: int = dragones.size() + 1
+	var max_uid: int = 0
+	for d_var: Variant in dragones:
+		if d_var is Dictionary:
+			max_uid = maxi(max_uid, int(d_var.get("uid", 0)))
+	var next_uid: int = max_uid + 1
+
 	var new_dragon: Dictionary = {
 		"uid": next_uid,
 		"especie_id": int(egg.get("especie_id", 1)),
@@ -303,17 +420,31 @@ func hatch_next_egg() -> Dictionary:
 	dragones.append(new_dragon)
 	player_state["dragones"] = dragones
 	save_game()
+	nest_updated.emit()
 	return {"ok": true, "dragon": new_dragon, "nombre": str(egg.get("nombre", "Dragón")), "msg": "¡Eclosionó %s!" % str(egg.get("nombre", "Dragón"))}
 
 
-func _resolve_breeding_species(parent_a_id: int, parent_b_id: int) -> int:
+func hatch_next_egg() -> Dictionary:
+	var huevos: Array = player_state.get("nido_huevos", [])
+	if huevos.is_empty():
+		return {"ok": false, "msg": "No hay huevos en el Nido. Usa Cruce primero."}
+
+	for i: int in range(huevos.size()):
+		var egg_var: Variant = huevos[i]
+		if egg_var is Dictionary and bool(egg_var.get("listo", false)):
+			return hatch_egg_at(i)
+
+	return hatch_egg_at(0)
+
+
+func _get_breeding_candidates(parent_a_id: int, parent_b_id: int) -> Array[int]:
 	var sp_a: Dictionary = get_species(parent_a_id)
 	var sp_b: Dictionary = get_species(parent_b_id)
 	var elem_a: int = int(sp_a.get("elemento_primario_id", 1))
 	var elem_b: int = int(sp_b.get("elemento_primario_id", 1))
 
 	if elem_a == elem_b:
-		return elem_a
+		return [elem_a]
 
 	var candidates: Array[int] = []
 	for sp: Variant in especies_by_id.values():
@@ -324,7 +455,12 @@ func _resolve_breeding_species(parent_a_id: int, parent_b_id: int) -> int:
 				candidates.append(int(sp.get("id", 1)))
 
 	if candidates.is_empty():
-		return elem_a
+		candidates.append(elem_a)
+	return candidates
+
+
+func _resolve_breeding_species(parent_a_id: int, parent_b_id: int) -> int:
+	var candidates: Array[int] = _get_breeding_candidates(parent_a_id, parent_b_id)
 	return candidates[randi() % candidates.size()]
 
 

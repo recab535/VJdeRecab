@@ -30,6 +30,6 @@ Plan de tareas incrementales alineado con los roles definidos en `GEMINI.md` (`G
   - **Rol:** A2 (Entidades 2D `Sprite3D`).
   - **Archivos a crear/editar:** Editar `scripts/dragons/dragon_2d.gd` en `_create_placeholder_pixel_art(id)` añadiendo paletas y siluetas/detalles diferenciados (cuernos, llamas, aletas, hojas, rayos, cristales, placas metálicas y aura oscura) para los IDs `1..8`.
 
-- [ ] Tarea 8: Implementar un selector visual de especies en los botones Cruce y Nido para elegir qué dos dragones cruzar y ver el tiempo/estado de incubación.
+- [x] Tarea 8: Implementar un selector visual de especies en los botones Cruce y Nido para elegir qué dos dragones cruzar y ver el tiempo/estado de incubación.
   - **Rol:** A1 (UI) + A2 (Cruces/Nido).
   - **Archivos a crear/editar:** Crear `scenes/ui/breeding_panel.tscn`, `scripts/ui/breeding_panel.gd`, `scenes/ui/nest_panel.tscn` y `scripts/ui/nest_panel.gd`; editar `scenes/main.tscn`, `scripts/main.gd` y `scripts/autoload/game_core.gd` para seleccionar padres disponibles y mostrar el progreso de `nido_huevos`.

@@ -12,6 +12,8 @@ const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_aren
 @onready var isla_bloqueada: LockedIsland = $IslaBloqueadaPreview
 @onready var slots_container: Node3D = $IslaInicial/SlotsConstruibles
 @onready var bestiario_panel: BestiarioPanel = $HUD/RootControl/BestiarioPanel
+@onready var breeding_panel: BreedingPanel = $HUD/RootControl/BreedingPanel
+@onready var nest_panel: NestPanel = $HUD/RootControl/NestPanel
 
 var _built_habitats: Dictionary = {}
 var _active_combat_arena: CombatArena = null
@@ -27,6 +29,11 @@ func _ready() -> void:
 
 	if isla_bloqueada:
 		isla_bloqueada.preview_requested.connect(_on_island_preview_requested)
+
+	if breeding_panel:
+		breeding_panel.breeding_completed.connect(_on_breeding_completed)
+	if nest_panel:
+		nest_panel.egg_hatched.connect(_on_egg_hatched)
 
 	if has_node("/root/GameCore"):
 		var core: Node = get_node("/root/GameCore")
@@ -141,27 +148,57 @@ func _on_panel_requested(panel_name: String) -> void:
 				_spawn_habitat_at_slot(next_slot)
 			hud.show_status_message(str(res.get("msg", "")))
 		"Cruce":
-			var res: Dictionary = core.start_breeding(1, 2)
-			hud.show_status_message(str(res.get("msg", "")))
+			_close_overlay_panels()
+			if breeding_panel:
+				breeding_panel.open_breeding()
+				hud.show_status_message("Selector de Cruce abierto.")
 		"Nido":
-			var res: Dictionary = core.hatch_next_egg()
-			if res.get("ok", false):
-				var placed: bool = _spawn_dragon_into_free_habitat(core, res.get("dragon", {}))
-				var extra: String = "" if placed else " (Construye otro hábitat en Tienda para alojarlo)"
-				hud.show_status_message(str(res.get("msg", "")) + extra)
-			else:
-				hud.show_status_message(str(res.get("msg", "")))
+			_close_overlay_panels()
+			if nest_panel:
+				nest_panel.open_nest()
+				hud.show_status_message("Nido de incubación abierto.")
 		"Alimentar":
+			_close_overlay_panels()
 			_active_feed_filter_uids.clear()
 			_open_feed_panel(core, _active_feed_filter_uids, 0)
 		"Bestiario":
+			_close_overlay_panels()
 			if bestiario_panel:
 				bestiario_panel.open_bestiario()
 				hud.show_status_message("Bestiario abierto.")
 		"Combate":
+			_close_overlay_panels()
 			_open_combat_arena()
 		_:
 			hud.show_status_message("Panel %s disponible en próxima iteración." % panel_name)
+
+
+func _close_overlay_panels() -> void:
+	if bestiario_panel and bestiario_panel.visible:
+		bestiario_panel.visible = false
+	if breeding_panel and breeding_panel.visible:
+		breeding_panel.visible = false
+	if nest_panel and nest_panel.visible:
+		nest_panel.visible = false
+	if hud:
+		hud.hide_dragon_feed_panel()
+		hud.hide_island_preview()
+
+
+func _on_breeding_completed(res: Dictionary) -> void:
+	hud.show_status_message(str(res.get("msg", "")))
+
+
+func _on_egg_hatched(res: Dictionary) -> void:
+	if not has_node("/root/GameCore"):
+		return
+	var core: Node = get_node("/root/GameCore")
+	if res.get("ok", false):
+		var placed: bool = _spawn_dragon_into_free_habitat(core, res.get("dragon", {}))
+		var extra: String = "" if placed else " (Construye otro hábitat en Tienda para alojarlo)"
+		hud.show_status_message(str(res.get("msg", "")) + extra)
+	else:
+		hud.show_status_message(str(res.get("msg", "")))
 
 
 func _open_combat_arena() -> void:

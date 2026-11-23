@@ -1,10 +1,12 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/world/camera_rig.gd" id="2_cam"]
 [ext_resource type="Script" path="res://scripts/ui/hud_basic.gd" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/world/locked_island.gd" id="4_locked"]
 [ext_resource type="PackedScene" path="res://scenes/ui/bestiario_panel.tscn" id="5_bestiario"]
+[ext_resource type="PackedScene" path="res://scenes/ui/breeding_panel.tscn" id="6_breeding"]
+[ext_resource type="PackedScene" path="res://scenes/ui/nest_panel.tscn" id="7_nest"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.24, 0.58, 0.92, 1)
@@ -394,5 +396,13 @@ layout_mode = 2
 text = "Cerrar"
 
 [node name="BestiarioPanel" parent="HUD/RootControl" instance=ExtResource("5_bestiario")]
+visible = false
+layout_mode = 1
+
+[node name="BreedingPanel" parent="HUD/RootControl" instance=ExtResource("6_breeding")]
+visible = false
+layout_mode = 1
+
+[node name="NestPanel" parent="HUD/RootControl" instance=ExtResource("7_nest")]
 visible = false
 layout_mode = 1
