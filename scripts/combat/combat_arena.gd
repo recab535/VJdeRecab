@@ -1,290 +1,228 @@
 extends Node3D
 class_name CombatArena
 
-## Escena 2.5D de la Arena de Combate 3v3:
-## Posiciona hasta 3 dragones aliados y 3 enemigos (Dragon2D),
-## muestra barras de HP por unidad y botones de ataque elemental.
+## Arena 1v1 estilo Dragon City:
+## 1 dragón aliado activo vs 1 enemigo activo en pedestales 3D,
+## 4 botones de ataque con efectividad elemental, 2 botones laterales de relevo
+## y barras de HP animadas suavemente con Tween.
 
-signal attack_selected(attack_index: int, element_id: int)
-signal target_selected(enemy_index: int)
+signal attack_selected(attack_index: int)
+signal switch_requested(bench_team_index: int)
 signal retreat_requested
 
 const DRAGON_SCENE: PackedScene = preload("res://scenes/dragons/dragon_2d.tscn")
-const MAX_TEAM_SIZE: int = 3
 
-@onready var ally_markers: Array[Marker3D] = [
-	$AllyPositions/AllySlot0,
-	$AllyPositions/AllySlot1,
-	$AllyPositions/AllySlot2
-]
-@onready var enemy_markers: Array[Marker3D] = [
-	$EnemyPositions/EnemySlot0,
-	$EnemyPositions/EnemySlot1,
-	$EnemyPositions/EnemySlot2
-]
+@onready var ally_spot: Marker3D = $PedestalAliado/AllyPedestalSpot
+@onready var enemy_spot: Marker3D = $PedestalEnemigo/EnemyPedestalSpot
+@onready var arena_camera: Camera3D = $Camera3D
+@onready var combat_manager: CombatManager = $CombatManager
 
 @onready var lbl_arena_title: Label = %LblArenaTitle
 @onready var lbl_turn_info: Label = %LblTurnInfo
 @onready var btn_retreat: Button = %BtnRetreat
 @onready var lbl_combat_log: Label = %LblCombatLog
-@onready var ally_hp_list: VBoxContainer = %AllyHpList
-@onready var enemy_hp_list: VBoxContainer = %EnemyHpList
-@onready var attack_buttons_container: HBoxContainer = %AttackButtonsContainer
-@onready var combat_manager: CombatManager = $CombatManager
-@onready var arena_camera: Camera3D = $Camera3D
 
-var _ally_dragons: Array[Dragon2D] = []
-var _enemy_dragons: Array[Dragon2D] = []
-var _ally_hp_cards: Array[Dictionary] = []
-var _enemy_hp_cards: Array[Dictionary] = []
+@onready var lbl_ally_name: Label = %LblAllyName
+@onready var pb_ally_hp: ProgressBar = %PbAllyHp
+@onready var lbl_ally_hp: Label = %LblAllyHp
+
+@onready var lbl_enemy_name: Label = %LblEnemyName
+@onready var pb_enemy_hp: ProgressBar = %PbEnemyHp
+@onready var lbl_enemy_hp: Label = %LblEnemyHp
+
+@onready var btn_relevo_0: Button = %BtnRelevo0
+@onready var btn_relevo_1: Button = %BtnRelevo1
+@onready var attack_buttons_container: HBoxContainer = %AttackButtonsContainer
+
+var _active_ally_node: Dragon2D = null
+var _active_enemy_node: Dragon2D = null
+var _bench_team_indices: Array[int] = [-1, -1]
 var _attack_buttons: Array[Button] = []
-var _attack_elements: Array[int] = [1, 1, 2, 5]
-var _selected_enemy_idx: int = 0
-var _teams_initialized: bool = false
+var _cam_base_pos: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
+	if arena_camera:
+		_cam_base_pos = arena_camera.position
 	btn_retreat.pressed.connect(func() -> void: retreat_requested.emit())
-	_bind_hp_cards()
-	_bind_attack_buttons()
+	btn_relevo_0.pressed.connect(func() -> void:
+		if _bench_team_indices[0] >= 0:
+			switch_requested.emit(_bench_team_indices[0])
+	)
+	btn_relevo_1.pressed.connect(func() -> void:
+		if _bench_team_indices[1] >= 0:
+			switch_requested.emit(_bench_team_indices[1])
+	)
 
-	if not _teams_initialized:
-		if has_node("/root/GameCore") and combat_manager:
-			combat_manager.start_chapter(1, self)
-		else:
-			_setup_demo_preview()
-
-
-func _bind_hp_cards() -> void:
-	_ally_hp_cards.clear()
-	for i: int in range(MAX_TEAM_SIZE):
-		var card: PanelContainer = ally_hp_list.get_child(i) as PanelContainer
-		_ally_hp_cards.append({
-			"panel": card,
-			"lbl_name": card.get_node("VBox/LblName") as Label,
-			"bar": card.get_node("VBox/BarHp") as ProgressBar,
-			"lbl_hp": card.get_node("VBox/LblHp") as Label
-		})
-
-	_enemy_hp_cards.clear()
-	for i: int in range(MAX_TEAM_SIZE):
-		var card: PanelContainer = enemy_hp_list.get_child(i) as PanelContainer
-		var btn_target: Button = card.get_node("VBox/Header/BtnTarget") as Button
-		var idx: int = i
-		btn_target.pressed.connect(func() -> void: _on_enemy_target_pressed(idx))
-		_enemy_hp_cards.append({
-			"panel": card,
-			"lbl_name": card.get_node("VBox/Header/LblName") as Label,
-			"btn_target": btn_target,
-			"bar": card.get_node("VBox/BarHp") as ProgressBar,
-			"lbl_hp": card.get_node("VBox/LblHp") as Label
-		})
-
-
-func _bind_attack_buttons() -> void:
 	_attack_buttons.clear()
 	for i: int in range(attack_buttons_container.get_child_count()):
 		var btn: Button = attack_buttons_container.get_child(i) as Button
 		if btn:
-			var idx: int = i
-			btn.pressed.connect(func() -> void: _on_attack_button_pressed(idx))
 			_attack_buttons.append(btn)
+			var idx: int = i
+			btn.pressed.connect(func() -> void: attack_selected.emit(idx))
+
+	if has_node("/root/GameCore") and combat_manager:
+		combat_manager.start_chapter(1, self)
 
 
-func _setup_demo_preview() -> void:
-	var demo_allies: Array[Dictionary] = [
-		{
-			"especie_id": 1,
-			"nombre": "Dragón Terracota",
-			"sprite_prefijo": "dragon_terracota",
-			"etapa": "joven",
-			"hp": 120,
-			"max_hp": 120
-		}
-	]
-	var demo_enemies: Array[Dictionary] = [
-		{
-			"especie_id": 2,
-			"nombre": "Dragón Ascua",
-			"sprite_prefijo": "dragon_ascua",
-			"etapa": "cria",
-			"hp": 95,
-			"max_hp": 95
-		},
-		{
-			"especie_id": 5,
-			"nombre": "Dragón Chispa",
-			"sprite_prefijo": "dragon_chispa",
-			"etapa": "cria",
-			"hp": 90,
-			"max_hp": 90
-		}
-	]
-	setup_teams(demo_allies, demo_enemies)
-	set_attack_buttons([
-		{"label": "Golpe Tierra", "element_id": 1, "disabled": false},
-		{"label": "Embestida Feroz", "element_id": 1, "disabled": false}
-	])
+func set_header_info(title: String, turn_text: String) -> void:
+	lbl_arena_title.text = title
+	lbl_turn_info.text = turn_text
 
 
-func setup_teams(allies: Array, enemies: Array) -> void:
-	_teams_initialized = true
-	_clear_spawned_dragons()
-
-	for i: int in range(MAX_TEAM_SIZE):
-		if i < allies.size() and allies[i] is Dictionary:
-			var unit: Dictionary = allies[i]
-			var d_node: Dragon2D = _spawn_dragon_at(ally_markers[i], unit)
-			_ally_dragons.append(d_node)
-			_configure_hp_card(_ally_hp_cards[i], unit, true)
-		else:
-			_ally_dragons.append(null)
-			_hide_hp_card(_ally_hp_cards[i])
-
-	for i: int in range(MAX_TEAM_SIZE):
-		if i < enemies.size() and enemies[i] is Dictionary:
-			var unit: Dictionary = enemies[i]
-			var d_node: Dragon2D = _spawn_dragon_at(enemy_markers[i], unit)
-			_enemy_dragons.append(d_node)
-			_configure_hp_card(_enemy_hp_cards[i], unit, false)
-		else:
-			_enemy_dragons.append(null)
-			_hide_hp_card(_enemy_hp_cards[i])
-
-	select_enemy_target(0)
+func set_combat_log(msg: String) -> void:
+	lbl_combat_log.text = msg
 
 
-func _clear_spawned_dragons() -> void:
-	for d: Dragon2D in _ally_dragons:
-		if is_instance_valid(d):
-			d.queue_free()
-	_ally_dragons.clear()
+func set_active_fighters(ally_unit: Dictionary, enemy_unit: Dictionary) -> void:
+	_spawn_fighter_on_spot(ally_spot, ally_unit, true)
+	_spawn_fighter_on_spot(enemy_spot, enemy_unit, false)
 
-	for d: Dragon2D in _enemy_dragons:
-		if is_instance_valid(d):
-			d.queue_free()
-	_enemy_dragons.clear()
+	lbl_ally_name.text = "%s (Nv.%d)" % [str(ally_unit.get("nombre", "Aliado")), int(ally_unit.get("nivel", 1))]
+	lbl_enemy_name.text = "%s (Nv.%d)" % [str(enemy_unit.get("nombre", "Rival")), int(enemy_unit.get("nivel", 1))]
+	update_hp_bars(
+		int(ally_unit.get("hp", 100)), int(ally_unit.get("max_hp", 100)),
+		int(enemy_unit.get("hp", 100)), int(enemy_unit.get("max_hp", 100)),
+		true
+	)
 
 
-func _spawn_dragon_at(marker: Marker3D, unit: Dictionary) -> Dragon2D:
-	var d_node: Dragon2D = DRAGON_SCENE.instantiate() as Dragon2D
-	marker.add_child(d_node)
-	d_node.position = Vector3.ZERO
-	d_node.setup_visual(
+func _spawn_fighter_on_spot(spot: Marker3D, unit: Dictionary, is_ally: bool) -> void:
+	for c: Node in spot.get_children():
+		c.queue_free()
+	var d: Dragon2D = DRAGON_SCENE.instantiate() as Dragon2D
+	spot.add_child(d)
+	d.position = Vector3(0, -0.35, 0)
+	d.scale = Vector3(1.35, 1.35, 1.35)
+	d.patrol_enabled = false
+	d.setup_visual(
 		int(unit.get("especie_id", 1)),
 		str(unit.get("nombre", "Dragón")),
 		str(unit.get("sprite_prefijo", "dragon_terracota")),
-		str(unit.get("etapa", "cria"))
+		str(unit.get("etapa", "cria")),
+		int(unit.get("uid", -1)),
+		int(unit.get("nivel", 1))
 	)
-	return d_node
+	if is_ally:
+		_active_ally_node = d
+	else:
+		_active_enemy_node = d
+
+	var tw: Tween = create_tween()
+	tw.tween_property(d, "position:y", 0.0, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-func _configure_hp_card(card: Dictionary, unit: Dictionary, is_ally: bool) -> void:
-	var panel: PanelContainer = card["panel"]
-	var lbl_name: Label = card["lbl_name"]
-	var bar: ProgressBar = card["bar"]
-	var lbl_hp: Label = card["lbl_hp"]
+func update_hp_bars(ally_hp: int, ally_max: int, enemy_hp: int, enemy_max: int, instant: bool = false) -> void:
+	pb_ally_hp.max_value = maxf(1.0, float(ally_max))
+	pb_enemy_hp.max_value = maxf(1.0, float(enemy_max))
+	lbl_ally_hp.text = "%d / %d" % [maxi(0, ally_hp), ally_max]
+	lbl_enemy_hp.text = "%d / %d" % [maxi(0, enemy_hp), enemy_max]
 
-	panel.visible = true
-	var max_hp: int = maxi(1, int(unit.get("max_hp", unit.get("hp", 100))))
-	var cur_hp: int = clampi(int(unit.get("hp", max_hp)), 0, max_hp)
-	lbl_name.text = str(unit.get("nombre", "Dragón"))
-	bar.max_value = max_hp
-	bar.value = cur_hp
-	lbl_hp.text = "%d / %d HP" % [cur_hp, max_hp]
-
-	if not is_ally and card.has("btn_target"):
-		var btn: Button = card["btn_target"]
-		btn.disabled = cur_hp <= 0
+	if instant:
+		pb_ally_hp.value = float(maxi(0, ally_hp))
+		pb_enemy_hp.value = float(maxi(0, enemy_hp))
+	else:
+		var tw: Tween = create_tween()
+		tw.set_parallel(true)
+		tw.tween_property(pb_ally_hp, "value", float(maxi(0, ally_hp)), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(pb_enemy_hp, "value", float(maxi(0, enemy_hp)), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
-func _hide_hp_card(card: Dictionary) -> void:
-	var panel: PanelContainer = card["panel"]
-	panel.visible = false
-
-
-func update_unit_hp(is_ally: bool, index: int, current_hp: int, max_hp: int) -> void:
-	var cards: Array[Dictionary] = _ally_hp_cards if is_ally else _enemy_hp_cards
-	if index < 0 or index >= cards.size():
-		return
-
-	var card: Dictionary = cards[index]
-	var safe_max: int = maxi(1, max_hp)
-	var safe_hp: int = clampi(current_hp, 0, safe_max)
-
-	var bar: ProgressBar = card["bar"]
-	var lbl_hp: Label = card["lbl_hp"]
-	bar.max_value = safe_max
-	bar.value = safe_hp
-	lbl_hp.text = "%d / %d HP" % [safe_hp, safe_max]
-
-	if not is_ally and card.has("btn_target"):
-		var btn: Button = card["btn_target"]
-		btn.disabled = safe_hp <= 0
-
-	var dragons: Array[Dragon2D] = _ally_dragons if is_ally else _enemy_dragons
-	if index < dragons.size() and is_instance_valid(dragons[index]):
-		var d_node: Dragon2D = dragons[index]
-		if d_node.sprite:
-			d_node.sprite.modulate = Color(1, 1, 1, 1) if safe_hp > 0 else Color(0.35, 0.35, 0.35, 0.5)
-
-
-func set_attack_buttons(attacks: Array) -> void:
-	_attack_elements.clear()
+func update_attack_buttons(moves: Array[Dictionary], enemy_species: Dictionary, core: Node) -> void:
 	for i: int in range(_attack_buttons.size()):
 		var btn: Button = _attack_buttons[i]
-		if i < attacks.size() and attacks[i] is Dictionary:
-			var atk: Dictionary = attacks[i]
-			btn.visible = true
-			btn.text = str(atk.get("label", "Ataque %d" % (i + 1)))
-			btn.disabled = bool(atk.get("disabled", false))
-			_attack_elements.append(int(atk.get("element_id", 1)))
-		else:
+		if i >= moves.size():
 			btn.visible = false
-			_attack_elements.append(1)
+			continue
+		btn.visible = true
+		var mv: Dictionary = moves[i]
+		var elem_id: int = int(mv.get("elemento_id", 1))
+		var mult: float = core.get_elemental_multiplier(elem_id, enemy_species) if core else 1.0
+		var tag: String = "Normal"
+		var color: Color = Color(0.94, 0.96, 1.0, 1.0)
+		if mult >= 1.9:
+			tag = "Fuerte (2.0×)"
+			color = Color(0.35, 0.98, 0.45, 1.0)
+		elif mult <= 0.6:
+			tag = "Débil (0.5×)"
+			color = Color(1.0, 0.45, 0.42, 1.0)
+		btn.text = "%s\n[%s]" % [str(mv.get("nombre", "Ataque")), tag]
+		btn.add_theme_color_override("font_color", color)
 
 
-func set_attack_buttons_enabled(enabled: bool) -> void:
+func update_bench_buttons(ally_team: Array[Dictionary], active_idx: int) -> void:
+	var btns: Array[Button] = [btn_relevo_0, btn_relevo_1]
+	var slot: int = 0
+	_bench_team_indices = [-1, -1]
+
+	for i: int in range(ally_team.size()):
+		if i == active_idx or slot >= 2:
+			continue
+		var unit: Dictionary = ally_team[i]
+		var hp: int = int(unit.get("hp", 0))
+		var max_hp: int = int(unit.get("max_hp", 100))
+		var btn: Button = btns[slot]
+		btn.visible = true
+		btn.text = "Relevo: %s\nHP %d/%d" % [str(unit.get("nombre", "Dragón")), maxi(0, hp), max_hp]
+		btn.disabled = hp <= 0
+		_bench_team_indices[slot] = i
+		slot += 1
+
+	while slot < 2:
+		btns[slot].visible = false
+		slot += 1
+
+
+func set_controls_enabled(enabled: bool) -> void:
 	for btn: Button in _attack_buttons:
-		if btn.visible:
-			btn.disabled = not enabled
+		btn.disabled = not enabled
+	for i: int in range(2):
+		var btn: Button = btn_relevo_0 if i == 0 else btn_relevo_1
+		if _bench_team_indices[i] < 0:
+			btn.disabled = true
+		elif not enabled:
+			btn.disabled = true
 
 
-func set_arena_title(title: String) -> void:
-	if lbl_arena_title:
-		lbl_arena_title.text = title
-
-
-func set_turn_info(text: String) -> void:
-	if lbl_turn_info:
-		lbl_turn_info.text = text
-
-
-func set_combat_log(text: String) -> void:
-	if lbl_combat_log:
-		lbl_combat_log.text = text
-
-
-func select_enemy_target(index: int) -> void:
-	if index < 0 or index >= _enemy_hp_cards.size():
+func play_lunge_animation(is_ally: bool) -> void:
+	var attacker: Dragon2D = _active_ally_node if is_ally else _active_enemy_node
+	if attacker == null:
 		return
-	_selected_enemy_idx = index
-	for i: int in range(_enemy_hp_cards.size()):
-		var card: Dictionary = _enemy_hp_cards[i]
-		if card.has("btn_target"):
-			var btn: Button = card["btn_target"]
-			btn.text = "Objetivo" if i == _selected_enemy_idx else "Apuntar"
+	var dir: Vector3 = Vector3(1.1, 0.25, -0.35) if is_ally else Vector3(-1.1, 0.25, 0.35)
+	var tw: Tween = create_tween()
+	tw.tween_property(attacker, "position", dir, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(attacker, "position", Vector3.ZERO, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 
-func get_selected_enemy_index() -> int:
-	return _selected_enemy_idx
+func spawn_damage_number(is_ally_target: bool, damage: int, mult: float) -> void:
+	var spot: Marker3D = ally_spot if is_ally_target else enemy_spot
+	if spot == null:
+		return
+	var lbl: Label3D = Label3D.new()
+	var suffix: String = " ¡CRÍTICO!" if mult >= 1.9 else (" (Débil)" if mult <= 0.6 else "")
+	lbl.text = "-%d%s" % [damage, suffix]
+	lbl.modulate = Color(1.0, 0.86, 0.22, 1.0) if mult >= 1.9 else Color(1.0, 0.35, 0.32, 1.0)
+	lbl.font_size = 40
+	lbl.outline_size = 10
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.position = Vector3(0.0, 1.65, 0.0)
+	spot.add_child(lbl)
+
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(lbl, "position:y", 2.9, 0.85).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "modulate:a", 0.0, 0.85)
+	tw.chain().tween_callback(lbl.queue_free)
 
 
-func _on_enemy_target_pressed(index: int) -> void:
-	select_enemy_target(index)
-	target_selected.emit(index)
-
-
-func _on_attack_button_pressed(index: int) -> void:
-	var elem_id: int = _attack_elements[index] if index < _attack_elements.size() else 1
-	attack_selected.emit(index, elem_id)
+func shake_camera(intensity: float = 0.22, duration: float = 0.24) -> void:
+	if arena_camera == null:
+		return
+	var tw: Tween = create_tween()
+	var steps: int = 6
+	var step_time: float = duration / float(steps)
+	for _i: int in range(steps - 1):
+		var offset: Vector3 = Vector3(randf_range(-intensity, intensity), randf_range(-intensity, intensity), 0.0)
+		tw.tween_property(arena_camera, "position", _cam_base_pos + offset, step_time)
+	tw.tween_property(arena_camera, "position", _cam_base_pos, step_time)
