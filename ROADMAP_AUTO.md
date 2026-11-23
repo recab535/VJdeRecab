@@ -10,7 +10,7 @@ Plan de tareas incrementales alineado con los roles definidos en `GEMINI.md` (`G
   - **Rol:** G1 (Diseño/Campaña) + G2 (Datos).
   - **Archivos a crear/editar:** Editar `docs/game_design_base.md` (definición de las 3 oleadas/etapas del Capítulo 1 y recompensas de Oro/Comida) y `docs/contrato_datos_godot.md` (matriz `9×9` de `multiplicadores_elementales`: `2.0` crítico, `0.5` resistente, `1.0` neutro).
 
-- [ ] Tarea 3: Crear la escena 2.5D de la Arena de Combate 3v3 (`scenes/combat/combat_arena.tscn`) con posiciones de equipo aliado/enemigo, barras de HP y botones de ataque.
+- [x] Tarea 3: Crear la escena 2.5D de la Arena de Combate 3v3 (`scenes/combat/combat_arena.tscn`) con posiciones de equipo aliado/enemigo, barras de HP y botones de ataque.
   - **Rol:** A1 (Escena 2.5D/UI) + A2 (Combate 3v3).
   - **Archivos a crear/editar:** Crear `scenes/combat/combat_arena.tscn` y `scripts/combat/combat_arena.gd` con 3 marcadores aliados, 3 enemigos (`Dragon2D`), barras de HP por unidad y panel inferior con botones de ataque elemental.
 

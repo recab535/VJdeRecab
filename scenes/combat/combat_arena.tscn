@@ -1,0 +1,416 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/combat_arena.gd" id="1_arena"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_Arena"]
+sky_top_color = Color(0.32, 0.45, 0.72, 1)
+sky_horizon_color = Color(0.92, 0.66, 0.48, 1)
+ground_bottom_color = Color(0.24, 0.16, 0.14, 1)
+ground_horizon_color = Color(0.92, 0.66, 0.48, 1)
+
+[sub_resource type="Sky" id="Sky_Arena"]
+sky_material = SubResource("ProceduralSkyMaterial_Arena")
+
+[sub_resource type="Environment" id="Environment_Arena"]
+background_mode = 2
+sky = SubResource("Sky_Arena")
+ambient_light_source = 3
+ambient_light_energy = 0.75
+
+[sub_resource type="StandardMaterial3D" id="Mat_ArenaFloor"]
+albedo_color = Color(0.76, 0.44, 0.28, 1)
+roughness = 0.88
+
+[sub_resource type="CylinderMesh" id="Mesh_ArenaFloor"]
+material = SubResource("Mat_ArenaFloor")
+top_radius = 6.2
+bottom_radius = 5.8
+height = 0.5
+radial_segments = 12
+
+[sub_resource type="StandardMaterial3D" id="Mat_ArenaBase"]
+albedo_color = Color(0.38, 0.25, 0.2, 1)
+roughness = 0.95
+
+[sub_resource type="CylinderMesh" id="Mesh_ArenaBase"]
+material = SubResource("Mat_ArenaBase")
+top_radius = 5.5
+bottom_radius = 1.6
+height = 2.2
+radial_segments = 8
+
+[sub_resource type="StandardMaterial3D" id="Mat_AllyPad"]
+transparency = 1
+albedo_color = Color(0.25, 0.72, 0.92, 0.45)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="Mesh_AllyPad"]
+material = SubResource("Mat_AllyPad")
+top_radius = 0.7
+bottom_radius = 0.7
+height = 0.03
+radial_segments = 12
+
+[sub_resource type="StandardMaterial3D" id="Mat_EnemyPad"]
+transparency = 1
+albedo_color = Color(0.95, 0.35, 0.25, 0.45)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="Mesh_EnemyPad"]
+material = SubResource("Mat_EnemyPad")
+top_radius = 0.7
+bottom_radius = 0.7
+height = 0.03
+radial_segments = 12
+
+[node name="CombatArena" type="Node3D"]
+script = ExtResource("1_arena")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_Arena")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 10, 4)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.891007, 0.45399, 0, -0.45399, 0.891007, 0, 4.4, 8.2)
+fov = 48.0
+
+[node name="ArenaPlatform" type="Node3D" parent="."]
+
+[node name="PlataformaTerracota" type="MeshInstance3D" parent="ArenaPlatform"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+mesh = SubResource("Mesh_ArenaFloor")
+
+[node name="BaseRocosa" type="MeshInstance3D" parent="ArenaPlatform"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.6, 0)
+mesh = SubResource("Mesh_ArenaBase")
+
+[node name="AllyPositions" type="Node3D" parent="."]
+
+[node name="AllySlot0" type="Marker3D" parent="AllyPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 0, -1.2)
+
+[node name="Pad" type="MeshInstance3D" parent="AllyPositions/AllySlot0"]
+mesh = SubResource("Mesh_AllyPad")
+
+[node name="AllySlot1" type="Marker3D" parent="AllyPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.3, 0, 0.2)
+
+[node name="Pad" type="MeshInstance3D" parent="AllyPositions/AllySlot1"]
+mesh = SubResource("Mesh_AllyPad")
+
+[node name="AllySlot2" type="Marker3D" parent="AllyPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 0, 1.6)
+
+[node name="Pad" type="MeshInstance3D" parent="AllyPositions/AllySlot2"]
+mesh = SubResource("Mesh_AllyPad")
+
+[node name="EnemyPositions" type="Node3D" parent="."]
+
+[node name="EnemySlot0" type="Marker3D" parent="EnemyPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 0, -1.2)
+
+[node name="Pad" type="MeshInstance3D" parent="EnemyPositions/EnemySlot0"]
+mesh = SubResource("Mesh_EnemyPad")
+
+[node name="EnemySlot1" type="Marker3D" parent="EnemyPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3, 0, 0.2)
+
+[node name="Pad" type="MeshInstance3D" parent="EnemyPositions/EnemySlot1"]
+mesh = SubResource("Mesh_EnemyPad")
+
+[node name="EnemySlot2" type="Marker3D" parent="EnemyPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 0, 1.6)
+
+[node name="Pad" type="MeshInstance3D" parent="EnemyPositions/EnemySlot2"]
+mesh = SubResource("Mesh_EnemyPad")
+
+[node name="CombatHUD" type="CanvasLayer" parent="."]
+
+[node name="RootControl" type="Control" parent="CombatHUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBar" type="PanelContainer" parent="CombatHUD/RootControl"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 16.0
+offset_right = -24.0
+offset_bottom = 72.0
+grow_horizontal = 2
+
+[node name="HBoxTop" type="HBoxContainer" parent="CombatHUD/RootControl/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="LblArenaTitle" type="Label" parent="CombatHUD/RootControl/TopBar/HBoxTop"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "Arena de Combate 3v3 — Sendero Terracota"
+
+[node name="LblTurnInfo" type="Label" parent="CombatHUD/RootControl/TopBar/HBoxTop"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 20
+text = "Turno: Equipo Aliado"
+
+[node name="BtnRetreat" type="Button" parent="CombatHUD/RootControl/TopBar/HBoxTop"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 40)
+layout_mode = 2
+text = "Retirarse"
+
+[node name="HpBarsContainer" type="HBoxContainer" parent="CombatHUD/RootControl"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 84.0
+offset_right = -24.0
+offset_bottom = 290.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 600
+
+[node name="AllyHpList" type="VBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="AllyHp0" type="PanelContainer" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp0"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LblName" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp0/VBox"]
+layout_mode = 2
+text = "Aliado 1"
+
+[node name="BarHp" type="ProgressBar" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp0/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+value = 100.0
+show_percentage = false
+
+[node name="LblHp" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp0/VBox"]
+layout_mode = 2
+text = "100 / 100 HP"
+
+[node name="AllyHp1" type="PanelContainer" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp1"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LblName" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp1/VBox"]
+layout_mode = 2
+text = "Aliado 2"
+
+[node name="BarHp" type="ProgressBar" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp1/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+value = 100.0
+show_percentage = false
+
+[node name="LblHp" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp1/VBox"]
+layout_mode = 2
+text = "100 / 100 HP"
+
+[node name="AllyHp2" type="PanelContainer" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp2"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LblName" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp2/VBox"]
+layout_mode = 2
+text = "Aliado 3"
+
+[node name="BarHp" type="ProgressBar" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp2/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+value = 100.0
+show_percentage = false
+
+[node name="LblHp" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/AllyHpList/AllyHp2/VBox"]
+layout_mode = 2
+text = "100 / 100 HP"
+
+[node name="EnemyHpList" type="VBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="EnemyHp0" type="PanelContainer" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp0"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Header" type="HBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp0/VBox"]
+layout_mode = 2
+
+[node name="LblName" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp0/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Enemigo 1"
+
+[node name="BtnTarget" type="Button" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp0/VBox/Header"]
+custom_minimum_size = Vector2(88, 26)
+layout_mode = 2
+text = "Apuntar"
+
+[node name="BarHp" type="ProgressBar" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp0/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+value = 100.0
+show_percentage = false
+
+[node name="LblHp" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp0/VBox"]
+layout_mode = 2
+text = "100 / 100 HP"
+
+[node name="EnemyHp1" type="PanelContainer" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp1"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Header" type="HBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp1/VBox"]
+layout_mode = 2
+
+[node name="LblName" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp1/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Enemigo 2"
+
+[node name="BtnTarget" type="Button" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp1/VBox/Header"]
+custom_minimum_size = Vector2(88, 26)
+layout_mode = 2
+text = "Apuntar"
+
+[node name="BarHp" type="ProgressBar" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp1/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+value = 100.0
+show_percentage = false
+
+[node name="LblHp" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp1/VBox"]
+layout_mode = 2
+text = "100 / 100 HP"
+
+[node name="EnemyHp2" type="PanelContainer" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp2"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Header" type="HBoxContainer" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp2/VBox"]
+layout_mode = 2
+
+[node name="LblName" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp2/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Enemigo 3"
+
+[node name="BtnTarget" type="Button" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp2/VBox/Header"]
+custom_minimum_size = Vector2(88, 26)
+layout_mode = 2
+text = "Apuntar"
+
+[node name="BarHp" type="ProgressBar" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp2/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+value = 100.0
+show_percentage = false
+
+[node name="LblHp" type="Label" parent="CombatHUD/RootControl/HpBarsContainer/EnemyHpList/EnemyHp2/VBox"]
+layout_mode = 2
+text = "100 / 100 HP"
+
+[node name="BottomPanel" type="PanelContainer" parent="CombatHUD/RootControl"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -156.0
+offset_right = -24.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="CombatHUD/RootControl/BottomPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="HBoxBottom" type="HBoxContainer" parent="CombatHUD/RootControl/BottomPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="AttackButtonsContainer" type="HBoxContainer" parent="CombatHUD/RootControl/BottomPanel/Margin/HBoxBottom"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="BtnAttack0" type="Button" parent="CombatHUD/RootControl/BottomPanel/Margin/HBoxBottom/AttackButtonsContainer"]
+custom_minimum_size = Vector2(170, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Golpe Tierra"
+
+[node name="BtnAttack1" type="Button" parent="CombatHUD/RootControl/BottomPanel/Margin/HBoxBottom/AttackButtonsContainer"]
+custom_minimum_size = Vector2(170, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Embestida Feroz"
+
+[node name="BtnAttack2" type="Button" parent="CombatHUD/RootControl/BottomPanel/Margin/HBoxBottom/AttackButtonsContainer"]
+custom_minimum_size = Vector2(170, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Lluvia Ígnea"
+
+[node name="BtnAttack3" type="Button" parent="CombatHUD/RootControl/BottomPanel/Margin/HBoxBottom/AttackButtonsContainer"]
+custom_minimum_size = Vector2(170, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Impulso Elemental"
+
+[node name="LogPanel" type="PanelContainer" parent="CombatHUD/RootControl/BottomPanel/Margin/HBoxBottom"]
+custom_minimum_size = Vector2(460, 0)
+layout_mode = 2
+
+[node name="LblCombatLog" type="Label" parent="CombatHUD/RootControl/BottomPanel/Margin/HBoxBottom/LogPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+vertical_alignment = 1
+text = "¡Comienza el combate 3v3! Selecciona un ataque elemental."

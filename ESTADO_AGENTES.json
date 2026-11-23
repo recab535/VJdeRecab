@@ -12,7 +12,7 @@
   "ultimo_ciclo": {
     "G1": "Tarea 2: Documentadas en docs/game_design_base.md (Sección 9) las 3 etapas del Capítulo 1 PvE (Sendero Terracota) y recompensas de Oro/Comida/Gemas.",
     "G2": "Tarea 2: Documentada en docs/contrato_datos_godot.md (Sección 5) la matriz 9x9 de multiplicadores_elementales (2.0 crítico, 0.5 resistente, 1.0 neutro).",
-    "A1": "Tarea 1: Creada escena scenes/ui/bestiario_panel.tscn e integrada en scenes/main.tscn y scripts/main.gd para abrir el Bestiario desde el botón del HUD.",
-    "A2": "Tarea 1: Implementado scripts/ui/bestiario_panel.gd leyendo GameCore.especies_by_id (id, nombre, rareza, elementos, sprite_prefijo) y comparando contra GameCore.player_state['dragones'] con filtros."
+    "A1": "Tarea 3: Creada escena 2.5D scenes/combat/combat_arena.tscn con 3 marcadores aliados, 3 enemigos, barras de HP por unidad y panel inferior de ataques elementales.",
+    "A2": "Tarea 3: Implementado scripts/combat/combat_arena.gd con instanciación de Dragon2D en los slots, actualización de HP, selección de objetivo y señales de ataque elemental."
   }
 }
