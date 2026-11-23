@@ -1,35 +1,10 @@
-# Roadmap Autónomo de Desarrollo — VJdeRecab
+# Roadmap de Rediseño Radical — VJdeRecab
 
-Plan de tareas incrementales alineado con los roles definidos en `GEMINI.md` (`G1`, `G2`, `A1`, `A2`) y el contrato de datos en `docs/contrato_datos_godot.md`.
+Plan de 6 tareas secuenciales para transformar la jugabilidad, interfaz y visuales (combate 1v1 con equipo de 3, UI estilizada, Tienda por categorías con colocación y vida en las islas).
 
-- [x] Tarea 1: Implementar el panel UI del Bestiario (`scenes/ui/bestiario_panel.tscn` + script) conectado al botón Bestiario del HUD para mostrar especies descubiertas y bloqueadas.
-  - **Rol:** A1 (UI) + A2 (consulta de colección).
-  - **Archivos a crear/editar:** Crear `scenes/ui/bestiario_panel.tscn` y `scripts/ui/bestiario_panel.gd`; editar `scenes/main.tscn` y `scripts/main.gd` para instanciar/abrir el panel desde el botón `Bestiario`, leyendo `GameCore.especies_by_id` (`id`, `nombre`, `rareza`, `elementos`, `sprite_prefijo`) y comparando contra `GameCore.player_state["dragones"]`.
-
-- [x] Tarea 2: Documentar en `docs/game_design_base.md` y `docs/contrato_datos_godot.md` la tabla de efectividad elemental y las 3 etapas del Capítulo 1 PvE (Sendero Terracota).
-  - **Rol:** G1 (Diseño/Campaña) + G2 (Datos).
-  - **Archivos a crear/editar:** Editar `docs/game_design_base.md` (definición de las 3 oleadas/etapas del Capítulo 1 y recompensas de Oro/Comida) y `docs/contrato_datos_godot.md` (matriz `9×9` de `multiplicadores_elementales`: `2.0` crítico, `0.5` resistente, `1.0` neutro).
-
-- [x] Tarea 3: Crear la escena 2.5D de la Arena de Combate 3v3 (`scenes/combat/combat_arena.tscn`) con posiciones de equipo aliado/enemigo, barras de HP y botones de ataque.
-  - **Rol:** A1 (Escena 2.5D/UI) + A2 (Combate 3v3).
-  - **Archivos a crear/editar:** Crear `scenes/combat/combat_arena.tscn` y `scripts/combat/combat_arena.gd` con 3 marcadores aliados, 3 enemigos (`Dragon2D`), barras de HP por unidad y panel inferior con botones de ataque elemental.
-
-- [x] Tarea 4: Implementar el motor de combate por turnos (`scripts/systems/combat_manager.gd`) usando `hp_base`, `atk_base`, `spd_base` y ventajas elementales, conectado al botón Combate del HUD y otorgando recompensas al ganar el Capítulo 1.
-  - **Rol:** A2 (Sistemas de Combate y Campaña).
-  - **Archivos a crear/editar:** Crear `scripts/systems/combat_manager.gd`; editar `scripts/autoload/game_core.gd` (método para acreditar recompensas y avanzar `capitulo_pve_actual` en `user://savegame.json`) y `scripts/main.gd` / `scenes/combat/combat_arena.tscn` para lanzar el Capítulo 1 desde el botón `Combate`.
-
-- [x] Tarea 5: Hacer funcional el botón Desbloquear de Isla 2 (Bruma Volcánica, 2500 Oro) en `locked_island.gd` y `GameCore`, habilitando 4 nuevos slots construibles en la segunda isla.
-  - **Rol:** A1 (Mundo 3D/HUD) + A2 (Persistencia).
-  - **Archivos a crear/editar:** Editar `scripts/world/locked_island.gd`, `scripts/autoload/game_core.gd` (método `unlock_island(island_id, cost_oro)` actualizando `islas_desbloqueadas`), `scenes/main.tscn` (añadir `SlotsConstruibles` en Isla 2 y material desbloqueado) y `scripts/main.gd`.
-
-- [x] Tarea 6: Implementar el sistema de alimentación con Comida en `GameCore` y en el hábitat/dragón para subir de nivel a los dragones y aumentar sus estadísticas y oro por minuto.
-  - **Rol:** A2 (Progresión) + A1 (UI/Hábitat).
-  - **Archivos a crear/editar:** Editar `scripts/autoload/game_core.gd` (método `feed_dragon(dragon_uid)` descontando `Comida` y actualizando `nivel`/`etapa` en `savegame.json`), `scripts/world/habitat_base.gd` y `scripts/ui/hud_basic.gd` / `scripts/main.gd` para disparar y mostrar la subida de nivel.
-
-- [x] Tarea 7: Ampliar el generador visual procedural en `dragon_2d.gd` para diferenciar colores, formas y detalles pixel art únicos para los 8 elementos puros (IDs 1 al 8).
-  - **Rol:** A2 (Entidades 2D `Sprite3D`).
-  - **Archivos a crear/editar:** Editar `scripts/dragons/dragon_2d.gd` en `_create_placeholder_pixel_art(id)` añadiendo paletas y siluetas/detalles diferenciados (cuernos, llamas, aletas, hojas, rayos, cristales, placas metálicas y aura oscura) para los IDs `1..8`.
-
-- [x] Tarea 8: Implementar un selector visual de especies en los botones Cruce y Nido para elegir qué dos dragones cruzar y ver el tiempo/estado de incubación.
-  - **Rol:** A1 (UI) + A2 (Cruces/Nido).
-  - **Archivos a crear/editar:** Crear `scenes/ui/breeding_panel.tscn`, `scripts/ui/breeding_panel.gd`, `scenes/ui/nest_panel.tscn` y `scripts/ui/nest_panel.gd`; editar `scenes/main.tscn`, `scripts/main.gd` y `scripts/autoload/game_core.gd` para seleccionar padres disponibles y mostrar el progreso de `nido_huevos`.
+- [x] Tarea 1 (Diseño y Contrato): Actualizar `docs/game_design_base.md` y `docs/contrato_datos_godot.md` para establecer el Combate 1v1 con equipo de 3 dragones (1 activo en arena + 2 en banca intercambiables, estilo Dragon City), 4 ataques por dragón, Tienda por categorías con modo colocación y menú contextual de Hábitat.
+- [ ] Tarea 2 (Tema UI Global y HUD Estilizado): Crear `assets/ui/game_theme.tres` (`StyleBoxFlat` redondeados, bordes brillantes, sombras paralelas) + helper de animación de botones con `Tween`, y rediseñar el HUD (`scenes/ui/hud_basic.tscn` + `scripts/ui/hud_basic.gd` integrado en `scenes/main.tscn`) con paneles de recursos estilizados, barra de nivel de jugador y barra inferior pulida.
+- [ ] Tarea 3 (Tienda por Pestañas y Modo Colocación): Reemplazar la compra directa del botón `Tienda` por una ventana modal (`scenes/ui/shop_panel.tscn` + `scripts/ui/shop_panel.gd`) con pestañas (Hábitats por elemento con colores propios, Huevos y Granja de Comida) y activar un modo de colocación resaltando en verde los slots libres de la isla.
+- [ ] Tarea 4 (Menú de Hábitat y Vida en la Isla): Añadir decoración low-poly (árboles, rocas, nubes ambientales y levitación suave en `scenes/main.tscn`), movimiento autónomo de los dragones dentro de su hábitat con volteo horizontal (`flip_h`) y un panel inferior al clicar un hábitat para Recoger Oro (con texto flotante) y Alimentar dragones con barra de XP y subida de nivel.
+- [ ] Tarea 5 (Arena 1v1 Estilo Dragon City - Escena y UI): Reconstruir `scenes/combat/combat_arena.tscn` y `scripts/combat/combat_arena.gd` para mostrar únicamente 1 dragón aliado vs 1 enemigo en pedestales 3D con cámara dinámica, 4 botones de ataque elemental (Fuerte/Normal/Débil), 2 botones laterales de relevo y barras de HP animadas con `Tween`.
+- [ ] Tarea 6 (Motor de Combate 1v1 con Relevos y Animaciones): Reescribir `scripts/systems/combat_manager.gd` para gestionar relevos en batalla, 4 ataques por especie, animaciones de embestida/impacto, sacudida de cámara (`camera shake`), números de daño flotantes y victoria al derrotar a los 3 dragones rivales, actualizando `ESTADO_AGENTES.json`.

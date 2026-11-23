@@ -1,7 +1,7 @@
 # Base de Diseño del Juego — Sucesor Espiritual de Dragon City (2012)
 
 ## 1. Visión y enfoque
-- **Concepto:** Juego comercial de crianza, gestión de islas flotantes y combate 3v3 por turnos inspirado en el *Dragon City* clásico de 2012 (sencillez, ritmo sin muros de pago abusivos y progresión relevante en batalla).
+- **Concepto:** Juego comercial de crianza, gestión de islas flotantes y combate 1v1 por turnos con equipo de 3 dragones (1 activo + 2 en banca intercambiables) inspirado en el *Dragon City* clásico de 2012 (sencillez, ritmo sin muros de pago abusivos y progresión relevante en batalla).
 - **Identidad original:** Nombres, criaturas, música y estética propios para constituir una propiedad intelectual original viable comercialmente.
 - **Plataforma y motor:** **Godot 4** (GDScript). Prioridad inicial en **PC (1920×1080)** y preparación para exportar a **móvil** en una etapa posterior.
 - **Trabajo en conjunto:** Coordinación entre **Gemini** (G1: Diseño/Balance/Campaña; G2: Arquitectura de Datos/Reglas) y **Antigravity** (A1: Mundo 3D/Cámara/UI/Persistencia; A2: Cruces/Campaña/Combate 3v3) sobre el repositorio `VJdeRecab`.
@@ -89,7 +89,11 @@ Estructura de carpetas respetando la base existente (`assets/`, `data/`, `docs/`
   - **Cruce:** El jugador selecciona 2 dragones adultos disponibles desde el panel `Cruce`; al confirmar, se resuelve la especie resultante según las reglas de cruce y se envía un huevo al **Nido**.
   - **Nido (Incubación):** El huevo permanece en incubación durante `tiempo_incubacion_seg` (acelerable en prototipo o completado al vencer el temporizador) y al eclosionar se añade el nuevo dragón a la colección del jugador (`savegame.json`) para ubicarlo en un hábitat con espacio libre.
 
-## 9. Combate 3v3, Efectividad Elemental y Capítulo 1 PvE (Sendero Terracota) (G1)
+## 9. Combate 1v1 con Relevos (Equipo de 3), Efectividad Elemental y Capítulo 1 PvE (G1)
+- **Formato de batalla (estilo Dragon City):**
+  - Cada equipo participa con hasta **3 dragones**: **1 dragón activo** en el pedestal 3D y **2 en banca** disponibles para relevo lateral durante la batalla.
+  - Cada dragón cuenta con **4 ataques** (según sus elementos y nivel), mostrando en la UI la efectividad (**Fuerte `2.0×`**, **Normal `1.0×`**, **Débil `0.5×`**) frente al rival activo.
+  - La victoria se obtiene al derrotar a los 3 dragones del equipo enemigo.
 - **Regla de efectividad elemental en combate:**
   - Cada ataque utiliza un elemento del atacante contra el elemento defensor aplicando la matriz `9×9` oficial (`docs/contrato_datos_godot.md`):
     - **Crítico (`2.0`):** Doble daño. Ejemplo inicial: **Tierra (1)** es crítico contra **Fuego (2)** y **Eléctrico (5)**.
@@ -107,4 +111,10 @@ Estructura de carpetas respetando la base existente (`assets/`, `data/`, `docs/`
     - **Enemigos (3v3):** `Dragón Terracota` (ID `1`, Tierra, Niv. 2), `Dragón Magma` (ID `9`, Tierra/Fuego, Niv. 3) y `Dragón Ascua` (ID `2`, Fuego, Niv. 3).
     - **Recompensa:** `400 Oro`, `200 Comida`, `5 Gemas` y desbloqueo del **Capítulo 2**.
   - **Total Capítulo 1:** `800 Oro`, `400 Comida` y `5 Gemas`.
+
+## 10. Rediseño UI, Tienda por Categorías y Menú Contextual de Hábitat
+- **Tema UI global (`assets/ui/game_theme.tres`):** Paneles y tarjetas con `StyleBoxFlat` redondeados, bordes brillantes, sombras paralelas, barra de nivel de jugador y botones animados con `Tween` al pasar el ratón o clicar.
+- **Tienda por pestañas y modo colocación:** Catálogo modal con pestañas (**Hábitats** por elemento con colores propios, **Huevos** y **Granja de Comida**). Al comprar un hábitat se activa el **modo colocación**, iluminando en verde los slots libres de la isla para elegir dónde construir.
+- **Vida en la isla y menú contextual de Hábitat:** Decoración low-poly (árboles, rocas, nubes y levitación suave de islas), patrulla autónoma de los dragones dentro de su hábitat con volteo horizontal (`flip_h`) y panel inferior al clicar un hábitat para **Recoger Oro** (con texto flotante) y **Alimentar** dragones con barra de XP y subida de nivel.
+
 
