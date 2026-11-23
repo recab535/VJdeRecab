@@ -26,7 +26,7 @@ Plan de tareas incrementales alineado con los roles definidos en `GEMINI.md` (`G
   - **Rol:** A2 (Progresión) + A1 (UI/Hábitat).
   - **Archivos a crear/editar:** Editar `scripts/autoload/game_core.gd` (método `feed_dragon(dragon_uid)` descontando `Comida` y actualizando `nivel`/`etapa` en `savegame.json`), `scripts/world/habitat_base.gd` y `scripts/ui/hud_basic.gd` / `scripts/main.gd` para disparar y mostrar la subida de nivel.
 
-- [ ] Tarea 7: Ampliar el generador visual procedural en `dragon_2d.gd` para diferenciar colores, formas y detalles pixel art únicos para los 8 elementos puros (IDs 1 al 8).
+- [x] Tarea 7: Ampliar el generador visual procedural en `dragon_2d.gd` para diferenciar colores, formas y detalles pixel art únicos para los 8 elementos puros (IDs 1 al 8).
   - **Rol:** A2 (Entidades 2D `Sprite3D`).
   - **Archivos a crear/editar:** Editar `scripts/dragons/dragon_2d.gd` en `_create_placeholder_pixel_art(id)` añadiendo paletas y siluetas/detalles diferenciados (cuernos, llamas, aletas, hojas, rayos, cristales, placas metálicas y aura oscura) para los IDs `1..8`.
 
