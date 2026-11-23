@@ -1,6 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/habitat_base.gd" id="1_hab"]
+
+[sub_resource type="CylinderShape3D" id="Shape_HabitatClick"]
+height = 0.8
+radius = 1.75
 
 [sub_resource type="StandardMaterial3D" id="Mat_HabitatBase"]
 albedo_color = Color(0.64, 0.48, 0.3, 1)
@@ -46,3 +50,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0, -0.15)
 
 [node name="Sombra2" type="MeshInstance3D" parent="AreaDragones/DragonSpot2"]
 mesh = SubResource("Mesh_Sombra")
+
+[node name="AreaClick" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaClick"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("Shape_HabitatClick")

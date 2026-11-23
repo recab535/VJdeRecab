@@ -15,6 +15,7 @@ const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_aren
 
 var _built_habitats: Dictionary = {}
 var _active_combat_arena: CombatArena = null
+var _active_feed_filter_uids: Array[int] = []
 
 
 func _ready() -> void:
@@ -22,6 +23,7 @@ func _ready() -> void:
 	hud.rotate_right_requested.connect(camera_rig.rotate_right)
 	hud.panel_requested.connect(_on_panel_requested)
 	hud.unlock_island_requested.connect(_on_unlock_island_requested)
+	hud.feed_dragon_requested.connect(_on_feed_dragon_requested)
 
 	if isla_bloqueada:
 		isla_bloqueada.preview_requested.connect(_on_island_preview_requested)
@@ -29,6 +31,7 @@ func _ready() -> void:
 	if has_node("/root/GameCore"):
 		var core: Node = get_node("/root/GameCore")
 		core.resources_changed.connect(hud.set_resources)
+		core.dragon_leveled_up.connect(_on_dragon_leveled_up)
 		var res: Dictionary = core.get_resources()
 		hud.set_resources(int(res.get("oro", 0)), int(res.get("comida", 0)), int(res.get("gemas", 0)))
 		_restore_world_from_save(core)
@@ -72,23 +75,28 @@ func _spawn_habitat_at_slot(slot_index: int) -> HabitatBase:
 	var hab: HabitatBase = HABITAT_SCENE.instantiate() as HabitatBase
 	slot_node.add_child(hab)
 	hab.position = Vector3.ZERO
+	hab.habitat_clicked.connect(_on_habitat_clicked)
 	_built_habitats[slot_index] = hab
 	return hab
 
 
 func _spawn_dragon_into_free_habitat(core: Node, dragon_data: Dictionary) -> bool:
 	var sp_id: int = int(dragon_data.get("especie_id", 1))
+	var d_uid: int = int(dragon_data.get("uid", -1))
+	var d_nivel: int = maxi(1, int(dragon_data.get("nivel", 1)))
 	var sp: Dictionary = core.get_species(sp_id)
 	for slot_idx: int in _built_habitats.keys():
 		var hab: HabitatBase = _built_habitats[slot_idx]
 		if hab.has_free_slot():
 			var d_node: Dragon2D = DRAGON_SCENE.instantiate() as Dragon2D
-			hab.place_dragon(d_node)
+			hab.place_dragon(d_node, d_uid)
 			d_node.setup_visual(
 				sp_id,
 				str(sp.get("nombre", "Dragón Terracota")),
 				str(sp.get("sprite_prefijo", "dragon_terracota")),
-				str(dragon_data.get("etapa", "cria"))
+				str(dragon_data.get("etapa", "cria")),
+				d_uid,
+				d_nivel
 			)
 			return true
 	return false
@@ -143,6 +151,9 @@ func _on_panel_requested(panel_name: String) -> void:
 				hud.show_status_message(str(res.get("msg", "")) + extra)
 			else:
 				hud.show_status_message(str(res.get("msg", "")))
+		"Alimentar":
+			_active_feed_filter_uids.clear()
+			_open_feed_panel(core, _active_feed_filter_uids, 0)
 		"Bestiario":
 			if bestiario_panel:
 				bestiario_panel.open_bestiario()
@@ -205,3 +216,68 @@ func _find_next_free_slot() -> int:
 		if not _built_habitats.has(i):
 			return i
 	return -1
+
+
+func _on_habitat_clicked(hab: HabitatBase) -> void:
+	if not has_node("/root/GameCore") or hab == null:
+		return
+	if hab.hosted_dragon_uids.is_empty():
+		hud.show_status_message("Este hábitat está vacío. Usa Cruce y Nido para alojar dragones.")
+		return
+	var core: Node = get_node("/root/GameCore")
+	_active_feed_filter_uids = hab.hosted_dragon_uids.duplicate()
+	_open_feed_panel(core, _active_feed_filter_uids, 0)
+
+
+func _on_feed_dragon_requested(dragon_uid: int) -> void:
+	if not has_node("/root/GameCore"):
+		return
+	var core: Node = get_node("/root/GameCore")
+	var res: Dictionary = core.feed_dragon(dragon_uid)
+	hud.show_status_message(str(res.get("msg", "")))
+	var keep_idx: int = hud.get_feed_selected_index()
+	_open_feed_panel(core, _active_feed_filter_uids, keep_idx)
+
+
+func _on_dragon_leveled_up(dragon_uid: int, new_nivel: int, new_etapa: String) -> void:
+	for hab_var: Variant in _built_habitats.values():
+		if hab_var is HabitatBase:
+			var hab: HabitatBase = hab_var
+			if hab.refresh_dragon_visual(dragon_uid, new_nivel, new_etapa):
+				break
+
+
+func _open_feed_panel(core: Node, filter_uids: Array[int], selected_index: int) -> void:
+	var info_list: Array[Dictionary] = _build_feed_info_list(core, filter_uids)
+	if info_list.is_empty():
+		hud.show_status_message("No hay dragones disponibles para alimentar.")
+		return
+	var comida_actual: int = int(core.get_resources().get("comida", 0))
+	hud.show_dragon_feed_panel(info_list, comida_actual, selected_index)
+
+
+func _build_feed_info_list(core: Node, filter_uids: Array[int]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for d_var: Variant in core.player_state.get("dragones", []):
+		if not (d_var is Dictionary):
+			continue
+		var d: Dictionary = d_var
+		var uid: int = int(d.get("uid", -1))
+		if not filter_uids.is_empty() and not filter_uids.has(uid):
+			continue
+		var sp: Dictionary = core.get_species(int(d.get("especie_id", 1)))
+		var nivel: int = maxi(1, int(d.get("nivel", 1)))
+		var stats: Dictionary = core.get_dragon_stats(d)
+		result.append({
+			"uid": uid,
+			"nombre": str(sp.get("nombre", "Dragón")),
+			"nivel": nivel,
+			"max_nivel": core.MAX_DRAGON_LEVEL,
+			"etapa": str(d.get("etapa", "cria")),
+			"cost_comida": core.get_feed_cost(nivel),
+			"hp": int(stats.get("hp", 100)),
+			"atk": int(stats.get("atk", 20)),
+			"spd": int(stats.get("spd", 15)),
+			"oro_por_min": int(stats.get("oro_por_min", 12))
+		})
+	return result

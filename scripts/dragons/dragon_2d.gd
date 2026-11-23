@@ -7,6 +7,8 @@ class_name Dragon2D
 @export var dragon_nombre: String = "Dragón Terracota"
 @export var sprite_prefijo: String = "dragon_terracota"
 @export var etapa: String = "cria"
+@export var dragon_uid: int = -1
+@export var nivel: int = 1
 
 @onready var sprite: Sprite3D = $Sprite3D
 @onready var label_nombre: Label3D = $Label3D
@@ -27,23 +29,33 @@ func _process(delta: float) -> void:
 		sprite.position.y = _base_y + sin(_anim_time) * 0.04
 
 
-func setup_visual(id: int, nombre: String, prefijo: String, stage: String = "cria") -> void:
+func setup_visual(id: int, nombre: String, prefijo: String, stage: String = "cria", uid: int = -1, lvl: int = 1) -> void:
 	especie_id = id
 	dragon_nombre = nombre
 	sprite_prefijo = prefijo
 	etapa = stage
+	if uid > 0:
+		dragon_uid = uid
+	nivel = maxi(1, lvl)
 
 	if label_nombre:
-		label_nombre.text = dragon_nombre
+		label_nombre.text = "%s (Nv.%d)" % [dragon_nombre, nivel]
 
 	if sprite == null:
 		return
+
+	var stage_scale: float = 1.0 if etapa == "cria" else (1.15 if etapa == "joven" else 1.3)
+	sprite.scale = Vector3.ONE * stage_scale
 
 	var tex_path: String = "res://assets/sprites/dragons/%s_%s.png" % [sprite_prefijo, etapa]
 	if ResourceLoader.exists(tex_path):
 		sprite.texture = load(tex_path)
 	else:
 		sprite.texture = _create_placeholder_pixel_art(especie_id)
+
+
+func update_progression(new_nivel: int, new_etapa: String) -> void:
+	setup_visual(especie_id, dragon_nombre, sprite_prefijo, new_etapa, dragon_uid, new_nivel)
 
 
 func _create_placeholder_pixel_art(id: int) -> ImageTexture:

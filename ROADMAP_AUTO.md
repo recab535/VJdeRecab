@@ -22,7 +22,7 @@ Plan de tareas incrementales alineado con los roles definidos en `GEMINI.md` (`G
   - **Rol:** A1 (Mundo 3D/HUD) + A2 (Persistencia).
   - **Archivos a crear/editar:** Editar `scripts/world/locked_island.gd`, `scripts/autoload/game_core.gd` (método `unlock_island(island_id, cost_oro)` actualizando `islas_desbloqueadas`), `scenes/main.tscn` (añadir `SlotsConstruibles` en Isla 2 y material desbloqueado) y `scripts/main.gd`.
 
-- [ ] Tarea 6: Implementar el sistema de alimentación con Comida en `GameCore` y en el hábitat/dragón para subir de nivel a los dragones y aumentar sus estadísticas y oro por minuto.
+- [x] Tarea 6: Implementar el sistema de alimentación con Comida en `GameCore` y en el hábitat/dragón para subir de nivel a los dragones y aumentar sus estadísticas y oro por minuto.
   - **Rol:** A2 (Progresión) + A1 (UI/Hábitat).
   - **Archivos a crear/editar:** Editar `scripts/autoload/game_core.gd` (método `feed_dragon(dragon_uid)` descontando `Comida` y actualizando `nivel`/`etapa` en `savegame.json`), `scripts/world/habitat_base.gd` y `scripts/ui/hud_basic.gd` / `scripts/main.gd` para disparar y mostrar la subida de nivel.
 

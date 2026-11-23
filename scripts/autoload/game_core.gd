@@ -8,10 +8,12 @@ const CATALOG_PATH: String = "res://data/especies_68.json"
 const SAVE_PATH: String = "user://savegame.json"
 const HABITAT_COST_ORO: int = 250
 const PASSIVE_TICK_SEC: float = 5.0
+const MAX_DRAGON_LEVEL: int = 10
 
 signal catalog_loaded(total_species: int)
 signal save_loaded
 signal resources_changed(oro: int, comida: int, gemas: int)
+signal dragon_leveled_up(dragon_uid: int, new_nivel: int, new_etapa: String)
 
 var elementos_by_id: Dictionary = {}
 var especies_by_id: Dictionary = {}
@@ -40,8 +42,7 @@ func _tick_passive_gold(elapsed_sec: float) -> void:
 	var oro_por_min: float = 0.0
 	for d: Variant in player_state.get("dragones", []):
 		if d is Dictionary:
-			var sp: Dictionary = get_species(int(d.get("especie_id", 0)))
-			oro_por_min += float(sp.get("oro_por_minuto", 0))
+			oro_por_min += get_dragon_gold_per_minute(d)
 
 	if oro_por_min <= 0.0:
 		return
@@ -333,6 +334,95 @@ func get_species(species_id: int) -> Dictionary:
 
 func get_element(element_id: int) -> Dictionary:
 	return elementos_by_id.get(element_id, {})
+
+
+func get_feed_cost(nivel: int) -> int:
+	return 50 + (maxi(1, nivel) - 1) * 50
+
+
+func get_stage_for_level(nivel: int) -> String:
+	if nivel >= 7:
+		return "adulto"
+	if nivel >= 4:
+		return "joven"
+	return "cria"
+
+
+func get_dragon_gold_per_minute(dragon_data: Dictionary) -> float:
+	var sp: Dictionary = get_species(int(dragon_data.get("especie_id", 0)))
+	var base_oro: float = float(sp.get("oro_por_minuto", 0))
+	var nivel: int = maxi(1, int(dragon_data.get("nivel", 1)))
+	return base_oro * (1.0 + float(nivel - 1) * 0.25)
+
+
+func get_dragon_stats(dragon_data: Dictionary) -> Dictionary:
+	var sp: Dictionary = get_species(int(dragon_data.get("especie_id", 1)))
+	var nivel: int = maxi(1, int(dragon_data.get("nivel", 1)))
+	var scale: float = 1.0 + float(nivel - 1) * 0.15
+	return {
+		"hp": maxi(10, int(round(float(sp.get("hp_base", 100)) * scale))),
+		"atk": maxi(5, int(round(float(sp.get("atk_base", 20)) * scale))),
+		"spd": maxi(5, int(round(float(sp.get("spd_base", 15)) * scale))),
+		"oro_por_min": int(round(get_dragon_gold_per_minute(dragon_data)))
+	}
+
+
+func get_dragon_by_uid(dragon_uid: int) -> Dictionary:
+	for d: Variant in player_state.get("dragones", []):
+		if d is Dictionary and int(d.get("uid", -1)) == dragon_uid:
+			return d
+	return {}
+
+
+func feed_dragon(dragon_uid: int) -> Dictionary:
+	var dragones: Array = player_state.get("dragones", [])
+	var target_idx: int = -1
+	for i: int in range(dragones.size()):
+		var item: Variant = dragones[i]
+		if item is Dictionary and int(item.get("uid", -1)) == dragon_uid:
+			target_idx = i
+			break
+
+	if target_idx == -1:
+		return {"ok": false, "msg": "Dragón no encontrado (UID %d)." % dragon_uid}
+
+	var d: Dictionary = dragones[target_idx]
+	var sp: Dictionary = get_species(int(d.get("especie_id", 1)))
+	var nombre: String = str(sp.get("nombre", "Dragón"))
+	var nivel_actual: int = maxi(1, int(d.get("nivel", 1)))
+
+	if nivel_actual >= MAX_DRAGON_LEVEL:
+		return {"ok": false, "msg": "%s ya alcanzó el nivel máximo (%d)." % [nombre, MAX_DRAGON_LEVEL]}
+
+	var cost_comida: int = get_feed_cost(nivel_actual)
+	var res: Dictionary = get_resources()
+	var comida_actual: int = int(res.get("comida", 0))
+	if comida_actual < cost_comida:
+		return {"ok": false, "msg": "Comida insuficiente para %s (%d/%d)." % [nombre, comida_actual, cost_comida]}
+
+	var nuevo_nivel: int = nivel_actual + 1
+	var nueva_etapa: String = get_stage_for_level(nuevo_nivel)
+	d["nivel"] = nuevo_nivel
+	d["etapa"] = nueva_etapa
+	dragones[target_idx] = d
+	player_state["dragones"] = dragones
+
+	res["comida"] = comida_actual - cost_comida
+	player_state["recursos"] = res
+
+	save_game()
+	_emit_resources()
+	dragon_leveled_up.emit(dragon_uid, nuevo_nivel, nueva_etapa)
+
+	return {
+		"ok": true,
+		"dragon": d,
+		"cost": cost_comida,
+		"nivel": nuevo_nivel,
+		"etapa": nueva_etapa,
+		"stats": get_dragon_stats(d),
+		"msg": "¡%s subió a Nivel %d (%s)! (-%d Comida)" % [nombre, nuevo_nivel, nueva_etapa.capitalize(), cost_comida]
+	}
 
 
 func get_resources() -> Dictionary:

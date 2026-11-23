@@ -12,7 +12,7 @@
   "ultimo_ciclo": {
     "G1": "Tarea 2: Documentadas en docs/game_design_base.md (Sección 9) las 3 etapas del Capítulo 1 PvE (Sendero Terracota) y recompensas de Oro/Comida/Gemas.",
     "G2": "Tarea 2: Documentada en docs/contrato_datos_godot.md (Sección 5) la matriz 9x9 de multiplicadores_elementales (2.0 crítico, 0.5 resistente, 1.0 neutro).",
-    "A1": "Tarea 5: Añadido SlotsConstruibles (4 slots) y material desbloqueado en scenes/main.tscn, vista visual/raycast de desbloqueo en locked_island.gd y flujo de desbloqueo/construcción en main.gd.",
-    "A2": "Tarea 5: Implementados is_island_unlocked() y unlock_island(island_id, cost_oro) en scripts/autoload/game_core.gd actualizando islas_desbloqueadas y persistencia en savegame.json."
+    "A1": "Tarea 6: Añadido PanelAlimentar y BtnAlimentar en scenes/main.tscn, interacción 3D de hábitat en habitat_base.tscn/gd, UI de alimentación en hud_basic.gd y conexión en main.gd.",
+    "A2": "Tarea 6: Implementado feed_dragon(dragon_uid), escalado de oro/minuto y estadísticas por nivel/etapa en game_core.gd y actualización visual por nivel en dragon_2d.gd."
   }
 }

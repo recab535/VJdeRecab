@@ -291,9 +291,9 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -360.0
+offset_left = -420.0
 offset_top = -84.0
-offset_right = 360.0
+offset_right = 420.0
 offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 0
@@ -315,6 +315,11 @@ custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
 text = "Nido"
 
+[node name="BtnAlimentar" type="Button" parent="HUD/RootControl/AccionesBar"]
+custom_minimum_size = Vector2(120, 48)
+layout_mode = 2
+text = "Alimentar"
+
 [node name="BtnBestiario" type="Button" parent="HUD/RootControl/AccionesBar"]
 custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
@@ -324,6 +329,69 @@ text = "Bestiario"
 custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
 text = "Combate"
+
+[node name="PanelAlimentar" type="PanelContainer" parent="HUD/RootControl"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -145.0
+offset_right = 220.0
+offset_bottom = 145.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxAlimentar" type="VBoxContainer" parent="HUD/RootControl/PanelAlimentar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LblDragonTitulo" type="Label" parent="HUD/RootControl/PanelAlimentar/VBoxAlimentar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Dragón Terracota — Nivel 1 (Cría)"
+
+[node name="LblDragonStats" type="Label" parent="HUD/RootControl/PanelAlimentar/VBoxAlimentar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "HP: 120 | ATK: 24 | SPD: 18
+Oro/min: 12"
+
+[node name="HBoxNavDragon" type="HBoxContainer" parent="HUD/RootControl/PanelAlimentar/VBoxAlimentar"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BtnAnteriorDragon" type="Button" parent="HUD/RootControl/PanelAlimentar/VBoxAlimentar/HBoxNavDragon"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+text = "◀ Anterior"
+
+[node name="BtnSiguienteDragon" type="Button" parent="HUD/RootControl/PanelAlimentar/VBoxAlimentar/HBoxNavDragon"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+text = "Siguiente ▶"
+
+[node name="HBoxAlimentarBtns" type="HBoxContainer" parent="HUD/RootControl/PanelAlimentar/VBoxAlimentar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BtnAlimentarDragon" type="Button" parent="HUD/RootControl/PanelAlimentar/VBoxAlimentar/HBoxAlimentarBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 44)
+layout_mode = 2
+text = "Alimentar (50 Comida)"
+
+[node name="BtnCerrarAlimentar" type="Button" parent="HUD/RootControl/PanelAlimentar/VBoxAlimentar/HBoxAlimentarBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 44)
+layout_mode = 2
+text = "Cerrar"
 
 [node name="BestiarioPanel" parent="HUD/RootControl" instance=ExtResource("5_bestiario")]
 visible = false
