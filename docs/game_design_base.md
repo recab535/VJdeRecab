@@ -76,3 +76,17 @@ Estructura de carpetas respetando la base existente (`assets/`, `data/`, `docs/`
   - Desde `Combate` accede al **Capítulo 1: Sendero Terracota** (1 de 5 capítulos de Tierra).
   - Al superar el combate del Capítulo 1, recibe recompensa de Oro/Comida y desbloquea el Capítulo 2.
 
+## 8. Hábitats, vista previa de islas bloqueadas y flujo de Cruce + Nido (G1)
+- **Construcción de hábitats (desde Tienda):**
+  - **Hábitat Base (Nivel 1):** Costo inicial `250 Oro`, capacidad para **2 dragones** compatibles con su elemento.
+  - **Generación pasiva de oro:** Cada dragón alojado aporta su `oro_por_minuto` (definido en `especies_68.json`, ej. `12 Oro/min` para `Dragón Terracota`), acumulándose de forma continua y acreditándose al jugador de forma periódica o al recolectar.
+  - **Marcadores construibles:** Cada isla dispone de puntos de anclaje (`Slot_1`, `Slot_2`, etc.) donde se instancian los hábitats comprados.
+- **Vista previa al clicar islas bloqueadas:**
+  - Al hacer clic sobre una isla bloqueada (oscura/desvanecida), se abre un panel emergente con:
+    - Nombre de la isla, cantidad de espacios construibles disponibles y elementos recomendados.
+    - Costo de desbloqueo en Oro/Gemas (ej. `2500 Oro` para la Isla 2) y botón de acción (deshabilitado si no alcanza el recurso o requisito).
+- **Flujo básico de Cruce + Incubación en el Nido:**
+  - **Cruce:** El jugador selecciona 2 dragones adultos disponibles desde el panel `Cruce`; al confirmar, se resuelve la especie resultante según las reglas de cruce y se envía un huevo al **Nido**.
+  - **Nido (Incubación):** El huevo permanece en incubación durante `tiempo_incubacion_seg` (acelerable en prototipo o completado al vencer el temporizador) y al eclosionar se añade el nuevo dragón a la colección del jugador (`savegame.json`) para ubicarlo en un hábitat con espacio libre.
+
+

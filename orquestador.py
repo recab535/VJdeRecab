@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -45,6 +46,9 @@ def main():
     inicio_tiempo = time.time()
     print("[Orquestador] Iniciando orquestación de agentes...")
 
+    # Resolver ejecutable de gemini (o gemini.cmd en Windows)
+    gemini_bin = shutil.which("gemini") or shutil.which("gemini.cmd") or "gemini"
+
     while True:
         tiempo_transcurrido = time.time() - inicio_tiempo
         if tiempo_transcurrido >= MAX_DURACION_SEGUNDOS:
@@ -71,17 +75,26 @@ def main():
 
         prompt = PROMPTS_AGENTES.get(turno, f"Ejecutar turno para el agente {turno}.")
         print(f"\n--- [Ronda {rondas + 1}] Turno del agente: {turno} ---")
-        print(f"[Orquestador] Ejecutando comando gemini...")
+        print(f"[Orquestador] Ejecutando comando gemini con binario: {gemini_bin}...")
 
-        cmd = ["gemini", "-m", "gemini-3.5-flash-lite", "-y", "-p", prompt]
+        cmd = [gemini_bin, "-m", "gemini-3.5-flash-lite", "-y", "-p", prompt]
         try:
-            resultado = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+            # Usar shell=True y binario resuelto con shutil.which para evitar [WinError 2] en Windows
+            resultado = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", shell=True)
             if resultado.returncode == 0:
                 print(f"[Orquestador] Agente {turno} ejecutado con éxito.")
             else:
-                print(f"[Orquestador] Advertencia en ejecución de {turno} (código {resultado.returncode}): {resultado.stderr}")
+                print(f"[Orquestador] Error en ejecución de {turno} (código {resultado.returncode}): {resultado.stderr}")
+                estado["estado"] = "ERROR"
+                guardar_estado(estado)
+                print("[Orquestador] Deteniendo script debido a error en la ejecución de gemini.")
+                break
         except Exception as e:
-            print(f"[Orquestador] Error ejecutando CLI de gemini: {e}")
+            print(f"[Orquestador] Excepción ejecutando CLI de gemini: {e}")
+            estado["estado"] = "ERROR"
+            guardar_estado(estado)
+            print("[Orquestador] Deteniendo script debido a excepción.")
+            break
 
         git_commit(f"Orquestador: Turno completado por agente {turno} (Ronda {rondas + 1})")
 
