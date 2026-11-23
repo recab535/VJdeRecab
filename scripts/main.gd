@@ -18,6 +18,7 @@ const BUILD_SLOT_SCRIPT: Script = preload("res://scripts/world/build_slot.gd")
 @onready var breeding_panel: Control = $HUD/RootControl/BreedingPanel
 @onready var nest_panel: Control = $HUD/RootControl/NestPanel
 @onready var shop_panel: PanelContainer = $HUD/RootControl/ShopPanel
+@onready var tutorial_dialog: Control = $HUD/RootControl/TutorialDialog
 
 var _built_habitats: Dictionary = {}
 var _active_combat_arena: CombatArena = null
@@ -61,6 +62,9 @@ func _ready() -> void:
 		var res: Dictionary = core.get_resources()
 		hud.set_resources(int(res.get("oro", 0)), int(res.get("comida", 0)), int(res.get("gemas", 0)))
 		_restore_world_from_save(core)
+		if tutorial_dialog and core.has_method("is_tutorial_completed") and not core.is_tutorial_completed():
+			tutorial_dialog.tutorial_finished.connect(core.complete_tutorial)
+			tutorial_dialog.start_tutorial()
 	else:
 		hud.set_resources(1000, 500, 25)
 
@@ -210,6 +214,8 @@ func _close_overlay_panels() -> void:
 
 func _on_breeding_completed(res: Dictionary) -> void:
 	hud.show_status_message(str(res.get("msg", "")))
+	if res.get("ok", false) and tutorial_dialog and tutorial_dialog.has_method("notify_action"):
+		tutorial_dialog.call("notify_action", "cruce")
 
 
 func _on_egg_hatched(res: Dictionary) -> void:
@@ -220,6 +226,8 @@ func _on_egg_hatched(res: Dictionary) -> void:
 		var placed: bool = _spawn_dragon_into_free_habitat(core, res.get("dragon", {}))
 		var extra: String = "" if placed else " (Construye otro hábitat en Tienda para alojarlo)"
 		hud.show_status_message(str(res.get("msg", "")) + extra)
+		if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
+			tutorial_dialog.call("notify_action", "eclosion")
 	else:
 		hud.show_status_message(str(res.get("msg", "")))
 
@@ -227,6 +235,8 @@ func _on_egg_hatched(res: Dictionary) -> void:
 func _open_combat_arena() -> void:
 	if is_instance_valid(_active_combat_arena):
 		return
+	if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
+		tutorial_dialog.call("notify_action", "combate")
 
 	_active_combat_arena = COMBAT_ARENA_SCENE.instantiate() as CombatArena
 	add_child(_active_combat_arena)
@@ -301,6 +311,8 @@ func _on_collect_habitat_oro_requested() -> void:
 	if collected > 0:
 		get_node("/root/GameCore").add_oro(collected)
 		hud.show_status_message("¡Recogiste +%d Oro del hábitat!" % collected)
+		if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
+			tutorial_dialog.call("notify_action", "oro_o_alimentar")
 	_on_habitat_clicked(_selected_habitat)
 
 
@@ -322,6 +334,8 @@ func _on_feed_dragon_requested(dragon_uid: int) -> void:
 	var core: Node = get_node("/root/GameCore")
 	var res: Dictionary = core.feed_dragon(dragon_uid)
 	hud.show_status_message(str(res.get("msg", "")))
+	if res.get("ok", false) and tutorial_dialog and tutorial_dialog.has_method("notify_action"):
+		tutorial_dialog.call("notify_action", "oro_o_alimentar")
 	var keep_idx: int = hud.get_feed_selected_index()
 	_open_feed_panel(core, _active_feed_filter_uids, keep_idx)
 

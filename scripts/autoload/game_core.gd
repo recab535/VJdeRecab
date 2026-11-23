@@ -188,6 +188,8 @@ func load_game() -> void:
 			player_state["estructuras"] = []
 		if not player_state.has("islas_desbloqueadas"):
 			player_state["islas_desbloqueadas"] = [1]
+		if not player_state.has("tutorial_completado"):
+			player_state["tutorial_completado"] = false
 
 	save_loaded.emit()
 	_emit_resources()

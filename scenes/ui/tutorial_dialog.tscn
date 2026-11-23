@@ -1,0 +1,92 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/tutorial_dialog.gd" id="1_tut"]
+[ext_resource type="Theme" path="res://assets/ui/game_theme.tres" id="2_theme"]
+
+[node name="TutorialDialog" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_tut")
+
+[node name="DialogBox" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -640.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = 196.0
+grow_horizontal = 0
+
+[node name="HBoxMain" type="HBoxContainer" parent="DialogBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="PortraitFrame" type="PanelContainer" parent="DialogBox/HBoxMain"]
+custom_minimum_size = Vector2(116, 116)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="PortraitRect" type="TextureRect" parent="DialogBox/HBoxMain/PortraitFrame"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_filter = 1
+stretch_mode = 5
+
+[node name="VBoxText" type="VBoxContainer" parent="DialogBox/HBoxMain"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="LblSpeaker" type="Label" parent="DialogBox/HBoxMain/VBoxText"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.34, 1)
+theme_override_font_sizes/font_size = 18
+text = "Maestro Kael — Guardián del Santuario"
+
+[node name="LblText" type="Label" parent="DialogBox/HBoxMain/VBoxText"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "¡Bienvenido al Santuario!"
+autowrap_mode = 3
+
+[node name="HBoxBtns" type="HBoxContainer" parent="DialogBox/HBoxMain/VBoxText"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 2
+
+[node name="BtnNext" type="Button" parent="DialogBox/HBoxMain/VBoxText/HBoxBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 36)
+layout_mode = 2
+text = "Continuar"
+
+[node name="BtnSkip" type="Button" parent="DialogBox/HBoxMain/VBoxText/HBoxBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 36)
+layout_mode = 2
+text = "Omitir"
+
+[node name="ArrowHint" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 930.0
+offset_top = 910.0
+offset_right = 990.0
+offset_bottom = 960.0
+theme_override_colors/font_color = Color(1, 0.88, 0.24, 1)
+theme_override_font_sizes/font_size = 38
+text = "⬇"
+horizontal_alignment = 1
