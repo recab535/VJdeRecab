@@ -58,3 +58,21 @@ Estructura de carpetas respetando la base existente (`assets/`, `data/`, `docs/`
   - `scripts/world/` (rotación horizontal, cámara, interacción con islas/hábitats) — **A1**
   - `scripts/ui/` (controladores del HUD) — **A1**
   - `scripts/systems/` (motor de cruces, campaña PvE de 50 capítulos, combate 3v3) — **A2**
+
+## 7. Especificaciones de la escena principal y Capítulo 1 PvE (G1)
+- **Isla inicial (Isla Santuario):**
+  - Plataforma flotante 3D low-poly centrada en `(0, 0, 0)` con superficie verde/tierra y base rocosa minimalista, iluminada con `DirectionalLight3D` y `WorldEnvironment` vibrante.
+  - Espacio inicial preparado para colocar el primer hábitat y dragones 2D (`Sprite3D` con sombra).
+  - Las islas vecinas bloqueadas se muestran más oscuras/desvanecidas y permiten previsualizar sus espacios al clicar.
+- **Cámara y rotación horizontal:**
+  - `CameraRig` (`Node3D` pivote en `(0, 0, 0)`) con `Camera3D` en ángulo inclinado/isométrico.
+  - Rotación horizontal suave (interpolada) controlada por botones en HUD (`Rotar Izq` `-45°` / `Rotar Der` `+45°`) y teclas (`Q`/`E` o flechas), más zoom con rueda del ratón.
+- **HUD básico (`1920×1080`):**
+  - **Superior izquierda:** Recursos iniciales (`Oro`, `Comida`, `Gemas`) y nivel del jugador.
+  - **Inferior derecha:** Botones de rotación horizontal (`↺ Izq`, `↻ Der`).
+  - **Inferior centro:** Botones principales (`Tienda`, `Cruce`, `Nido`, `Bestiario`, `Combate`).
+- **Flujo del Capítulo 1 PvE (Elemento Tierra):**
+  - El jugador inicia con `Dragón Terracota` (ID `1`, Puro Tierra) y recursos base (`1000` Oro, `500` Comida, `25` Gemas).
+  - Desde `Combate` accede al **Capítulo 1: Sendero Terracota** (1 de 5 capítulos de Tierra).
+  - Al superar el combate del Capítulo 1, recibe recompensa de Oro/Comida y desbloquea el Capítulo 2.
+
