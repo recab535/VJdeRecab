@@ -9,6 +9,7 @@ const DRAGON_SCENE: PackedScene = preload("res://scenes/dragons/dragon_2d.tscn")
 @onready var hud: HudBasic = $HUD
 @onready var isla_bloqueada: LockedIsland = $IslaBloqueadaPreview
 @onready var slots_container: Node3D = $IslaInicial/SlotsConstruibles
+@onready var bestiario_panel: BestiarioPanel = $HUD/RootControl/BestiarioPanel
 
 var _built_habitats: Dictionary = {}
 
@@ -112,6 +113,10 @@ func _on_panel_requested(panel_name: String) -> void:
 				hud.show_status_message(str(res.get("msg", "")) + extra)
 			else:
 				hud.show_status_message(str(res.get("msg", "")))
+		"Bestiario":
+			if bestiario_panel:
+				bestiario_panel.open_bestiario()
+				hud.show_status_message("Bestiario abierto.")
 		_:
 			hud.show_status_message("Panel %s disponible en próxima iteración." % panel_name)
 

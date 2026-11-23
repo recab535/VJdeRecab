@@ -2,7 +2,7 @@
 
 Plan de tareas incrementales alineado con los roles definidos en `GEMINI.md` (`G1`, `G2`, `A1`, `A2`) y el contrato de datos en `docs/contrato_datos_godot.md`.
 
-- [ ] Tarea 1: Implementar el panel UI del Bestiario (`scenes/ui/bestiario_panel.tscn` + script) conectado al botón Bestiario del HUD para mostrar especies descubiertas y bloqueadas.
+- [x] Tarea 1: Implementar el panel UI del Bestiario (`scenes/ui/bestiario_panel.tscn` + script) conectado al botón Bestiario del HUD para mostrar especies descubiertas y bloqueadas.
   - **Rol:** A1 (UI) + A2 (consulta de colección).
   - **Archivos a crear/editar:** Crear `scenes/ui/bestiario_panel.tscn` y `scripts/ui/bestiario_panel.gd`; editar `scenes/main.tscn` y `scripts/main.gd` para instanciar/abrir el panel desde el botón `Bestiario`, leyendo `GameCore.especies_by_id` (`id`, `nombre`, `rareza`, `elementos`, `sprite_prefijo`) y comparando contra `GameCore.player_state["dragones"]`.
 
