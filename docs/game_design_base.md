@@ -33,4 +33,28 @@
 
 ## 5. Fuente de datos
 - Esquema y poblado SQL de referencia: `docs/db_y_catalogo.sql`.
-- Catálogo estructurado para consumo en Godot 4: `data/especies_68.json`.
+- Catálogo estructurado para consumo en Godot 4: `data/especies_68.json` (incluye `sprite_prefijo` por especie para resolver sprites 2D).
+- Persistencia local del jugador: `user://savegame.json` (estado de islas, estructuras/hábitats, recursos, colección e inventario).
+
+## 6. Organización del proyecto en Godot 4 y límites de equipo
+Estructura de carpetas respetando la base existente (`assets/`, `data/`, `docs/`, `scenes/`, `scripts/`):
+
+- `project.godot` en la raíz, con resolución base `1920×1080` (`stretch/mode = canvas_items`, `stretch/aspect = expand`).
+- `assets/`
+  - `assets/sprites/dragons/` (pixel art 2D indexado por `sprite_prefijo` y etapa: cria/joven/adulto)
+  - `assets/sprites/ui/` (iconos de recursos, elementos, botones)
+  - `assets/materials/` y `assets/models/` (materiales low-poly y recursos 3D de islas/hábitats)
+  - `assets/audio/` (música y efectos)
+- `data/`
+  - `especies_68.json` (catálogo oficial) y futuros JSON de campaña/ligas (G2)
+- `scenes/`
+  - `scenes/main.tscn` (escena principal arrancable con `F5`)
+  - `scenes/world/` (islas flotantes 3D, cámara orbital/isométrica, hábitats, preview de islas bloqueadas) — **A1**
+  - `scenes/dragons/` (entidad visual 2D en espacio 3D `Sprite3D` + sombra proyectada) — **A1**
+  - `scenes/ui/` (HUD `1920×1080`, paneles de tienda/bestiario/vista previa) — **A1**
+  - `scenes/systems/` o `scenes/combat/` (escenas de cruce, campaña y combate 3v3) — **A2**
+- `scripts/`
+  - `scripts/autoload/` (`SaveManager.gd`, `GameState.gd` / `CatalogLoader.gd`) — **A1** (datos compartidos con **A2**)
+  - `scripts/world/` (rotación horizontal, cámara, interacción con islas/hábitats) — **A1**
+  - `scripts/ui/` (controladores del HUD) — **A1**
+  - `scripts/systems/` (motor de cruces, campaña PvE de 50 capítulos, combate 3v3) — **A2**
