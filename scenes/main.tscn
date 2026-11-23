@@ -5,6 +5,8 @@
 [ext_resource type="Script" path="res://scripts/world/locked_island.gd" id="3_locked"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud_basic.tscn" id="4_hud_scene"]
 [ext_resource type="Script" path="res://scripts/world/island_ambient.gd" id="5_ambient"]
+[ext_resource type="PackedScene" path="res://scenes/world/adoratorio_cria.tscn" id="6_adoratorio"]
+[ext_resource type="PackedScene" path="res://scenes/world/torre_nido.tscn" id="7_torre"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.24, 0.58, 0.92, 1)
@@ -116,6 +118,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.3)
 
 [node name="Pad3" type="MeshInstance3D" parent="IslaInicial/SlotsConstruibles/Slot3"]
 mesh = SubResource("Mesh_SlotPad")
+
+[node name="AdoratorioCria" parent="IslaInicial" instance=ExtResource("6_adoratorio")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 0.6, 2.2)
+
+[node name="TorreNido" parent="IslaInicial" instance=ExtResource("7_torre")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 0.6, 2.2)
 
 [node name="IslaBloqueadaPreview" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, -0.5, -6)

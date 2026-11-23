@@ -117,6 +117,7 @@ func _create_default_state() -> Dictionary:
 		"version": "1.0.0",
 		"nivel_jugador": 1,
 		"capitulo_pve_actual": 1,
+		"tutorial_completado": false,
 		"recursos": {
 			"oro": 1000,
 			"comida": 500,
@@ -138,9 +139,25 @@ func _create_default_state() -> Dictionary:
 				"nivel": 1,
 				"etapa": "cria",
 				"xp": 0
+			},
+			{
+				"uid": 2,
+				"especie_id": 2,
+				"nivel": 1,
+				"etapa": "cria",
+				"xp": 0
 			}
 		]
 	}
+
+
+func is_tutorial_completed() -> bool:
+	return bool(player_state.get("tutorial_completado", false))
+
+
+func complete_tutorial() -> void:
+	player_state["tutorial_completado"] = true
+	save_game()
 
 
 func load_game() -> void:

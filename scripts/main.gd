@@ -10,6 +10,8 @@ const BUILD_SLOT_SCRIPT: Script = preload("res://scripts/world/build_slot.gd")
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var hud: HudBasic = $HUD
 @onready var isla_inicial: Node3D = $IslaInicial
+@onready var adoratorio_cria: Node3D = $IslaInicial/AdoratorioCria
+@onready var torre_nido: Node3D = $IslaInicial/TorreNido
 @onready var isla_bloqueada: LockedIsland = $IslaBloqueadaPreview
 @onready var slots_container: Node3D = $IslaInicial/SlotsConstruibles
 @onready var bestiario_panel: Control = $HUD/RootControl/BestiarioPanel
@@ -35,6 +37,10 @@ func _ready() -> void:
 
 	if isla_bloqueada:
 		isla_bloqueada.preview_requested.connect(_on_island_preview_requested)
+	if adoratorio_cria and adoratorio_cria.has_signal("adoratorio_clicked"):
+		adoratorio_cria.connect("adoratorio_clicked", func() -> void: _on_panel_requested("Cruce"))
+	if torre_nido and torre_nido.has_signal("torre_nido_clicked"):
+		torre_nido.connect("torre_nido_clicked", func() -> void: _on_panel_requested("Nido"))
 
 	if breeding_panel:
 		breeding_panel.breeding_completed.connect(_on_breeding_completed)
