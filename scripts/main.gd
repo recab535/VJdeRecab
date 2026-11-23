@@ -21,6 +21,7 @@ var _built_habitats: Dictionary = {}
 var _active_combat_arena: CombatArena = null
 var _active_feed_filter_uids: Array[int] = []
 var _pending_habitat_purchase: Dictionary = {}
+var _selected_habitat: HabitatBase = null
 
 
 func _ready() -> void:
@@ -29,6 +30,8 @@ func _ready() -> void:
 	hud.panel_requested.connect(_on_panel_requested)
 	hud.unlock_island_requested.connect(_on_unlock_island_requested)
 	hud.feed_dragon_requested.connect(_on_feed_dragon_requested)
+	hud.collect_habitat_oro_requested.connect(_on_collect_habitat_oro_requested)
+	hud.open_habitat_feed_requested.connect(_on_open_habitat_feed_requested)
 
 	if isla_bloqueada:
 		isla_bloqueada.preview_requested.connect(_on_island_preview_requested)
@@ -195,6 +198,7 @@ func _close_overlay_panels() -> void:
 	if hud:
 		hud.hide_dragon_feed_panel()
 		hud.hide_island_preview()
+		hud.hide_habitat_menu()
 
 
 func _on_breeding_completed(res: Dictionary) -> void:
@@ -270,11 +274,38 @@ func _find_next_free_slot() -> int:
 func _on_habitat_clicked(hab: HabitatBase) -> void:
 	if not has_node("/root/GameCore") or hab == null:
 		return
-	if hab.hosted_dragon_uids.is_empty():
-		hud.show_status_message("Este hábitat está vacío. Usa Cruce y Nido para alojar dragones.")
+	_close_overlay_panels()
+	_selected_habitat = hab
+	var core: Node = get_node("/root/GameCore")
+	var elem_info: Dictionary = core.get_element(hab.elemento_id)
+	var elem_name: String = str(elem_info.get("nombre", "Tierra"))
+	var oro_acum: int = int(floor(hab.accumulated_oro))
+	hud.show_habitat_menu(
+		"Hábitat %s (%d/%d)" % [elem_name, hab.dragons_count, hab.capacidad_maxima],
+		oro_acum,
+		not hab.hosted_dragon_uids.is_empty()
+	)
+
+
+func _on_collect_habitat_oro_requested() -> void:
+	if _selected_habitat == null or not has_node("/root/GameCore"):
+		return
+	var collected: int = _selected_habitat.collect_oro()
+	if collected > 0:
+		get_node("/root/GameCore").add_oro(collected)
+		hud.show_status_message("¡Recogiste +%d Oro del hábitat!" % collected)
+	_on_habitat_clicked(_selected_habitat)
+
+
+func _on_open_habitat_feed_requested() -> void:
+	if _selected_habitat == null or not has_node("/root/GameCore"):
+		return
+	if _selected_habitat.hosted_dragon_uids.is_empty():
+		hud.show_status_message("Este hábitat está vacío.")
 		return
 	var core: Node = get_node("/root/GameCore")
-	_active_feed_filter_uids = hab.hosted_dragon_uids.duplicate()
+	_active_feed_filter_uids = _selected_habitat.hosted_dragon_uids.duplicate()
+	hud.hide_habitat_menu()
 	_open_feed_panel(core, _active_feed_filter_uids, 0)
 
 

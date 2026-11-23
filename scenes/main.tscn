@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/world/camera_rig.gd" id="2_cam"]
 [ext_resource type="Script" path="res://scripts/world/locked_island.gd" id="3_locked"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud_basic.tscn" id="4_hud_scene"]
+[ext_resource type="Script" path="res://scripts/world/island_ambient.gd" id="5_ambient"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.24, 0.58, 0.92, 1)
@@ -85,6 +86,7 @@ transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0
 shadow_enabled = true
 
 [node name="IslaInicial" type="Node3D" parent="."]
+script = ExtResource("5_ambient")
 
 [node name="PlataformaVerde" type="MeshInstance3D" parent="IslaInicial"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)

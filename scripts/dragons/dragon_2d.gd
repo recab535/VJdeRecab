@@ -15,6 +15,9 @@ class_name Dragon2D
 
 var _anim_time: float = 0.0
 var _base_y: float = 0.48
+var patrol_enabled: bool = false
+var _patrol_target: Vector3 = Vector3.ZERO
+var _patrol_timer: float = 1.5
 
 
 func _ready() -> void:
@@ -27,6 +30,17 @@ func _process(delta: float) -> void:
 	_anim_time += delta * 3.0
 	if sprite:
 		sprite.position.y = _base_y + sin(_anim_time) * 0.04
+	if patrol_enabled:
+		_patrol_timer -= delta
+		if _patrol_timer <= 0.0:
+			_patrol_timer = randf_range(1.8, 3.8)
+			_patrol_target = Vector3(randf_range(-0.38, 0.38), 0.0, randf_range(-0.22, 0.22))
+		var diff: Vector3 = _patrol_target - position
+		if diff.length() > 0.03:
+			var step: Vector3 = diff.normalized() * minf(diff.length(), delta * 0.45)
+			if sprite and absf(step.x) > 0.001:
+				sprite.flip_h = step.x < 0.0
+			position += step
 
 
 func setup_visual(id: int, nombre: String, prefijo: String, stage: String = "cria", uid: int = -1, lvl: int = 1) -> void:

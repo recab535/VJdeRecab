@@ -25,6 +25,39 @@ const ELEMENT_COLORS: Dictionary = {
 var dragons_count: int = 0
 var hosted_dragon_uids: Array[int] = []
 var hosted_dragons: Array[Dragon2D] = []
+var accumulated_oro: float = 0.0
+var oro_per_minute_total: float = 12.0
+
+
+func _process(delta: float) -> void:
+	if dragons_count > 0:
+		accumulated_oro = minf(accumulated_oro + (oro_per_minute_total / 60.0) * delta, 500.0)
+
+
+func collect_oro() -> int:
+	var amount: int = int(floor(accumulated_oro))
+	if amount <= 0:
+		return 0
+	accumulated_oro -= float(amount)
+	spawn_floating_gold_text(amount)
+	return amount
+
+
+func spawn_floating_gold_text(amount: int) -> void:
+	var lbl: Label3D = Label3D.new()
+	lbl.text = "+%d Oro" % amount
+	lbl.modulate = Color(1.0, 0.88, 0.28, 1.0)
+	lbl.outline_size = 8
+	lbl.font_size = 32
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.position = Vector3(0.0, 1.6, 0.0)
+	add_child(lbl)
+
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(lbl, "position:y", 2.8, 1.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "modulate:a", 0.0, 1.1)
+	tw.chain().tween_callback(lbl.queue_free)
 
 
 func _ready() -> void:
@@ -58,6 +91,8 @@ func place_dragon(dragon_node: Node3D, dragon_uid: int = -1) -> bool:
 	var spot: Node3D = spots[dragons_count]
 	spot.add_child(dragon_node)
 	dragon_node.position = Vector3.ZERO
+	if "patrol_enabled" in dragon_node:
+		dragon_node.set("patrol_enabled", true)
 	dragons_count += 1
 	if dragon_uid > 0:
 		hosted_dragon_uids.append(dragon_uid)

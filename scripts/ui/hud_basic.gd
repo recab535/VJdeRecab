@@ -8,6 +8,8 @@ signal rotate_right_requested
 signal panel_requested(panel_name: String)
 signal unlock_island_requested(island_id: int, cost_oro: int)
 signal feed_dragon_requested(dragon_uid: int)
+signal collect_habitat_oro_requested
+signal open_habitat_feed_requested
 
 @onready var lbl_nivel_jugador: Label = %LblNivelJugador
 @onready var pb_nivel_jugador: ProgressBar = %PbNivelJugador
@@ -25,6 +27,12 @@ signal feed_dragon_requested(dragon_uid: int)
 @onready var panel_alimentar: PanelContainer = %PanelAlimentar
 @onready var lbl_dragon_titulo: Label = %LblDragonTitulo
 @onready var lbl_dragon_stats: Label = %LblDragonStats
+@onready var pb_dragon_xp: ProgressBar = %PbDragonXP
+@onready var panel_habitat_menu: PanelContainer = %PanelHabitatMenu
+@onready var lbl_habitat_menu_info: Label = %LblHabitatMenuInfo
+@onready var btn_recoger_oro: Button = %BtnRecogerOro
+@onready var btn_habitat_alimentar: Button = %BtnHabitatAlimentar
+@onready var btn_cerrar_habitat_menu: Button = %BtnCerrarHabitatMenu
 @onready var btn_anterior_dragon: Button = %BtnAnteriorDragon
 @onready var btn_siguiente_dragon: Button = %BtnSiguienteDragon
 @onready var btn_alimentar_dragon: Button = %BtnAlimentarDragon
@@ -48,6 +56,12 @@ func _ready() -> void:
 
 	if btn_cerrar_alimentar:
 		btn_cerrar_alimentar.pressed.connect(hide_dragon_feed_panel)
+	if btn_recoger_oro:
+		btn_recoger_oro.pressed.connect(func() -> void: collect_habitat_oro_requested.emit())
+	if btn_habitat_alimentar:
+		btn_habitat_alimentar.pressed.connect(func() -> void: open_habitat_feed_requested.emit())
+	if btn_cerrar_habitat_menu:
+		btn_cerrar_habitat_menu.pressed.connect(hide_habitat_menu)
 	if btn_anterior_dragon:
 		btn_anterior_dragon.pressed.connect(func() -> void: _cycle_feed_dragon(-1))
 	if btn_siguiente_dragon:
@@ -154,6 +168,24 @@ func hide_dragon_feed_panel() -> void:
 		panel_alimentar.visible = false
 
 
+func show_habitat_menu(info_text: String, oro_acumulado: int, has_dragons: bool) -> void:
+	if panel_habitat_menu == null:
+		return
+	if lbl_habitat_menu_info:
+		lbl_habitat_menu_info.text = info_text
+	if btn_recoger_oro:
+		btn_recoger_oro.text = "Recoger (+%d Oro)" % oro_acumulado
+		btn_recoger_oro.disabled = oro_acumulado <= 0
+	if btn_habitat_alimentar:
+		btn_habitat_alimentar.disabled = not has_dragons
+	panel_habitat_menu.visible = true
+
+
+func hide_habitat_menu() -> void:
+	if panel_habitat_menu:
+		panel_habitat_menu.visible = false
+
+
 func get_feed_selected_index() -> int:
 	return _feed_selected_idx
 
@@ -182,6 +214,8 @@ func _refresh_feed_panel_ui() -> void:
 
 	lbl_dragon_titulo.text = "%s — Nv. %d/%d (%s)" % [nombre, nivel, max_nivel, etapa]
 	lbl_dragon_stats.text = "HP: %d  |  ATK: %d  |  SPD: %d\nProducción: %d Oro/min" % [hp, atk, spd, oro_min]
+	if pb_dragon_xp:
+		pb_dragon_xp.value = clampf((float(nivel) / float(max_nivel)) * 100.0, 0.0, 100.0)
 
 	var multiple: bool = _feed_dragons_list.size() > 1
 	btn_anterior_dragon.visible = multiple

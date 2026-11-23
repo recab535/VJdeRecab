@@ -166,6 +166,14 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "HP: 420 | ATK: 85 | Oro/min: 12"
 
+[node name="PbDragonXP" type="ProgressBar" parent="RootControl/PanelAlimentar/VBoxAlimentar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+max_value = 100.0
+value = 20.0
+show_percentage = false
+
 [node name="HBoxNavDragon" type="HBoxContainer" parent="RootControl/PanelAlimentar/VBoxAlimentar"]
 layout_mode = 2
 theme_override_constants/separation = 12
@@ -281,3 +289,48 @@ text = "Combate"
 [node name="NestPanel" parent="RootControl" instance=ExtResource("5_nest")]
 
 [node name="ShopPanel" parent="RootControl" instance=ExtResource("6_shop")]
+
+[node name="PanelHabitatMenu" type="PanelContainer" parent="RootControl"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -310.0
+offset_top = -188.0
+offset_right = 310.0
+offset_bottom = -112.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="HBoxHabitatMenu" type="HBoxContainer" parent="RootControl/PanelHabitatMenu"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="LblHabitatMenuInfo" type="Label" parent="RootControl/PanelHabitatMenu/HBoxHabitatMenu"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Hábitat (1/2)"
+
+[node name="BtnRecogerOro" type="Button" parent="RootControl/PanelHabitatMenu/HBoxHabitatMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 44)
+layout_mode = 2
+text = "Recoger Oro"
+
+[node name="BtnHabitatAlimentar" type="Button" parent="RootControl/PanelHabitatMenu/HBoxHabitatMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 44)
+layout_mode = 2
+text = "Alimentar"
+
+[node name="BtnCerrarHabitatMenu" type="Button" parent="RootControl/PanelHabitatMenu/HBoxHabitatMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 44)
+layout_mode = 2
+text = "Cerrar"
