@@ -37,6 +37,9 @@ func _ready() -> void:
 
 
 func _restore_world_from_save(core: Node) -> void:
+	if isla_bloqueada and core.is_island_unlocked(isla_bloqueada.island_id):
+		isla_bloqueada.set_unlocked(true)
+
 	for est: Variant in core.player_state.get("estructuras", []):
 		if est is Dictionary:
 			_spawn_habitat_at_slot(int(est.get("slot_index", 0)))
@@ -46,10 +49,24 @@ func _restore_world_from_save(core: Node) -> void:
 			_spawn_dragon_into_free_habitat(core, d)
 
 
+func _get_all_slot_nodes() -> Array[Node3D]:
+	var all_slots: Array[Node3D] = []
+	if slots_container:
+		for child: Node in slots_container.get_children():
+			if child is Node3D:
+				all_slots.append(child)
+	if isla_bloqueada and isla_bloqueada.is_unlocked and isla_bloqueada.slots_container:
+		for child: Node in isla_bloqueada.slots_container.get_children():
+			if child is Node3D:
+				all_slots.append(child)
+	return all_slots
+
+
 func _spawn_habitat_at_slot(slot_index: int) -> HabitatBase:
 	if _built_habitats.has(slot_index):
 		return _built_habitats[slot_index]
-	var slot_node: Node3D = slots_container.get_child(slot_index) as Node3D if slot_index < slots_container.get_child_count() else null
+	var all_slots: Array[Node3D] = _get_all_slot_nodes()
+	var slot_node: Node3D = all_slots[slot_index] if slot_index >= 0 and slot_index < all_slots.size() else null
 	if slot_node == null:
 		return null
 	var hab: HabitatBase = HABITAT_SCENE.instantiate() as HabitatBase
@@ -85,8 +102,18 @@ func _on_island_preview_requested(info: Dictionary) -> void:
 	hud.show_island_preview(info, oro_actual)
 
 
-func _on_unlock_island_requested(_island_id: int, cost_oro: int) -> void:
-	hud.show_status_message("Oro insuficiente o pendiente de desbloqueo (%d Oro)." % cost_oro)
+func _on_unlock_island_requested(island_id: int, cost_oro: int) -> void:
+	if not has_node("/root/GameCore"):
+		hud.show_status_message("GameCore no disponible para desbloquear la isla %d." % island_id)
+		return
+
+	var core: Node = get_node("/root/GameCore")
+	var res: Dictionary = core.unlock_island(island_id, cost_oro)
+	if res.get("ok", false):
+		if isla_bloqueada and isla_bloqueada.island_id == island_id:
+			isla_bloqueada.set_unlocked(true)
+		hud.hide_island_preview()
+	hud.show_status_message(str(res.get("msg", "")))
 
 
 func _on_panel_requested(panel_name: String) -> void:
@@ -99,7 +126,7 @@ func _on_panel_requested(panel_name: String) -> void:
 		"Tienda":
 			var next_slot: int = _find_next_free_slot()
 			if next_slot == -1:
-				hud.show_status_message("No quedan espacios libres en Isla Inicial.")
+				hud.show_status_message("No quedan espacios libres en las islas desbloqueadas.")
 				return
 			var res: Dictionary = core.build_habitat(next_slot, 1)
 			if res.get("ok", false):
@@ -173,7 +200,8 @@ func _on_combat_finished(victory: bool, rewards: Dictionary) -> void:
 
 
 func _find_next_free_slot() -> int:
-	for i: int in range(slots_container.get_child_count()):
+	var all_slots: Array[Node3D] = _get_all_slot_nodes()
+	for i: int in range(all_slots.size()):
 		if not _built_habitats.has(i):
 			return i
 	return -1

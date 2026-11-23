@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/world/camera_rig.gd" id="2_cam"]
@@ -60,6 +60,10 @@ transparency = 1
 albedo_color = Color(0.22, 0.24, 0.32, 0.55)
 roughness = 0.9
 
+[sub_resource type="StandardMaterial3D" id="Mat_Isla2Desbloqueada"]
+albedo_color = Color(0.55, 0.3, 0.22, 1)
+roughness = 0.88
+
 [sub_resource type="CylinderMesh" id="Mesh_IslaBloqueada"]
 material = SubResource("Mat_Bloqueada")
 top_radius = 4.2
@@ -115,6 +119,7 @@ mesh = SubResource("Mesh_SlotPad")
 [node name="IslaBloqueadaPreview" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, -0.5, -6)
 script = ExtResource("4_locked")
+unlocked_material = SubResource("Mat_Isla2Desbloqueada")
 
 [node name="MeshBloqueada" type="MeshInstance3D" parent="IslaBloqueadaPreview"]
 mesh = SubResource("Mesh_IslaBloqueada")
@@ -123,6 +128,34 @@ mesh = SubResource("Mesh_IslaBloqueada")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="IslaBloqueadaPreview/AreaClick"]
 shape = SubResource("Shape_IslaBloqueada")
+
+[node name="SlotsConstruibles" type="Node3D" parent="IslaBloqueadaPreview"]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.12, 0)
+
+[node name="Slot1" type="Marker3D" parent="IslaBloqueadaPreview/SlotsConstruibles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0, -1.6)
+
+[node name="Pad1" type="MeshInstance3D" parent="IslaBloqueadaPreview/SlotsConstruibles/Slot1"]
+mesh = SubResource("Mesh_SlotPad")
+
+[node name="Slot2" type="Marker3D" parent="IslaBloqueadaPreview/SlotsConstruibles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 0, -1.6)
+
+[node name="Pad2" type="MeshInstance3D" parent="IslaBloqueadaPreview/SlotsConstruibles/Slot2"]
+mesh = SubResource("Mesh_SlotPad")
+
+[node name="Slot3" type="Marker3D" parent="IslaBloqueadaPreview/SlotsConstruibles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0, 1.6)
+
+[node name="Pad3" type="MeshInstance3D" parent="IslaBloqueadaPreview/SlotsConstruibles/Slot3"]
+mesh = SubResource("Mesh_SlotPad")
+
+[node name="Slot4" type="Marker3D" parent="IslaBloqueadaPreview/SlotsConstruibles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 0, 1.6)
+
+[node name="Pad4" type="MeshInstance3D" parent="IslaBloqueadaPreview/SlotsConstruibles/Slot4"]
+mesh = SubResource("Mesh_SlotPad")
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("2_cam")

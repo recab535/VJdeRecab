@@ -140,6 +140,8 @@ func load_game() -> void:
 			player_state["nido_huevos"] = []
 		if not player_state.has("estructuras"):
 			player_state["estructuras"] = []
+		if not player_state.has("islas_desbloqueadas"):
+			player_state["islas_desbloqueadas"] = [1]
 
 	save_loaded.emit()
 	_emit_resources()
@@ -225,6 +227,41 @@ func build_habitat(slot_index: int, elemento_id: int = 1, cost_oro: int = HABITA
 	save_game()
 	_emit_resources()
 	return {"ok": true, "estructura": nueva, "msg": "Hábitat construido en espacio %d (-%d Oro)." % [slot_index + 1, cost_oro]}
+
+
+func is_island_unlocked(island_id: int) -> bool:
+	var unlocked: Array = player_state.get("islas_desbloqueadas", [1])
+	for item: Variant in unlocked:
+		if int(item) == island_id:
+			return true
+	return false
+
+
+func unlock_island(island_id: int, cost_oro: int = 2500) -> Dictionary:
+	if not player_state.has("islas_desbloqueadas"):
+		player_state["islas_desbloqueadas"] = [1]
+
+	if is_island_unlocked(island_id):
+		return {"ok": false, "msg": "La isla %d ya está desbloqueada." % island_id}
+
+	var res: Dictionary = get_resources()
+	var oro_actual: int = int(res.get("oro", 0))
+	if oro_actual < cost_oro:
+		return {"ok": false, "msg": "Oro insuficiente (%d/%d)." % [oro_actual, cost_oro]}
+
+	var unlocked: Array = player_state.get("islas_desbloqueadas", [1])
+	unlocked.append(island_id)
+	player_state["islas_desbloqueadas"] = unlocked
+
+	res["oro"] = oro_actual - cost_oro
+	player_state["recursos"] = res
+	save_game()
+	_emit_resources()
+	return {
+		"ok": true,
+		"island_id": island_id,
+		"msg": "¡Isla %d desbloqueada (-%d Oro)! 4 nuevos espacios disponibles." % [island_id, cost_oro]
+	}
 
 
 func start_breeding(parent_a_id: int, parent_b_id: int) -> Dictionary:

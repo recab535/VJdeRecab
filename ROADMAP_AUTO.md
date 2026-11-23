@@ -18,7 +18,7 @@ Plan de tareas incrementales alineado con los roles definidos en `GEMINI.md` (`G
   - **Rol:** A2 (Sistemas de Combate y Campaña).
   - **Archivos a crear/editar:** Crear `scripts/systems/combat_manager.gd`; editar `scripts/autoload/game_core.gd` (método para acreditar recompensas y avanzar `capitulo_pve_actual` en `user://savegame.json`) y `scripts/main.gd` / `scenes/combat/combat_arena.tscn` para lanzar el Capítulo 1 desde el botón `Combate`.
 
-- [ ] Tarea 5: Hacer funcional el botón Desbloquear de Isla 2 (Bruma Volcánica, 2500 Oro) en `locked_island.gd` y `GameCore`, habilitando 4 nuevos slots construibles en la segunda isla.
+- [x] Tarea 5: Hacer funcional el botón Desbloquear de Isla 2 (Bruma Volcánica, 2500 Oro) en `locked_island.gd` y `GameCore`, habilitando 4 nuevos slots construibles en la segunda isla.
   - **Rol:** A1 (Mundo 3D/HUD) + A2 (Persistencia).
   - **Archivos a crear/editar:** Editar `scripts/world/locked_island.gd`, `scripts/autoload/game_core.gd` (método `unlock_island(island_id, cost_oro)` actualizando `islas_desbloqueadas`), `scenes/main.tscn` (añadir `SlotsConstruibles` en Isla 2 y material desbloqueado) y `scripts/main.gd`.
 
