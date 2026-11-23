@@ -1,0 +1,280 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud_basic.gd" id="1_hud"]
+[ext_resource type="Theme" path="res://assets/ui/game_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://scenes/ui/bestiario_panel.tscn" id="3_bestiario"]
+[ext_resource type="PackedScene" path="res://scenes/ui/breeding_panel.tscn" id="4_breeding"]
+[ext_resource type="PackedScene" path="res://scenes/ui/nest_panel.tscn" id="5_nest"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="RootControl" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="TopLeftBar" type="HBoxContainer" parent="RootControl"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 920.0
+offset_bottom = 96.0
+theme_override_constants/separation = 16
+
+[node name="NivelPanel" type="PanelContainer" parent="RootControl/TopLeftBar"]
+custom_minimum_size = Vector2(220, 68)
+layout_mode = 2
+
+[node name="VBoxNivel" type="VBoxContainer" parent="RootControl/TopLeftBar/NivelPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="LblNivelJugador" type="Label" parent="RootControl/TopLeftBar/NivelPanel/VBoxNivel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Nivel 1 — Domador"
+
+[node name="PbNivelJugador" type="ProgressBar" parent="RootControl/TopLeftBar/NivelPanel/VBoxNivel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+max_value = 100.0
+value = 25.0
+show_percentage = false
+
+[node name="RecursosPanel" type="PanelContainer" parent="RootControl/TopLeftBar"]
+custom_minimum_size = Vector2(480, 68)
+layout_mode = 2
+
+[node name="HBoxRecursos" type="HBoxContainer" parent="RootControl/TopLeftBar/RecursosPanel"]
+layout_mode = 2
+theme_override_constants/separation = 26
+alignment = 1
+
+[node name="LblOro" type="Label" parent="RootControl/TopLeftBar/RecursosPanel/HBoxRecursos"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.34, 1)
+text = "Oro: 1000"
+
+[node name="LblComida" type="Label" parent="RootControl/TopLeftBar/RecursosPanel/HBoxRecursos"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.54, 0.94, 0.56, 1)
+text = "Comida: 500"
+
+[node name="LblGemas" type="Label" parent="RootControl/TopLeftBar/RecursosPanel/HBoxRecursos"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.56, 0.88, 1, 1)
+text = "Gemas: 25"
+
+[node name="StatusBanner" type="PanelContainer" parent="RootControl"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 106.0
+offset_right = 760.0
+offset_bottom = 154.0
+
+[node name="LblEstadoAccion" type="Label" parent="RootControl/StatusBanner"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Isla Santuario lista. Clica la isla oscura para previsualizar."
+
+[node name="PanelIslaPreview" type="PanelContainer" parent="RootControl"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -230.0
+offset_top = -130.0
+offset_right = 230.0
+offset_bottom = 130.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxPreview" type="VBoxContainer" parent="RootControl/PanelIslaPreview"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="LblIslaTitulo" type="Label" parent="RootControl/PanelIslaPreview/VBoxPreview"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Isla 2 — Bruma Volcánica"
+
+[node name="LblIslaDetalle" type="Label" parent="RootControl/PanelIslaPreview/VBoxPreview"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Espacios construibles: 4"
+
+[node name="HBoxPreviewBtns" type="HBoxContainer" parent="RootControl/PanelIslaPreview/VBoxPreview"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BtnDesbloquearIsla" type="Button" parent="RootControl/PanelIslaPreview/VBoxPreview/HBoxPreviewBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 46)
+layout_mode = 2
+text = "Desbloquear (2500 Oro)"
+
+[node name="BtnCerrarPreview" type="Button" parent="RootControl/PanelIslaPreview/VBoxPreview/HBoxPreviewBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 46)
+layout_mode = 2
+text = "Cerrar"
+
+[node name="PanelAlimentar" type="PanelContainer" parent="RootControl"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -150.0
+offset_right = 250.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxAlimentar" type="VBoxContainer" parent="RootControl/PanelAlimentar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LblDragonTitulo" type="Label" parent="RootControl/PanelAlimentar/VBoxAlimentar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Dragón Terracota (Niv. 1)"
+
+[node name="LblDragonStats" type="Label" parent="RootControl/PanelAlimentar/VBoxAlimentar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "HP: 420 | ATK: 85 | Oro/min: 12"
+
+[node name="HBoxNavDragon" type="HBoxContainer" parent="RootControl/PanelAlimentar/VBoxAlimentar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BtnAnteriorDragon" type="Button" parent="RootControl/PanelAlimentar/VBoxAlimentar/HBoxNavDragon"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+text = "< Anterior"
+
+[node name="BtnSiguienteDragon" type="Button" parent="RootControl/PanelAlimentar/VBoxAlimentar/HBoxNavDragon"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+text = "Siguiente >"
+
+[node name="HBoxAlimentarBtns" type="HBoxContainer" parent="RootControl/PanelAlimentar/VBoxAlimentar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BtnAlimentarDragon" type="Button" parent="RootControl/PanelAlimentar/VBoxAlimentar/HBoxAlimentarBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(210, 44)
+layout_mode = 2
+text = "Alimentar (50 Comida)"
+
+[node name="BtnCerrarAlimentar" type="Button" parent="RootControl/PanelAlimentar/VBoxAlimentar/HBoxAlimentarBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 44)
+layout_mode = 2
+text = "Cerrar"
+
+[node name="RotacionBar" type="HBoxContainer" parent="RootControl"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -290.0
+offset_top = -92.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 12
+
+[node name="BtnRotarIzq" type="Button" parent="RootControl/RotacionBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(124, 54)
+layout_mode = 2
+text = "↺ Rotar"
+
+[node name="BtnRotarDer" type="Button" parent="RootControl/RotacionBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(124, 54)
+layout_mode = 2
+text = "Rotar ↻"
+
+[node name="BottomDock" type="PanelContainer" parent="RootControl"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -450.0
+offset_top = -100.0
+offset_right = 450.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="AccionesBar" type="HBoxContainer" parent="RootControl/BottomDock"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="BtnTienda" type="Button" parent="RootControl/BottomDock/AccionesBar"]
+custom_minimum_size = Vector2(128, 52)
+layout_mode = 2
+text = "Tienda"
+
+[node name="BtnCruce" type="Button" parent="RootControl/BottomDock/AccionesBar"]
+custom_minimum_size = Vector2(128, 52)
+layout_mode = 2
+text = "Cruce"
+
+[node name="BtnNido" type="Button" parent="RootControl/BottomDock/AccionesBar"]
+custom_minimum_size = Vector2(128, 52)
+layout_mode = 2
+text = "Nido"
+
+[node name="BtnAlimentar" type="Button" parent="RootControl/BottomDock/AccionesBar"]
+custom_minimum_size = Vector2(128, 52)
+layout_mode = 2
+text = "Alimentar"
+
+[node name="BtnBestiario" type="Button" parent="RootControl/BottomDock/AccionesBar"]
+custom_minimum_size = Vector2(128, 52)
+layout_mode = 2
+text = "Bestiario"
+
+[node name="BtnCombate" type="Button" parent="RootControl/BottomDock/AccionesBar"]
+custom_minimum_size = Vector2(128, 52)
+layout_mode = 2
+text = "Combate"
+
+[node name="BestiarioPanel" parent="RootControl" instance=ExtResource("3_bestiario")]
+
+[node name="BreedingPanel" parent="RootControl" instance=ExtResource("4_breeding")]
+
+[node name="NestPanel" parent="RootControl" instance=ExtResource("5_nest")]

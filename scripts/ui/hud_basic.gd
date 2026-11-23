@@ -9,6 +9,8 @@ signal panel_requested(panel_name: String)
 signal unlock_island_requested(island_id: int, cost_oro: int)
 signal feed_dragon_requested(dragon_uid: int)
 
+@onready var lbl_nivel_jugador: Label = %LblNivelJugador
+@onready var pb_nivel_jugador: ProgressBar = %PbNivelJugador
 @onready var lbl_oro: Label = %LblOro
 @onready var lbl_comida: Label = %LblComida
 @onready var lbl_gemas: Label = %LblGemas
@@ -66,6 +68,43 @@ func _ready() -> void:
 	panel_isla_preview.visible = false
 	if panel_alimentar:
 		panel_alimentar.visible = false
+	call_deferred("_attach_button_tweens", self)
+
+
+func set_player_level(level: int, xp_ratio: float = 0.25) -> void:
+	if lbl_nivel_jugador:
+		lbl_nivel_jugador.text = "Nivel %d — Domador" % level
+	if pb_nivel_jugador:
+		pb_nivel_jugador.value = clampf(xp_ratio * 100.0, 0.0, 100.0)
+
+
+func _attach_button_tweens(root: Node) -> void:
+	for child: Node in root.get_children():
+		if child is Button:
+			var btn: Button = child as Button
+			if not btn.has_meta("tween_bound"):
+				btn.set_meta("tween_bound", true)
+				btn.mouse_entered.connect(func() -> void:
+					btn.pivot_offset = btn.size * 0.5
+					var tw: Tween = btn.create_tween()
+					tw.tween_property(btn, "scale", Vector2(1.06, 1.06), 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+				)
+				btn.mouse_exited.connect(func() -> void:
+					btn.pivot_offset = btn.size * 0.5
+					var tw: Tween = btn.create_tween()
+					tw.tween_property(btn, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+				)
+				btn.button_down.connect(func() -> void:
+					btn.pivot_offset = btn.size * 0.5
+					var tw: Tween = btn.create_tween()
+					tw.tween_property(btn, "scale", Vector2(0.94, 0.94), 0.06)
+				)
+				btn.button_up.connect(func() -> void:
+					btn.pivot_offset = btn.size * 0.5
+					var tw: Tween = btn.create_tween()
+					tw.tween_property(btn, "scale", Vector2(1.06, 1.06), 0.08)
+				)
+		_attach_button_tweens(child)
 
 
 func set_resources(oro: int, comida: int, gemas: int) -> void:
