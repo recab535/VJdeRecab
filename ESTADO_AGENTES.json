@@ -1,7 +1,7 @@
 {
   "estado": "ACTIVO",
-  "turno_actual": "A2",
-  "rondas_completadas": 1,
+  "turno_actual": "G1",
+  "rondas_completadas": 2,
   "max_rondas_limite": 4,
   "orden_agentes": [
     "G1",
