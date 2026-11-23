@@ -258,6 +258,45 @@ func build_habitat(slot_index: int, elemento_id: int = 1, cost_oro: int = HABITA
 	return {"ok": true, "estructura": nueva, "msg": "Hábitat construido en espacio %d (-%d Oro)." % [slot_index + 1, cost_oro]}
 
 
+func buy_egg(especie_id: int, cost_oro: int) -> Dictionary:
+	var res: Dictionary = get_resources()
+	var oro_actual: int = int(res.get("oro", 0))
+	if oro_actual < cost_oro:
+		return {"ok": false, "msg": "Oro insuficiente (%d/%d)." % [oro_actual, cost_oro]}
+
+	var huevos: Array = player_state.get("nido_huevos", [])
+	if huevos.size() >= 3:
+		return {"ok": false, "msg": "El Nido está lleno (máx. 3 huevos)."}
+
+	var sp: Dictionary = get_species(especie_id)
+	var egg: Dictionary = {
+		"especie_id": especie_id,
+		"nombre": str(sp.get("nombre", "Dragón")),
+		"tiempo_incubacion_seg": int(sp.get("tiempo_incubacion_seg", 300)),
+		"restante_seg": 5.0
+	}
+	huevos.append(egg)
+	player_state["nido_huevos"] = huevos
+	res["oro"] = oro_actual - cost_oro
+	player_state["recursos"] = res
+	save_game()
+	_emit_resources()
+	return {"ok": true, "msg": "Huevo de %s comprado y enviado al Nido (-%d Oro)." % [egg["nombre"], cost_oro]}
+
+
+func buy_food_farm(cost_oro: int = 300) -> Dictionary:
+	var res: Dictionary = get_resources()
+	var oro_actual: int = int(res.get("oro", 0))
+	if oro_actual < cost_oro:
+		return {"ok": false, "msg": "Oro insuficiente (%d/%d)." % [oro_actual, cost_oro]}
+	res["oro"] = oro_actual - cost_oro
+	res["comida"] = int(res.get("comida", 0)) + 150
+	player_state["recursos"] = res
+	save_game()
+	_emit_resources()
+	return {"ok": true, "msg": "¡Granja de Comida cosechada! +150 Comida (-%d Oro)." % cost_oro}
+
+
 func is_island_unlocked(island_id: int) -> bool:
 	var unlocked: Array = player_state.get("islas_desbloqueadas", [1])
 	for item: Variant in unlocked:

@@ -1,0 +1,101 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/shop_panel.gd" id="1_shop"]
+[ext_resource type="Theme" path="res://assets/ui/game_theme.tres" id="2_theme"]
+
+[node name="ShopPanel" type="PanelContainer"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -410.0
+offset_top = -260.0
+offset_right = 410.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_shop")
+
+[node name="VBoxMain" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="HBoxContainer" parent="VBoxMain"]
+layout_mode = 2
+
+[node name="LblTitulo" type="Label" parent="VBoxMain/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Tienda del Santuario"
+
+[node name="BtnCerrarTienda" type="Button" parent="VBoxMain/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+text = "Cerrar"
+
+[node name="Tabs" type="TabContainer" parent="VBoxMain"]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Hábitats" type="ScrollContainer" parent="VBoxMain/Tabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="GridHabitats" type="GridContainer" parent="VBoxMain/Tabs/Hábitats"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+columns = 3
+
+[node name="Huevos" type="ScrollContainer" parent="VBoxMain/Tabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="GridHuevos" type="GridContainer" parent="VBoxMain/Tabs/Huevos"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+columns = 3
+
+[node name="Granja de Comida" type="CenterContainer" parent="VBoxMain/Tabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="CardGranja" type="PanelContainer" parent="VBoxMain/Tabs/Granja de Comida"]
+custom_minimum_size = Vector2(360, 200)
+layout_mode = 2
+
+[node name="VBoxGranja" type="VBoxContainer" parent="VBoxMain/Tabs/Granja de Comida/CardGranja"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="LblGranjaTitulo" type="Label" parent="VBoxMain/Tabs/Granja de Comida/CardGranja/VBoxGranja"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Granja de Comida (+150 Comida)"
+horizontal_alignment = 1
+
+[node name="LblGranjaDesc" type="Label" parent="VBoxMain/Tabs/Granja de Comida/CardGranja/VBoxGranja"]
+layout_mode = 2
+text = "Cosecha fruta fresca para alimentar y subir de nivel a tus dragones."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="BtnComprarGranja" type="Button" parent="VBoxMain/Tabs/Granja de Comida/CardGranja/VBoxGranja"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 46)
+layout_mode = 2
+text = "Comprar (300 Oro)"

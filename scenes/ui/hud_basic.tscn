@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/bestiario_panel.tscn" id="3_bestiario"]
 [ext_resource type="PackedScene" path="res://scenes/ui/breeding_panel.tscn" id="4_breeding"]
 [ext_resource type="PackedScene" path="res://scenes/ui/nest_panel.tscn" id="5_nest"]
+[ext_resource type="PackedScene" path="res://scenes/ui/shop_panel.tscn" id="6_shop"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -278,3 +279,5 @@ text = "Combate"
 [node name="BreedingPanel" parent="RootControl" instance=ExtResource("4_breeding")]
 
 [node name="NestPanel" parent="RootControl" instance=ExtResource("5_nest")]
+
+[node name="ShopPanel" parent="RootControl" instance=ExtResource("6_shop")]

@@ -5,6 +5,7 @@ extends Node3D
 const HABITAT_SCENE: PackedScene = preload("res://scenes/world/habitat_base.tscn")
 const DRAGON_SCENE: PackedScene = preload("res://scenes/dragons/dragon_2d.tscn")
 const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_arena.tscn")
+const BUILD_SLOT_SCRIPT: Script = preload("res://scripts/world/build_slot.gd")
 
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var hud: HudBasic = $HUD
@@ -14,10 +15,12 @@ const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_aren
 @onready var bestiario_panel: BestiarioPanel = $HUD/RootControl/BestiarioPanel
 @onready var breeding_panel: BreedingPanel = $HUD/RootControl/BreedingPanel
 @onready var nest_panel: NestPanel = $HUD/RootControl/NestPanel
+@onready var shop_panel: ShopPanel = $HUD/RootControl/ShopPanel
 
 var _built_habitats: Dictionary = {}
 var _active_combat_arena: CombatArena = null
 var _active_feed_filter_uids: Array[int] = []
+var _pending_habitat_purchase: Dictionary = {}
 
 
 func _ready() -> void:
@@ -34,6 +37,12 @@ func _ready() -> void:
 		breeding_panel.breeding_completed.connect(_on_breeding_completed)
 	if nest_panel:
 		nest_panel.egg_hatched.connect(_on_egg_hatched)
+	if shop_panel:
+		shop_panel.habitat_purchase_requested.connect(_on_shop_habitat_requested)
+		shop_panel.egg_purchase_requested.connect(_on_shop_egg_requested)
+		shop_panel.farm_purchase_requested.connect(_on_shop_farm_requested)
+
+	_setup_build_slots()
 
 	if has_node("/root/GameCore"):
 		var core: Node = get_node("/root/GameCore")
@@ -52,7 +61,7 @@ func _restore_world_from_save(core: Node) -> void:
 
 	for est: Variant in core.player_state.get("estructuras", []):
 		if est is Dictionary:
-			_spawn_habitat_at_slot(int(est.get("slot_index", 0)))
+			_spawn_habitat_at_slot(int(est.get("slot_index", 0)), int(est.get("elemento_id", 1)))
 
 	for d: Variant in core.player_state.get("dragones", []):
 		if d is Dictionary:
@@ -72,7 +81,7 @@ func _get_all_slot_nodes() -> Array[Node3D]:
 	return all_slots
 
 
-func _spawn_habitat_at_slot(slot_index: int) -> HabitatBase:
+func _spawn_habitat_at_slot(slot_index: int, elemento_id: int = 1) -> HabitatBase:
 	if _built_habitats.has(slot_index):
 		return _built_habitats[slot_index]
 	var all_slots: Array[Node3D] = _get_all_slot_nodes()
@@ -80,10 +89,14 @@ func _spawn_habitat_at_slot(slot_index: int) -> HabitatBase:
 	if slot_node == null:
 		return null
 	var hab: HabitatBase = HABITAT_SCENE.instantiate() as HabitatBase
+	hab.elemento_id = elemento_id
 	slot_node.add_child(hab)
 	hab.position = Vector3.ZERO
+	hab.set_element_theme(elemento_id)
 	hab.habitat_clicked.connect(_on_habitat_clicked)
 	_built_habitats[slot_index] = hab
+	if slot_node is BuildSlot:
+		(slot_node as BuildSlot).set_placement_highlight(false, false)
 	return hab
 
 
@@ -139,14 +152,11 @@ func _on_panel_requested(panel_name: String) -> void:
 	var core: Node = get_node("/root/GameCore")
 	match panel_name:
 		"Tienda":
-			var next_slot: int = _find_next_free_slot()
-			if next_slot == -1:
-				hud.show_status_message("No quedan espacios libres en las islas desbloqueadas.")
-				return
-			var res: Dictionary = core.build_habitat(next_slot, 1)
-			if res.get("ok", false):
-				_spawn_habitat_at_slot(next_slot)
-			hud.show_status_message(str(res.get("msg", "")))
+			_close_overlay_panels()
+			if shop_panel:
+				var oro_actual: int = int(core.get_resources().get("oro", 0))
+				shop_panel.open_shop(oro_actual)
+				hud.show_status_message("Tienda abierta: elige una categoría.")
 		"Cruce":
 			_close_overlay_panels()
 			if breeding_panel:
@@ -180,6 +190,8 @@ func _close_overlay_panels() -> void:
 		breeding_panel.visible = false
 	if nest_panel and nest_panel.visible:
 		nest_panel.visible = false
+	if shop_panel and shop_panel.visible:
+		shop_panel.visible = false
 	if hud:
 		hud.hide_dragon_feed_panel()
 		hud.hide_island_preview()
@@ -318,3 +330,80 @@ func _build_feed_info_list(core: Node, filter_uids: Array[int]) -> Array[Diction
 			"oro_por_min": int(stats.get("oro_por_min", 12))
 		})
 	return result
+
+
+func _setup_build_slots() -> void:
+	var all_slots: Array[Node3D] = []
+	if slots_container:
+		for c: Node in slots_container.get_children():
+			if c is Node3D:
+				all_slots.append(c)
+	if isla_bloqueada and isla_bloqueada.slots_container:
+		for c: Node in isla_bloqueada.slots_container.get_children():
+			if c is Node3D:
+				all_slots.append(c)
+
+	for i: int in range(all_slots.size()):
+		var slot: Node3D = all_slots[i]
+		if slot.get_script() == null:
+			slot.set_script(BUILD_SLOT_SCRIPT)
+			slot._ready()
+		slot.set("slot_index", i)
+		if slot.has_signal("slot_clicked") and not slot.is_connected("slot_clicked", _on_build_slot_clicked):
+			slot.connect("slot_clicked", _on_build_slot_clicked)
+		if slot.has_method("set_placement_highlight"):
+			slot.call("set_placement_highlight", false, not _built_habitats.has(i))
+
+
+func _on_shop_habitat_requested(elemento_id: int, cost_oro: int, nombre: String) -> void:
+	if _find_next_free_slot() == -1:
+		hud.show_status_message("No quedan espacios libres en las islas desbloqueadas.")
+		return
+	_pending_habitat_purchase = {"elemento_id": elemento_id, "cost_oro": cost_oro, "nombre": nombre}
+	_set_placement_mode(true)
+	hud.show_status_message("Modo colocación: clica un espacio verde para construir %s (Esc para cancelar)." % nombre)
+
+
+func _on_shop_egg_requested(especie_id: int, cost_oro: int) -> void:
+	if has_node("/root/GameCore"):
+		var res: Dictionary = get_node("/root/GameCore").buy_egg(especie_id, cost_oro)
+		hud.show_status_message(str(res.get("msg", "")))
+
+
+func _on_shop_farm_requested(cost_oro: int) -> void:
+	if has_node("/root/GameCore"):
+		var res: Dictionary = get_node("/root/GameCore").buy_food_farm(cost_oro)
+		hud.show_status_message(str(res.get("msg", "")))
+
+
+func _set_placement_mode(active: bool) -> void:
+	var all_slots: Array[Node3D] = _get_all_slot_nodes()
+	for i: int in range(all_slots.size()):
+		var slot: Node3D = all_slots[i]
+		if slot.has_method("set_placement_highlight"):
+			slot.call("set_placement_highlight", active, not _built_habitats.has(i))
+
+
+func _on_build_slot_clicked(slot_node: Node3D) -> void:
+	if _pending_habitat_purchase.is_empty() or not has_node("/root/GameCore"):
+		return
+	var slot_idx: int = int(slot_node.get("slot_index"))
+	if _built_habitats.has(slot_idx):
+		hud.show_status_message("Ese espacio ya está ocupado.")
+		return
+	var core: Node = get_node("/root/GameCore")
+	var elem_id: int = int(_pending_habitat_purchase.get("elemento_id", 1))
+	var cost: int = int(_pending_habitat_purchase.get("cost_oro", 250))
+	var res: Dictionary = core.build_habitat(slot_idx, elem_id, cost)
+	if res.get("ok", false):
+		_spawn_habitat_at_slot(slot_idx, elem_id)
+	_pending_habitat_purchase.clear()
+	_set_placement_mode(false)
+	hud.show_status_message(str(res.get("msg", "")))
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _pending_habitat_purchase.is_empty() and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_pending_habitat_purchase.clear()
+		_set_placement_mode(false)
+		hud.show_status_message("Modo colocación cancelado.")
