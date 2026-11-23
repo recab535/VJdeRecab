@@ -12,10 +12,10 @@ const BUILD_SLOT_SCRIPT: Script = preload("res://scripts/world/build_slot.gd")
 @onready var isla_inicial: Node3D = $IslaInicial
 @onready var isla_bloqueada: LockedIsland = $IslaBloqueadaPreview
 @onready var slots_container: Node3D = $IslaInicial/SlotsConstruibles
-@onready var bestiario_panel: BestiarioPanel = $HUD/RootControl/BestiarioPanel
-@onready var breeding_panel: BreedingPanel = $HUD/RootControl/BreedingPanel
-@onready var nest_panel: NestPanel = $HUD/RootControl/NestPanel
-@onready var shop_panel: ShopPanel = $HUD/RootControl/ShopPanel
+@onready var bestiario_panel: Control = $HUD/RootControl/BestiarioPanel
+@onready var breeding_panel: Control = $HUD/RootControl/BreedingPanel
+@onready var nest_panel: Control = $HUD/RootControl/NestPanel
+@onready var shop_panel: PanelContainer = $HUD/RootControl/ShopPanel
 
 var _built_habitats: Dictionary = {}
 var _active_combat_arena: CombatArena = null
@@ -46,6 +46,7 @@ func _ready() -> void:
 		shop_panel.farm_purchase_requested.connect(_on_shop_farm_requested)
 
 	_setup_build_slots()
+	_close_overlay_panels()
 
 	if has_node("/root/GameCore"):
 		var core: Node = get_node("/root/GameCore")
@@ -98,8 +99,8 @@ func _spawn_habitat_at_slot(slot_index: int, elemento_id: int = 1) -> HabitatBas
 	hab.set_element_theme(elemento_id)
 	hab.habitat_clicked.connect(_on_habitat_clicked)
 	_built_habitats[slot_index] = hab
-	if slot_node is BuildSlot:
-		(slot_node as BuildSlot).set_placement_highlight(false, false)
+	if slot_node.has_method("set_placement_highlight"):
+		slot_node.call("set_placement_highlight", false, false)
 	return hab
 
 

@@ -15,6 +15,7 @@ var _slot_widgets: Array[Dictionary] = []
 
 
 func _ready() -> void:
+	visible = false
 	btn_cerrar.pressed.connect(close_nest)
 	var core: Node = get_node_or_null("/root/GameCore")
 	if core:

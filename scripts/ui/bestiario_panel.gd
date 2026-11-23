@@ -16,6 +16,7 @@ var _current_filter: String = "todos"
 
 
 func _ready() -> void:
+	visible = false
 	btn_cerrar.pressed.connect(close_bestiario)
 	btn_todos.pressed.connect(func() -> void: _set_filter("todos"))
 	btn_descubiertos.pressed.connect(func() -> void: _set_filter("descubiertos"))

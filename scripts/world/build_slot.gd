@@ -32,6 +32,7 @@ func _ready() -> void:
 	_highlight_mat.emission_energy_multiplier = 1.4
 
 	_area = Area3D.new()
+	_area.input_ray_pickable = false
 	var col: CollisionShape3D = CollisionShape3D.new()
 	var shape: CylinderShape3D = CylinderShape3D.new()
 	shape.radius = 1.4
@@ -46,6 +47,8 @@ func _ready() -> void:
 
 
 func set_placement_highlight(active: bool, is_free: bool) -> void:
+	if _area:
+		_area.input_ray_pickable = active and is_free
 	if _pad_mesh == null:
 		return
 	_pad_mesh.visible = is_free

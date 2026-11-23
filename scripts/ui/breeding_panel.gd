@@ -23,6 +23,7 @@ var _selected_b: Dictionary = {}
 
 
 func _ready() -> void:
+	visible = false
 	btn_cerrar.pressed.connect(close_breeding)
 	btn_iniciar_cruce.pressed.connect(_on_iniciar_cruce_pressed)
 
