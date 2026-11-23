@@ -1,10 +1,13 @@
 extends Node
 
-## Autoload central: carga el catálogo oficial (data/especies_68.json)
-## y gestiona la persistencia del progreso del jugador en user://savegame.json.
+## Autoload central: carga el catálogo oficial (data/especies_68.json),
+## gestiona la persistencia en user://savegame.json, generación pasiva de oro,
+## construcción de hábitats, cruces y nido.
 
 const CATALOG_PATH: String = "res://data/especies_68.json"
 const SAVE_PATH: String = "user://savegame.json"
+const HABITAT_COST_ORO: int = 250
+const PASSIVE_TICK_SEC: float = 5.0
 
 signal catalog_loaded(total_species: int)
 signal save_loaded
@@ -16,10 +19,38 @@ var multiplicadores: Dictionary = {}
 var reglas_cruce: Dictionary = {}
 var player_state: Dictionary = {}
 
+var _passive_accum_sec: float = 0.0
+var _gold_fraction: float = 0.0
+
 
 func _ready() -> void:
 	_load_catalog()
 	load_game()
+
+
+func _process(delta: float) -> void:
+	_passive_accum_sec += delta
+	if _passive_accum_sec >= PASSIVE_TICK_SEC:
+		var elapsed: float = _passive_accum_sec
+		_passive_accum_sec = 0.0
+		_tick_passive_gold(elapsed)
+
+
+func _tick_passive_gold(elapsed_sec: float) -> void:
+	var oro_por_min: float = 0.0
+	for d: Variant in player_state.get("dragones", []):
+		if d is Dictionary:
+			var sp: Dictionary = get_species(int(d.get("especie_id", 0)))
+			oro_por_min += float(sp.get("oro_por_minuto", 0))
+
+	if oro_por_min <= 0.0:
+		return
+
+	_gold_fraction += oro_por_min * (elapsed_sec / 60.0)
+	var earned: int = int(floor(_gold_fraction))
+	if earned > 0:
+		_gold_fraction -= float(earned)
+		add_oro(earned)
 
 
 func _load_catalog() -> void:
@@ -65,7 +96,14 @@ func _create_default_state() -> Dictionary:
 			"gemas": 25
 		},
 		"islas_desbloqueadas": [1],
-		"estructuras": [],
+		"estructuras": [
+			{
+				"id": 1,
+				"slot_index": 0,
+				"elemento_id": 1
+			}
+		],
+		"nido_huevos": [],
 		"dragones": [
 			{
 				"uid": 1,
@@ -98,6 +136,10 @@ func load_game() -> void:
 		player_state = _create_default_state()
 	else:
 		player_state = parsed
+		if not player_state.has("nido_huevos"):
+			player_state["nido_huevos"] = []
+		if not player_state.has("estructuras"):
+			player_state["estructuras"] = []
 
 	save_loaded.emit()
 	_emit_resources()
@@ -110,6 +152,103 @@ func save_game() -> bool:
 		return false
 	file.store_string(JSON.stringify(player_state, "\t"))
 	return true
+
+
+func add_oro(amount: int) -> void:
+	var res: Dictionary = player_state.get("recursos", {})
+	res["oro"] = int(res.get("oro", 0)) + amount
+	player_state["recursos"] = res
+	save_game()
+	_emit_resources()
+
+
+func build_habitat(slot_index: int, elemento_id: int = 1, cost_oro: int = HABITAT_COST_ORO) -> Dictionary:
+	var res: Dictionary = get_resources()
+	var oro_actual: int = int(res.get("oro", 0))
+	if oro_actual < cost_oro:
+		return {"ok": false, "msg": "Oro insuficiente (%d/%d)." % [oro_actual, cost_oro]}
+
+	var estructuras: Array = player_state.get("estructuras", [])
+	for est: Variant in estructuras:
+		if est is Dictionary and int(est.get("slot_index", -1)) == slot_index:
+			return {"ok": false, "msg": "El espacio %d ya tiene un hábitat." % (slot_index + 1)}
+
+	var new_id: int = estructuras.size() + 1
+	var nueva: Dictionary = {
+		"id": new_id,
+		"slot_index": slot_index,
+		"elemento_id": elemento_id
+	}
+	estructuras.append(nueva)
+	player_state["estructuras"] = estructuras
+	res["oro"] = oro_actual - cost_oro
+	player_state["recursos"] = res
+	save_game()
+	_emit_resources()
+	return {"ok": true, "estructura": nueva, "msg": "Hábitat construido en espacio %d (-%d Oro)." % [slot_index + 1, cost_oro]}
+
+
+func start_breeding(parent_a_id: int, parent_b_id: int) -> Dictionary:
+	var huevos: Array = player_state.get("nido_huevos", [])
+	if huevos.size() >= 3:
+		return {"ok": false, "msg": "El Nido está lleno (máx. 3 huevos). Eclosiona uno primero."}
+
+	var result_id: int = _resolve_breeding_species(parent_a_id, parent_b_id)
+	var sp: Dictionary = get_species(result_id)
+	var egg: Dictionary = {
+		"especie_id": result_id,
+		"nombre": str(sp.get("nombre", "Dragón")),
+		"tiempo_incubacion_seg": int(sp.get("tiempo_incubacion_seg", 300))
+	}
+	huevos.append(egg)
+	player_state["nido_huevos"] = huevos
+	save_game()
+	return {"ok": true, "egg": egg, "msg": "Cruce iniciado: huevo de %s enviado al Nido." % egg["nombre"]}
+
+
+func hatch_next_egg() -> Dictionary:
+	var huevos: Array = player_state.get("nido_huevos", [])
+	if huevos.is_empty():
+		return {"ok": false, "msg": "No hay huevos en el Nido. Usa Cruce primero."}
+
+	var egg: Dictionary = huevos.pop_front()
+	player_state["nido_huevos"] = huevos
+
+	var dragones: Array = player_state.get("dragones", [])
+	var next_uid: int = dragones.size() + 1
+	var new_dragon: Dictionary = {
+		"uid": next_uid,
+		"especie_id": int(egg.get("especie_id", 1)),
+		"nivel": 1,
+		"etapa": "cria",
+		"xp": 0
+	}
+	dragones.append(new_dragon)
+	player_state["dragones"] = dragones
+	save_game()
+	return {"ok": true, "dragon": new_dragon, "nombre": str(egg.get("nombre", "Dragón")), "msg": "¡Eclosionó %s!" % str(egg.get("nombre", "Dragón"))}
+
+
+func _resolve_breeding_species(parent_a_id: int, parent_b_id: int) -> int:
+	var sp_a: Dictionary = get_species(parent_a_id)
+	var sp_b: Dictionary = get_species(parent_b_id)
+	var elem_a: int = int(sp_a.get("elemento_primario_id", 1))
+	var elem_b: int = int(sp_b.get("elemento_primario_id", 1))
+
+	if elem_a == elem_b:
+		return elem_a
+
+	var candidates: Array[int] = []
+	for sp: Variant in especies_by_id.values():
+		if sp is Dictionary:
+			var p: int = int(sp.get("elemento_primario_id", 0))
+			var s: Variant = sp.get("elemento_secundario_id", null)
+			if s != null and ((p == elem_a and int(s) == elem_b) or (p == elem_b and int(s) == elem_a)):
+				candidates.append(int(sp.get("id", 1)))
+
+	if candidates.is_empty():
+		return elem_a
+	return candidates[randi() % candidates.size()]
 
 
 func get_species(species_id: int) -> Dictionary:

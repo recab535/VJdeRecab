@@ -1,7 +1,7 @@
 {
   "estado": "COMPLETADO",
   "turno_actual": "G1",
-  "rondas_completadas": 1,
+  "rondas_completadas": 2,
   "max_rondas_limite": 4,
   "orden_agentes": [
     "G1",
@@ -10,9 +10,9 @@
     "A2"
   ],
   "ultimo_ciclo": {
-    "G1": "Especificaciones de escena principal, cámara/rotación horizontal, HUD 1920x1080 y flujo del Capítulo 1 PvE en docs/game_design_base.md.",
-    "G2": "Verificación cruzada de docs/db_y_catalogo.sql y data/especies_68.json documentada en docs/contrato_datos_godot.md.",
-    "A1": "Creación de project.godot (1920x1080), .gitignore, scenes/main.tscn, scripts/main.gd, scripts/world/camera_rig.gd y scripts/ui/hud_basic.gd.",
-    "A2": "Creación de scripts/autoload/game_core.gd (carga de especies_68.json y persistencia en user://savegame.json) e integración como autoload."
+    "G1": "Sección 8 en docs/game_design_base.md: reglas de construcción de hábitats, generación pasiva de oro, vista previa de islas bloqueadas y flujo Cruce + Nido.",
+    "G2": "Sección 4 en docs/contrato_datos_godot.md: tabla de reglas de cruce (puros 100%, híbridos 50%/50%, opuestos 50%/50% y 4 recetas cerradas de legendarios al 4%).",
+    "A1": "Interacción de clic en IslaBloqueadaPreview con PanelIslaPreview en HUD, SlotsConstruibles en IslaInicial y escena scenes/world/habitat_base.tscn.",
+    "A2": "Escena scenes/dragons/dragon_2d.tscn (Sprite3D billboarded con pixel art procedural), generación pasiva de oro y flujos de Tienda, Cruce y Nido en GameCore y user://savegame.json."
   }
 }

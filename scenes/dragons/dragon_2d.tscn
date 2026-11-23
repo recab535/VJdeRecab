@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dragons/dragon_2d.gd" id="1_d2d"]
+
+[node name="Dragon2D" type="Node3D"]
+script = ExtResource("1_d2d")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.48, 0)
+pixel_size = 0.06
+billboard = 1
+texture_filter = 0
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
+billboard = 1
+text = "Dragón Terracota"
+font_size = 22
+outline_size = 6
