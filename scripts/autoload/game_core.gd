@@ -162,6 +162,45 @@ func add_oro(amount: int) -> void:
 	_emit_resources()
 
 
+func grant_combat_rewards(oro: int, comida: int, gemas: int = 0, next_chapter: int = -1) -> Dictionary:
+	var res: Dictionary = get_resources()
+	res["oro"] = int(res.get("oro", 0)) + maxi(0, oro)
+	res["comida"] = int(res.get("comida", 0)) + maxi(0, comida)
+	res["gemas"] = int(res.get("gemas", 0)) + maxi(0, gemas)
+	player_state["recursos"] = res
+
+	var current_chapter: int = int(player_state.get("capitulo_pve_actual", 1))
+	if next_chapter > current_chapter:
+		player_state["capitulo_pve_actual"] = next_chapter
+
+	save_game()
+	_emit_resources()
+	return {
+		"oro": maxi(0, oro),
+		"comida": maxi(0, comida),
+		"gemas": maxi(0, gemas),
+		"capitulo_pve_actual": int(player_state.get("capitulo_pve_actual", 1))
+	}
+
+
+func get_elemental_multiplier(atk_elem_id: int, def_species: Dictionary) -> float:
+	var atk_key: String = str(atk_elem_id)
+	var row: Dictionary = multiplicadores.get(atk_key, {})
+	if row.is_empty():
+		return 1.0
+
+	var prim_id: int = int(def_species.get("elemento_primario_id", 1))
+	var mult: float = float(row.get(str(prim_id), 1.0))
+
+	var sec_var: Variant = def_species.get("elemento_secundario_id", null)
+	if sec_var != null:
+		var sec_id: int = int(sec_var)
+		if sec_id > 0:
+			mult *= float(row.get(str(sec_id), 1.0))
+
+	return mult
+
+
 func build_habitat(slot_index: int, elemento_id: int = 1, cost_oro: int = HABITAT_COST_ORO) -> Dictionary:
 	var res: Dictionary = get_resources()
 	var oro_actual: int = int(res.get("oro", 0))

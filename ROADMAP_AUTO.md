@@ -14,7 +14,7 @@ Plan de tareas incrementales alineado con los roles definidos en `GEMINI.md` (`G
   - **Rol:** A1 (Escena 2.5D/UI) + A2 (Combate 3v3).
   - **Archivos a crear/editar:** Crear `scenes/combat/combat_arena.tscn` y `scripts/combat/combat_arena.gd` con 3 marcadores aliados, 3 enemigos (`Dragon2D`), barras de HP por unidad y panel inferior con botones de ataque elemental.
 
-- [ ] Tarea 4: Implementar el motor de combate por turnos (`scripts/systems/combat_manager.gd`) usando `hp_base`, `atk_base`, `spd_base` y ventajas elementales, conectado al botón Combate del HUD y otorgando recompensas al ganar el Capítulo 1.
+- [x] Tarea 4: Implementar el motor de combate por turnos (`scripts/systems/combat_manager.gd`) usando `hp_base`, `atk_base`, `spd_base` y ventajas elementales, conectado al botón Combate del HUD y otorgando recompensas al ganar el Capítulo 1.
   - **Rol:** A2 (Sistemas de Combate y Campaña).
   - **Archivos a crear/editar:** Crear `scripts/systems/combat_manager.gd`; editar `scripts/autoload/game_core.gd` (método para acreditar recompensas y avanzar `capitulo_pve_actual` en `user://savegame.json`) y `scripts/main.gd` / `scenes/combat/combat_arena.tscn` para lanzar el Capítulo 1 desde el botón `Combate`.
 

@@ -1,6 +1,7 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/combat_arena.gd" id="1_arena"]
+[ext_resource type="Script" path="res://scripts/systems/combat_manager.gd" id="2_combat_mgr"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_Arena"]
 sky_top_color = Color(0.32, 0.45, 0.72, 1)
@@ -65,6 +66,9 @@ radial_segments = 12
 
 [node name="CombatArena" type="Node3D"]
 script = ExtResource("1_arena")
+
+[node name="CombatManager" type="Node" parent="."]
+script = ExtResource("2_combat_mgr")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_Arena")

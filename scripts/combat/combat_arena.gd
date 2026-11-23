@@ -30,6 +30,8 @@ const MAX_TEAM_SIZE: int = 3
 @onready var ally_hp_list: VBoxContainer = %AllyHpList
 @onready var enemy_hp_list: VBoxContainer = %EnemyHpList
 @onready var attack_buttons_container: HBoxContainer = %AttackButtonsContainer
+@onready var combat_manager: CombatManager = $CombatManager
+@onready var arena_camera: Camera3D = $Camera3D
 
 var _ally_dragons: Array[Dragon2D] = []
 var _enemy_dragons: Array[Dragon2D] = []
@@ -47,7 +49,10 @@ func _ready() -> void:
 	_bind_attack_buttons()
 
 	if not _teams_initialized:
-		_setup_demo_preview()
+		if has_node("/root/GameCore") and combat_manager:
+			combat_manager.start_chapter(1, self)
+		else:
+			_setup_demo_preview()
 
 
 func _bind_hp_cards() -> void:

@@ -4,14 +4,17 @@ extends Node3D
 
 const HABITAT_SCENE: PackedScene = preload("res://scenes/world/habitat_base.tscn")
 const DRAGON_SCENE: PackedScene = preload("res://scenes/dragons/dragon_2d.tscn")
+const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_arena.tscn")
 
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var hud: HudBasic = $HUD
+@onready var isla_inicial: Node3D = $IslaInicial
 @onready var isla_bloqueada: LockedIsland = $IslaBloqueadaPreview
 @onready var slots_container: Node3D = $IslaInicial/SlotsConstruibles
 @onready var bestiario_panel: BestiarioPanel = $HUD/RootControl/BestiarioPanel
 
 var _built_habitats: Dictionary = {}
+var _active_combat_arena: CombatArena = null
 
 
 func _ready() -> void:
@@ -117,8 +120,56 @@ func _on_panel_requested(panel_name: String) -> void:
 			if bestiario_panel:
 				bestiario_panel.open_bestiario()
 				hud.show_status_message("Bestiario abierto.")
+		"Combate":
+			_open_combat_arena()
 		_:
 			hud.show_status_message("Panel %s disponible en próxima iteración." % panel_name)
+
+
+func _open_combat_arena() -> void:
+	if is_instance_valid(_active_combat_arena):
+		return
+
+	_active_combat_arena = COMBAT_ARENA_SCENE.instantiate() as CombatArena
+	add_child(_active_combat_arena)
+
+	if isla_inicial:
+		isla_inicial.visible = false
+	if isla_bloqueada:
+		isla_bloqueada.visible = false
+	hud.visible = false
+	if camera_rig and camera_rig.camera:
+		camera_rig.camera.current = false
+	if _active_combat_arena.arena_camera:
+		_active_combat_arena.arena_camera.current = true
+
+	if _active_combat_arena.combat_manager:
+		_active_combat_arena.combat_manager.combat_finished.connect(_on_combat_finished)
+	else:
+		_active_combat_arena.retreat_requested.connect(func() -> void: _on_combat_finished(false, {}))
+
+
+func _on_combat_finished(victory: bool, rewards: Dictionary) -> void:
+	if is_instance_valid(_active_combat_arena):
+		_active_combat_arena.queue_free()
+		_active_combat_arena = null
+
+	if isla_inicial:
+		isla_inicial.visible = true
+	if isla_bloqueada:
+		isla_bloqueada.visible = true
+	hud.visible = true
+	if camera_rig and camera_rig.camera:
+		camera_rig.camera.current = true
+
+	if victory:
+		hud.show_status_message("¡Capítulo 1 superado! +%d Oro, +%d Comida, +%d Gemas." % [
+			int(rewards.get("oro", 0)),
+			int(rewards.get("comida", 0)),
+			int(rewards.get("gemas", 0))
+		])
+	else:
+		hud.show_status_message("Combate finalizado. Regresaste a la isla.")
 
 
 func _find_next_free_slot() -> int:
