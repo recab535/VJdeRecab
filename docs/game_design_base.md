@@ -89,4 +89,22 @@ Estructura de carpetas respetando la base existente (`assets/`, `data/`, `docs/`
   - **Cruce:** El jugador selecciona 2 dragones adultos disponibles desde el panel `Cruce`; al confirmar, se resuelve la especie resultante según las reglas de cruce y se envía un huevo al **Nido**.
   - **Nido (Incubación):** El huevo permanece en incubación durante `tiempo_incubacion_seg` (acelerable en prototipo o completado al vencer el temporizador) y al eclosionar se añade el nuevo dragón a la colección del jugador (`savegame.json`) para ubicarlo en un hábitat con espacio libre.
 
+## 9. Combate 3v3, Efectividad Elemental y Capítulo 1 PvE (Sendero Terracota) (G1)
+- **Regla de efectividad elemental en combate:**
+  - Cada ataque utiliza un elemento del atacante contra el elemento defensor aplicando la matriz `9×9` oficial (`docs/contrato_datos_godot.md`):
+    - **Crítico (`2.0`):** Doble daño. Ejemplo inicial: **Tierra (1)** es crítico contra **Fuego (2)** y **Eléctrico (5)**.
+    - **Resistente (`0.5`):** Mitad de daño (mismo elemento contra sí mismo, p. ej. Tierra vs Tierra).
+    - **Neutro (`1.0`):** Daño estándar para el resto de combinaciones.
+- **Capítulo 1 PvE: Sendero Terracota (3 etapas / oleadas):**
+  - Diseñado para superarse con el equipo inicial (`Dragón Terracota`, ID `1`) aprovechando la ventaja elemental de Tierra y subiendo de nivel con Comida si es necesario.
+  - **Etapa 1 — Vanguardia Ígnea:**
+    - **Enemigos:** `Dragón Ascua` (ID `2`, Fuego, Niv. 1) y `Dragón Chispa` (ID `5`, Eléctrico, Niv. 1).
+    - **Recompensa:** `150 Oro`, `75 Comida`.
+  - **Etapa 2 — Cañón Volcánico:**
+    - **Enemigos:** `Dragón Magma` (ID `9`, Tierra/Fuego, Niv. 2) y `Dragón Obsidiana` (ID `10`, Fuego/Tierra, Niv. 2).
+    - **Recompensa:** `250 Oro`, `125 Comida`.
+  - **Etapa 3 — Guardián del Sendero (Jefe):**
+    - **Enemigos (3v3):** `Dragón Terracota` (ID `1`, Tierra, Niv. 2), `Dragón Magma` (ID `9`, Tierra/Fuego, Niv. 3) y `Dragón Ascua` (ID `2`, Fuego, Niv. 3).
+    - **Recompensa:** `400 Oro`, `200 Comida`, `5 Gemas` y desbloqueo del **Capítulo 2**.
+  - **Total Capítulo 1:** `800 Oro`, `400 Comida` y `5 Gemas`.
 

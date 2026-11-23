@@ -40,3 +40,22 @@ Cada entrada en el arreglo `"especies"` de `data/especies_68.json` expone los ca
 | Dragón Mercurio (`61`) | Dragón Marchito (`63`) | **Dragón Prisma** (`66`) | `0.04` (4 %) |
 | Dragón Telúrico (`58`) | Dragón Hidrometal (`62`) | **Dragón Cronos** (`67`) | `0.04` (4 %) |
 | Dragón Termozero (`60`) | Dragón Espina Negra (`64`) | **Dragón Astral** (`68`) | `0.04` (4 %) |
+
+## 5. Matriz 9×9 de Efectividad Elemental (`multiplicadores_elementales`)
+En `data/especies_68.json`, la clave `"multiplicadores_elementales"` se indexa por ID de elemento atacante (`"1".."9"`) y dentro por ID de elemento defensor (`"1".."9"`), con valores `2.0` (crítico), `0.5` (resistente) y `1.0` (neutro), idéntica a `docs/db_y_catalogo.sql`:
+
+| Atacante \ Defensor | 1 Tierra | 2 Fuego | 3 Agua | 4 Planta | 5 Eléctrico | 6 Hielo | 7 Metal | 8 Oscuro | 9 Legendario |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1. Tierra** | `0.5` | **`2.0`** | `1.0` | `1.0` | **`2.0`** | `1.0` | `1.0` | `1.0` | `1.0` |
+| **2. Fuego** | `1.0` | `0.5` | `1.0` | **`2.0`** | `1.0` | **`2.0`** | `1.0` | `1.0` | `1.0` |
+| **3. Agua** | **`2.0`** | **`2.0`** | `0.5` | `1.0` | `1.0` | `1.0` | `1.0` | `1.0` | `1.0` |
+| **4. Planta** | **`2.0`** | `1.0` | **`2.0`** | `0.5` | `1.0` | `1.0` | `1.0` | `1.0` | `1.0` |
+| **5. Eléctrico** | `1.0` | `1.0` | **`2.0`** | `1.0` | `0.5` | `1.0` | **`2.0`** | `1.0` | `1.0` |
+| **6. Hielo** | `1.0` | `1.0` | `1.0` | **`2.0`** | **`2.0`** | `0.5` | `1.0` | `1.0` | `1.0` |
+| **7. Metal** | `1.0` | `1.0` | `1.0` | `1.0` | `1.0` | **`2.0`** | `0.5` | **`2.0`** | `1.0` |
+| **8. Oscuro** | **`2.0`** | `1.0` | `1.0` | `1.0` | `1.0` | `1.0` | **`2.0`** | `0.5` | `1.0` |
+| **9. Legendario** | `1.0` | `1.0` | `1.0` | `1.0` | `1.0` | `1.0` | `1.0` | `1.0` | **`2.0`** |
+
+- **Uso en Godot (`GameCore.multiplicadores`):** `float(GameCore.multiplicadores[str(atk_elem_id)][str(def_elem_id)])`.
+- **Defensores híbridos (2 elementos):** Se evalúa contra `elemento_primario_id` del defensor (o ambos si el motor aplica combinación multiplicativa; `2.0` = crítico, `0.5` = resistente, `1.0` = neutro).
+

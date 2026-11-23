@@ -6,7 +6,7 @@ Plan de tareas incrementales alineado con los roles definidos en `GEMINI.md` (`G
   - **Rol:** A1 (UI) + A2 (consulta de colección).
   - **Archivos a crear/editar:** Crear `scenes/ui/bestiario_panel.tscn` y `scripts/ui/bestiario_panel.gd`; editar `scenes/main.tscn` y `scripts/main.gd` para instanciar/abrir el panel desde el botón `Bestiario`, leyendo `GameCore.especies_by_id` (`id`, `nombre`, `rareza`, `elementos`, `sprite_prefijo`) y comparando contra `GameCore.player_state["dragones"]`.
 
-- [ ] Tarea 2: Documentar en `docs/game_design_base.md` y `docs/contrato_datos_godot.md` la tabla de efectividad elemental y las 3 etapas del Capítulo 1 PvE (Sendero Terracota).
+- [x] Tarea 2: Documentar en `docs/game_design_base.md` y `docs/contrato_datos_godot.md` la tabla de efectividad elemental y las 3 etapas del Capítulo 1 PvE (Sendero Terracota).
   - **Rol:** G1 (Diseño/Campaña) + G2 (Datos).
   - **Archivos a crear/editar:** Editar `docs/game_design_base.md` (definición de las 3 oleadas/etapas del Capítulo 1 y recompensas de Oro/Comida) y `docs/contrato_datos_godot.md` (matriz `9×9` de `multiplicadores_elementales`: `2.0` crítico, `0.5` resistente, `1.0` neutro).
 

@@ -10,8 +10,8 @@
     "A2"
   ],
   "ultimo_ciclo": {
-    "G1": "Sección 8 en docs/game_design_base.md: reglas de construcción de hábitats, generación pasiva de oro, vista previa de islas bloqueadas y flujo Cruce + Nido.",
-    "G2": "Sección 4 en docs/contrato_datos_godot.md: tabla de reglas de cruce (puros 100%, híbridos 50%/50%, opuestos 50%/50% y 4 recetas cerradas de legendarios al 4%).",
+    "G1": "Tarea 2: Documentadas en docs/game_design_base.md (Sección 9) las 3 etapas del Capítulo 1 PvE (Sendero Terracota) y recompensas de Oro/Comida/Gemas.",
+    "G2": "Tarea 2: Documentada en docs/contrato_datos_godot.md (Sección 5) la matriz 9x9 de multiplicadores_elementales (2.0 crítico, 0.5 resistente, 1.0 neutro).",
     "A1": "Tarea 1: Creada escena scenes/ui/bestiario_panel.tscn e integrada en scenes/main.tscn y scripts/main.gd para abrir el Bestiario desde el botón del HUD.",
     "A2": "Tarea 1: Implementado scripts/ui/bestiario_panel.gd leyendo GameCore.especies_by_id (id, nombre, rareza, elementos, sprite_prefijo) y comparando contra GameCore.player_state['dragones'] con filtros."
   }
