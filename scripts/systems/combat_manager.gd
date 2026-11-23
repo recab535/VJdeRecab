@@ -1,374 +1,271 @@
 extends Node
 class_name CombatManager
 
-## Motor de combate por turnos 3v3 para la campaña PvE.
-## Usa hp_base, atk_base, spd_base y multiplicadores elementales de GameCore.
+## Motor de combate 1v1 por turnos con equipo de 3 dragones (1 activo + 2 en banca).
+## Gestiona relevos, 4 movimientos por especie, embestidas, camera shake y recompensas.
 
 signal combat_finished(victory: bool, rewards: Dictionary)
 
-const CHAPTER_1_STAGES: Array[Dictionary] = [
-	{
-		"titulo": "Etapa 1/3 — Vanguardia Ígnea",
-		"enemigos": [
-			{"especie_id": 2, "nivel": 1},
-			{"especie_id": 5, "nivel": 1}
-		],
-		"recompensa": {"oro": 150, "comida": 75, "gemas": 0}
-	},
-	{
-		"titulo": "Etapa 2/3 — Cañón Volcánico",
-		"enemigos": [
-			{"especie_id": 9, "nivel": 2},
-			{"especie_id": 10, "nivel": 2}
-		],
-		"recompensa": {"oro": 250, "comida": 125, "gemas": 0}
-	},
-	{
-		"titulo": "Etapa 3/3 — Guardián del Sendero (Jefe)",
-		"enemigos": [
-			{"especie_id": 1, "nivel": 2},
-			{"especie_id": 9, "nivel": 3},
-			{"especie_id": 2, "nivel": 3}
-		],
-		"recompensa": {"oro": 400, "comida": 200, "gemas": 5}
-	}
-]
-
-const ELEMENT_ATTACK_NAMES: Dictionary = {
-	1: "Golpe Terracota",
-	2: "Llamarada",
-	3: "Torrente",
-	4: "Látigo Cepa",
-	5: "Descarga",
-	6: "Aliento Gélido",
-	7: "Impacto Férreo",
-	8: "Pulso Umbrío",
-	9: "Destello Astral"
+const ELEMENT_MOVES: Dictionary = {
+	1: ["Golpe Rocoso", "Avalancha", "Terremoto"],
+	2: ["Ascua Viva", "Llamarada", "Erupción"],
+	3: ["Chorro Veloz", "Oleaje", "Tsunami"],
+	4: ["Látigo Hoja", "Tormenta Floral", "Raíz Ancestral"],
+	5: ["Chispazo", "Rayo Voltio", "Tempestad"],
+	6: ["Soplo Gélido", "Carámbano", "Ventisca"],
+	7: ["Garra Férrea", "Cañón Metal", "Impacto Acero"],
+	8: ["Sombra Fugaz", "Pulso Umbrío", "Abismo"],
+	9: ["Destello Astral", "Pulso Etéreo", "Juicio Legendario"]
 }
 
 var _arena: CombatArena = null
 var _core: Node = null
+var _ally_team: Array[Dictionary] = []
+var _enemy_team: Array[Dictionary] = []
+var _active_ally_idx: int = 0
+var _active_enemy_idx: int = 0
 var _chapter_id: int = 1
-var _stages: Array[Dictionary] = []
-var _stage_index: int = 0
-var _ally_units: Array[Dictionary] = []
-var _enemy_units: Array[Dictionary] = []
-var _turn_queue: Array[Dictionary] = []
-var _turn_cursor: int = 0
-var _active_unit: Dictionary = {}
-var _waiting_player_input: bool = false
-var _combat_active: bool = false
-var _accumulated_rewards: Dictionary = {"oro": 0, "comida": 0, "gemas": 0}
+var _busy: bool = false
+var _ended: bool = false
 
 
 func start_chapter(chapter_id: int, arena: CombatArena) -> void:
-	_arena = arena
 	_chapter_id = chapter_id
+	_arena = arena
 	_core = get_node_or_null("/root/GameCore")
-	if _arena == null or _core == null:
-		push_error("[CombatManager] Falta CombatArena o GameCore para iniciar combate.")
-		return
+	_ended = false
+	_busy = false
 
-	if not _arena.attack_selected.is_connected(_on_arena_attack_selected):
-		_arena.attack_selected.connect(_on_arena_attack_selected)
-	if not _arena.retreat_requested.is_connected(_on_arena_retreat_requested):
-		_arena.retreat_requested.connect(_on_arena_retreat_requested)
+	if not _arena.attack_selected.is_connected(_on_attack_selected):
+		_arena.attack_selected.connect(_on_attack_selected)
+	if not _arena.switch_requested.is_connected(_on_switch_requested):
+		_arena.switch_requested.connect(_on_switch_requested)
+	if not _arena.retreat_requested.is_connected(_on_retreat_requested):
+		_arena.retreat_requested.connect(_on_retreat_requested)
 
-	_stages = CHAPTER_1_STAGES.duplicate(true)
-	_stage_index = 0
-	_accumulated_rewards = {"oro": 0, "comida": 0, "gemas": 0}
-	_combat_active = true
-	_waiting_player_input = false
-
-	_ally_units = _build_player_team()
-	_load_current_stage()
+	_build_teams()
+	_arena.set_header_info("Capítulo %d — Sendero Terracota (1v1)" % _chapter_id, "Tu Turno")
+	_refresh_arena_state()
+	_arena.set_combat_log("¡Combate iniciado! Elige un ataque o releva a un dragón de reserva.")
 
 
-func _build_player_team() -> Array[Dictionary]:
-	var team: Array[Dictionary] = []
-	var owned: Array = _core.player_state.get("dragones", [])
-	for i: int in range(mini(3, owned.size())):
-		var d: Variant = owned[i]
-		if d is Dictionary:
-			var sp_id: int = int(d.get("especie_id", 1))
-			var lvl: int = maxi(1, int(d.get("nivel", 1)))
-			var etapa: String = str(d.get("etapa", "cria"))
-			team.append(_create_unit(sp_id, lvl, etapa, true, team.size()))
+func _build_teams() -> void:
+	_ally_team.clear()
+	_enemy_team.clear()
 
-	if team.is_empty():
-		team.append(_create_unit(1, 1, "cria", true, 0))
-	return team
+	if _core:
+		var owned: Array = _core.player_state.get("dragones", [])
+		for i: int in range(mini(3, owned.size())):
+			var d: Variant = owned[i]
+			if d is Dictionary:
+				_ally_team.append(_make_unit_from_owned(d))
+
+	if _ally_team.is_empty():
+		_ally_team.append(_make_unit_from_species_id(1, 1, 1))
+
+	# Equipo rival de 3 dragones del Capítulo 1
+	_enemy_team.append(_make_unit_from_species_id(2, 1, -1))
+	_enemy_team.append(_make_unit_from_species_id(5, 1, -2))
+	_enemy_team.append(_make_unit_from_species_id(9, 2, -3))
+
+	_active_ally_idx = 0
+	_active_enemy_idx = 0
 
 
-func _create_unit(species_id: int, nivel: int, etapa: String, is_ally: bool, slot_idx: int) -> Dictionary:
-	var sp: Dictionary = _core.get_species(species_id)
-	var scale: float = 1.0 + float(nivel - 1) * 0.15
-	var max_hp: int = maxi(10, int(round(float(sp.get("hp_base", 100)) * scale)))
-	var atk: int = maxi(5, int(round(float(sp.get("atk_base", 20)) * scale)))
-	var spd: int = maxi(5, int(round(float(sp.get("spd_base", 15)) * scale)))
-
+func _make_unit_from_owned(d: Dictionary) -> Dictionary:
+	var sp_id: int = int(d.get("especie_id", 1))
+	var nivel: int = maxi(1, int(d.get("nivel", 1)))
+	var sp: Dictionary = _core.get_species(sp_id) if _core else {}
+	var stats: Dictionary = _core.get_dragon_stats(d) if _core else {"hp": 420, "atk": 85, "spd": 40}
+	var hp: int = int(stats.get("hp", 420))
 	return {
-		"especie_id": species_id,
-		"nombre": str(sp.get("nombre", "Dragón")),
+		"uid": int(d.get("uid", 1)),
+		"especie_id": sp_id,
+		"nombre": str(sp.get("nombre", "Dragón Terracota")),
 		"sprite_prefijo": str(sp.get("sprite_prefijo", "dragon_terracota")),
-		"etapa": etapa,
+		"etapa": str(d.get("etapa", "cria")),
 		"nivel": nivel,
-		"hp": max_hp,
-		"max_hp": max_hp,
-		"atk": atk,
-		"spd": spd,
-		"elemento_primario_id": int(sp.get("elemento_primario_id", 1)),
-		"elemento_secundario_id": sp.get("elemento_secundario_id", null),
-		"elementos": sp.get("elementos", [1]),
-		"species_data": sp,
-		"is_ally": is_ally,
-		"slot_index": slot_idx
+		"hp": hp,
+		"max_hp": hp,
+		"atk": int(stats.get("atk", 85)),
+		"spd": int(stats.get("spd", 40)),
+		"species": sp,
+		"moves": _build_moves_for_species(sp)
 	}
 
 
-func _load_current_stage() -> void:
-	if not _combat_active or _stage_index >= _stages.size():
+func _make_unit_from_species_id(sp_id: int, nivel: int, uid: int) -> Dictionary:
+	var sp: Dictionary = _core.get_species(sp_id) if _core else {}
+	var hp_base: int = int(sp.get("hp_base", 310))
+	var atk_base: int = int(sp.get("atk_base", 90))
+	var spd_base: int = int(sp.get("spd_base", 55))
+	var scale_f: float = 1.0 + float(nivel - 1) * 0.14
+	var hp: int = roundi(hp_base * scale_f)
+	return {
+		"uid": uid,
+		"especie_id": sp_id,
+		"nombre": str(sp.get("nombre", "Dragón Rival")),
+		"sprite_prefijo": str(sp.get("sprite_prefijo", "dragon_ascua")),
+		"etapa": "cria",
+		"nivel": nivel,
+		"hp": hp,
+		"max_hp": hp,
+		"atk": roundi(atk_base * scale_f),
+		"spd": roundi(spd_base * scale_f),
+		"species": sp,
+		"moves": _build_moves_for_species(sp)
+	}
+
+
+func _build_moves_for_species(sp: Dictionary) -> Array[Dictionary]:
+	var prim: int = int(sp.get("elemento_primario_id", 1))
+	var sec_var: Variant = sp.get("elemento_secundario_id", null)
+	var sec: int = int(sec_var) if sec_var != null else prim
+	var prim_names: Array = ELEMENT_MOVES.get(prim, ELEMENT_MOVES[1])
+	var sec_names: Array = ELEMENT_MOVES.get(sec, ELEMENT_MOVES[1])
+	return [
+		{"nombre": "Embestida", "elemento_id": prim, "potencia": 28},
+		{"nombre": str(prim_names[0]), "elemento_id": prim, "potencia": 38},
+		{"nombre": str(sec_names[1]), "elemento_id": sec, "potencia": 48},
+		{"nombre": str(prim_names[2]), "elemento_id": prim, "potencia": 60}
+	]
+
+
+func _refresh_arena_state() -> void:
+	var ally: Dictionary = _ally_team[_active_ally_idx]
+	var enemy: Dictionary = _enemy_team[_active_enemy_idx]
+	_arena.set_active_fighters(ally, enemy)
+	_arena.update_attack_buttons(ally["moves"], enemy.get("species", {}), _core)
+	_arena.update_bench_buttons(_ally_team, _active_ally_idx)
+	_arena.set_controls_enabled(not _busy and not _ended)
+
+
+func _on_attack_selected(attack_idx: int) -> void:
+	if _busy or _ended:
+		return
+	_busy = true
+	_arena.set_controls_enabled(false)
+
+	var ally: Dictionary = _ally_team[_active_ally_idx]
+	var enemy: Dictionary = _enemy_team[_active_enemy_idx]
+	var moves: Array[Dictionary] = ally["moves"]
+	var mv: Dictionary = moves[clampi(attack_idx, 0, moves.size() - 1)]
+
+	var elem_id: int = int(mv.get("elemento_id", 1))
+	var mult: float = _core.get_elemental_multiplier(elem_id, enemy.get("species", {})) if _core else 1.0
+	var dmg: int = maxi(10, roundi((float(ally["atk"]) * (float(mv["potencia"]) / 35.0)) * mult))
+
+	_arena.play_lunge_animation(true)
+	enemy["hp"] = maxi(0, int(enemy["hp"]) - dmg)
+	_arena.spawn_damage_number(false, dmg, mult)
+	_arena.shake_camera(0.24 if mult >= 1.9 else 0.16, 0.22)
+	_arena.update_hp_bars(int(ally["hp"]), int(ally["max_hp"]), int(enemy["hp"]), int(enemy["max_hp"]))
+	_arena.set_combat_log("%s usó %s (-%d HP)." % [str(ally["nombre"]), str(mv["nombre"]), dmg])
+
+	await get_tree().create_timer(0.6).timeout
+	if _ended or not is_instance_valid(_arena):
 		return
 
-	var stage: Dictionary = _stages[_stage_index]
-	_enemy_units.clear()
-	var enemies_cfg: Array = stage.get("enemigos", [])
-	for i: int in range(mini(3, enemies_cfg.size())):
-		var e_cfg: Dictionary = enemies_cfg[i]
-		var sp_id: int = int(e_cfg.get("especie_id", 2))
-		var lvl: int = int(e_cfg.get("nivel", 1))
-		var etapa: String = "cria" if lvl <= 1 else ("joven" if lvl == 2 else "adulto")
-		_enemy_units.append(_create_unit(sp_id, lvl, etapa, false, i))
-
-	_arena.set_arena_title("Capítulo %d: Sendero Terracota — %s" % [_chapter_id, str(stage.get("titulo", ""))])
-	_arena.setup_teams(_ally_units, _enemy_units)
-	_arena.set_attack_buttons_enabled(false)
-	_arena.set_combat_log("¡Aparece %s! Orden de turnos según velocidad (SPD)." % str(stage.get("titulo", "la oleada")))
-
-	_rebuild_turn_queue()
-	_advance_turn()
-
-
-func _rebuild_turn_queue() -> void:
-	_turn_queue.clear()
-	for u: Dictionary in _ally_units:
-		if int(u.get("hp", 0)) > 0:
-			_turn_queue.append(u)
-	for u: Dictionary in _enemy_units:
-		if int(u.get("hp", 0)) > 0:
-			_turn_queue.append(u)
-
-	_turn_queue.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		var spd_a: int = int(a.get("spd", 0))
-		var spd_b: int = int(b.get("spd", 0))
-		if spd_a == spd_b:
-			return bool(a.get("is_ally", false)) and not bool(b.get("is_ally", false))
-		return spd_a > spd_b
-	)
-	_turn_cursor = 0
-
-
-func _advance_turn() -> void:
-	if not _combat_active:
-		return
-
-	if _all_defeated(_enemy_units):
-		_on_stage_cleared()
-		return
-	if _all_defeated(_ally_units):
-		_on_combat_defeat()
-		return
-
-	while _turn_cursor < _turn_queue.size():
-		var candidate: Dictionary = _turn_queue[_turn_cursor]
-		_turn_cursor += 1
-		if int(candidate.get("hp", 0)) > 0:
-			_start_unit_turn(candidate)
+	if int(enemy["hp"]) <= 0:
+		var next_enemy: int = _find_next_alive(_enemy_team)
+		if next_enemy == -1:
+			await _finish_battle(true)
 			return
-
-	_rebuild_turn_queue()
-	if not _turn_queue.is_empty():
-		var first_unit: Dictionary = _turn_queue[0]
-		_turn_cursor = 1
-		_start_unit_turn(first_unit)
-
-
-func _start_unit_turn(unit: Dictionary) -> void:
-	_active_unit = unit
-	var is_ally: bool = bool(unit.get("is_ally", false))
-	if is_ally:
-		_waiting_player_input = true
-		_arena.set_turn_info("Turno Aliado: %s (SPD %d)" % [str(unit.get("nombre", "")), int(unit.get("spd", 0))])
-		_arena.set_attack_buttons(_build_attacks_for_unit(unit))
-		_arena.set_attack_buttons_enabled(true)
-	else:
-		_waiting_player_input = false
-		_arena.set_attack_buttons_enabled(false)
-		_arena.set_turn_info("Turno Enemigo: %s (SPD %d)" % [str(unit.get("nombre", "")), int(unit.get("spd", 0))])
-		_execute_enemy_turn(unit)
-
-
-func _build_attacks_for_unit(unit: Dictionary) -> Array[Dictionary]:
-	var attacks: Array[Dictionary] = []
-	var elems: Array = unit.get("elementos", [1])
-	for elem_var: Variant in elems:
-		var elem_id: int = int(elem_var)
-		var label: String = str(ELEMENT_ATTACK_NAMES.get(elem_id, "Ataque Elemental"))
-		attacks.append({"label": label, "element_id": elem_id, "disabled": false})
-
-	if attacks.size() < 2:
-		var prim_id: int = int(unit.get("elemento_primario_id", 1))
-		attacks.append({"label": "Embestida Feroz", "element_id": prim_id, "disabled": false})
-	return attacks
-
-
-func _on_arena_attack_selected(_attack_index: int, element_id: int) -> void:
-	if not _combat_active or not _waiting_player_input:
+		_active_enemy_idx = next_enemy
+		_arena.set_combat_log("¡%s derrotado! Entra %s." % [str(enemy["nombre"]), str(_enemy_team[_active_enemy_idx]["nombre"])])
+		_refresh_arena_state()
+		await get_tree().create_timer(0.45).timeout
+		_busy = false
+		_arena.set_controls_enabled(true)
 		return
 
-	_waiting_player_input = false
-	_arena.set_attack_buttons_enabled(false)
+	await _execute_enemy_turn()
 
-	var target_idx: int = _resolve_alive_enemy_index(_arena.get_selected_enemy_index())
-	if target_idx == -1:
-		_on_stage_cleared()
+
+func _on_switch_requested(bench_team_idx: int) -> void:
+	if _busy or _ended:
 		return
-	_arena.select_enemy_target(target_idx)
+	if bench_team_idx < 0 or bench_team_idx >= _ally_team.size():
+		return
+	if int(_ally_team[bench_team_idx]["hp"]) <= 0:
+		return
 
-	var target: Dictionary = _enemy_units[target_idx]
-	_apply_attack(_active_unit, target, element_id)
-	_arena.update_unit_hp(false, target_idx, int(target.get("hp", 0)), int(target.get("max_hp", 1)))
+	_busy = true
+	_arena.set_controls_enabled(false)
+	_active_ally_idx = bench_team_idx
+	_refresh_arena_state()
+	_arena.set_combat_log("¡Relevo! %s entra a la arena." % str(_ally_team[_active_ally_idx]["nombre"]))
 
 	await get_tree().create_timer(0.55).timeout
-	if not _combat_active or not is_inside_tree():
+	if _ended or not is_instance_valid(_arena):
 		return
-	_advance_turn()
+	await _execute_enemy_turn()
 
 
-func _execute_enemy_turn(enemy: Dictionary) -> void:
-	await get_tree().create_timer(0.65).timeout
-	if not _combat_active or not is_inside_tree():
+func _execute_enemy_turn() -> void:
+	var ally: Dictionary = _ally_team[_active_ally_idx]
+	var enemy: Dictionary = _enemy_team[_active_enemy_idx]
+	var moves: Array[Dictionary] = enemy["moves"]
+	var mv: Dictionary = moves[randi() % moves.size()]
+
+	var elem_id: int = int(mv.get("elemento_id", 1))
+	var mult: float = _core.get_elemental_multiplier(elem_id, ally.get("species", {})) if _core else 1.0
+	var dmg: int = maxi(8, roundi((float(enemy["atk"]) * (float(mv["potencia"]) / 38.0)) * mult))
+
+	_arena.set_header_info("Capítulo %d — Sendero Terracota (1v1)" % _chapter_id, "Turno Enemigo")
+	_arena.play_lunge_animation(false)
+	ally["hp"] = maxi(0, int(ally["hp"]) - dmg)
+	_arena.spawn_damage_number(true, dmg, mult)
+	_arena.shake_camera(0.18, 0.2)
+	_arena.update_hp_bars(int(ally["hp"]), int(ally["max_hp"]), int(enemy["hp"]), int(enemy["max_hp"]))
+	_arena.set_combat_log("%s respondió con %s (-%d HP)." % [str(enemy["nombre"]), str(mv["nombre"]), dmg])
+
+	await get_tree().create_timer(0.6).timeout
+	if _ended or not is_instance_valid(_arena):
 		return
 
-	var alive_allies: Array[int] = []
-	for i: int in range(_ally_units.size()):
-		if int(_ally_units[i].get("hp", 0)) > 0:
-			alive_allies.append(i)
+	if int(ally["hp"]) <= 0:
+		var next_ally: int = _find_next_alive(_ally_team)
+		if next_ally == -1:
+			await _finish_battle(false)
+			return
+		_active_ally_idx = next_ally
+		_arena.set_combat_log("¡%s cayó! Entra %s." % [str(ally["nombre"]), str(_ally_team[_active_ally_idx]["nombre"])])
+		_refresh_arena_state()
 
-	if alive_allies.is_empty():
-		_on_combat_defeat()
-		return
-
-	var target_idx: int = alive_allies[randi() % alive_allies.size()]
-	var target: Dictionary = _ally_units[target_idx]
-	var elem_id: int = int(enemy.get("elemento_primario_id", 1))
-	_apply_attack(enemy, target, elem_id)
-	_arena.update_unit_hp(true, target_idx, int(target.get("hp", 0)), int(target.get("max_hp", 1)))
-
-	await get_tree().create_timer(0.55).timeout
-	if not _combat_active or not is_inside_tree():
-		return
-	_advance_turn()
+	_arena.update_bench_buttons(_ally_team, _active_ally_idx)
+	_arena.set_header_info("Capítulo %d — Sendero Terracota (1v1)" % _chapter_id, "Tu Turno")
+	_busy = false
+	_arena.set_controls_enabled(true)
 
 
-func _apply_attack(attacker: Dictionary, defender: Dictionary, atk_elem_id: int) -> void:
-	var def_species: Dictionary = defender.get("species_data", {})
-	var mult: float = _core.get_elemental_multiplier(atk_elem_id, def_species)
-	var base_atk: float = float(attacker.get("atk", 20))
-	var variance: float = randf_range(0.92, 1.08)
-	var dmg: int = maxi(1, int(round(base_atk * mult * variance)))
-
-	var new_hp: int = maxi(0, int(defender.get("hp", 0)) - dmg)
-	defender["hp"] = new_hp
-
-	var eff_tag: String = ""
-	if mult >= 1.5:
-		eff_tag = " ¡Crítico elemental (x%.1f)!" % mult
-	elif mult <= 0.6:
-		eff_tag = " Poco efectivo (x%.2f)..." % mult
-
-	var atk_name: String = str(ELEMENT_ATTACK_NAMES.get(atk_elem_id, "Ataque"))
-	var ko_tag: String = " ¡%s fue derrotado!" % str(defender.get("nombre", "")) if new_hp <= 0 else ""
-	_arena.set_combat_log("%s usa %s contra %s (-%d HP).%s%s" % [
-		str(attacker.get("nombre", "Dragón")),
-		atk_name,
-		str(defender.get("nombre", "Objetivo")),
-		dmg,
-		eff_tag,
-		ko_tag
-	])
-
-
-func _resolve_alive_enemy_index(preferred_idx: int) -> int:
-	if preferred_idx >= 0 and preferred_idx < _enemy_units.size():
-		if int(_enemy_units[preferred_idx].get("hp", 0)) > 0:
-			return preferred_idx
-	for i: int in range(_enemy_units.size()):
-		if int(_enemy_units[i].get("hp", 0)) > 0:
+func _find_next_alive(team: Array[Dictionary]) -> int:
+	for i: int in range(team.size()):
+		if int(team[i].get("hp", 0)) > 0:
 			return i
 	return -1
 
 
-func _all_defeated(units: Array[Dictionary]) -> bool:
-	for u: Dictionary in units:
-		if int(u.get("hp", 0)) > 0:
-			return false
-	return true
-
-
-func _on_stage_cleared() -> void:
-	var stage: Dictionary = _stages[_stage_index]
-	var reward: Dictionary = stage.get("recompensa", {})
-	_accumulated_rewards["oro"] = int(_accumulated_rewards.get("oro", 0)) + int(reward.get("oro", 0))
-	_accumulated_rewards["comida"] = int(_accumulated_rewards.get("comida", 0)) + int(reward.get("comida", 0))
-	_accumulated_rewards["gemas"] = int(_accumulated_rewards.get("gemas", 0)) + int(reward.get("gemas", 0))
-
-	_stage_index += 1
-	if _stage_index < _stages.size():
-		_arena.set_combat_log("¡Etapa superada! Preparando siguiente oleada...")
-		await get_tree().create_timer(1.0).timeout
-		if not _combat_active or not is_inside_tree():
-			return
-		_load_current_stage()
+func _finish_battle(victory: bool) -> void:
+	_ended = true
+	_busy = true
+	_arena.set_controls_enabled(false)
+	var rewards: Dictionary = {}
+	if victory:
+		if _core:
+			rewards = _core.grant_combat_rewards(800, 400, 5, _chapter_id + 1)
+		else:
+			rewards = {"oro": 800, "comida": 400, "gemas": 5}
+		_arena.set_combat_log("¡VICTORIA! Derrotaste a los 3 dragones rivales (+800 Oro, +400 Comida, +5 Gemas).")
 	else:
-		_on_chapter_victory()
+		_arena.set_combat_log("Derrota... Alimenta a tus dragones e inténtalo de nuevo.")
+
+	await get_tree().create_timer(1.2).timeout
+	combat_finished.emit(victory, rewards)
 
 
-func _on_chapter_victory() -> void:
-	_combat_active = false
-	_waiting_player_input = false
-	_arena.set_attack_buttons_enabled(false)
-
-	var oro: int = int(_accumulated_rewards.get("oro", 800))
-	var comida: int = int(_accumulated_rewards.get("comida", 400))
-	var gemas: int = int(_accumulated_rewards.get("gemas", 5))
-	var granted: Dictionary = _core.grant_combat_rewards(oro, comida, gemas, _chapter_id + 1)
-
-	_arena.set_turn_info("¡Victoria en Capítulo %d!" % _chapter_id)
-	_arena.set_combat_log("¡Capítulo %d completado! Recompensa: +%d Oro, +%d Comida, +%d Gemas." % [
-		_chapter_id, oro, comida, gemas
-	])
-
-	await get_tree().create_timer(1.6).timeout
-	if not is_inside_tree():
+func _on_retreat_requested() -> void:
+	if _ended:
 		return
-	combat_finished.emit(true, granted)
-
-
-func _on_combat_defeat() -> void:
-	_combat_active = false
-	_waiting_player_input = false
-	_arena.set_attack_buttons_enabled(false)
-	_arena.set_turn_info("Derrota en Capítulo %d" % _chapter_id)
-	_arena.set_combat_log("Tu equipo ha caído. Entrena o cruza más dragones e inténtalo de nuevo.")
-
-	await get_tree().create_timer(1.5).timeout
-	if not is_inside_tree():
-		return
-	combat_finished.emit(false, {})
-
-
-func _on_arena_retreat_requested() -> void:
-	_combat_active = false
-	_waiting_player_input = false
+	_ended = true
 	combat_finished.emit(false, {})

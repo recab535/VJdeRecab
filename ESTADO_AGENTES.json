@@ -1,7 +1,7 @@
 {
   "estado": "COMPLETADO",
   "turno_actual": "G1",
-  "rondas_completadas": 2,
+  "rondas_completadas": 3,
   "max_rondas_limite": 4,
   "orden_agentes": [
     "G1",
@@ -10,9 +10,9 @@
     "A2"
   ],
   "ultimo_ciclo": {
-    "G1": "Tarea 2: Documentadas en docs/game_design_base.md (Sección 9) las 3 etapas del Capítulo 1 PvE (Sendero Terracota) y recompensas de Oro/Comida/Gemas.",
-    "G2": "Tarea 2: Documentada en docs/contrato_datos_godot.md (Sección 5) la matriz 9x9 de multiplicadores_elementales (2.0 crítico, 0.5 resistente, 1.0 neutro).",
-    "A1": "Tarea 8: Creados scenes/ui/breeding_panel.tscn y scenes/ui/nest_panel.tscn e integrados en scenes/main.tscn y scripts/main.gd para seleccionar padres en Cruce y visualizar el progreso de nido_huevos.",
-    "A2": "Tarea 8: Implementados breeding_panel.gd, nest_panel.gd y soporte en game_core.gd (temporizador de incubación en tiempo real, vista previa de cruces, aceleración con gemas y eclosión por ranura)."
+    "G1": "Rediseño en docs/game_design_base.md: combate 1v1 con equipo de 3 (1 activo + 2 relevos), tienda por categorías y menú contextual de hábitat.",
+    "G2": "Contrato actualizado en docs/contrato_datos_godot.md: 4 movimientos por especie, relevos en combate 1v1 y estructura de tiendas/hábitats.",
+    "A1": "Tema global assets/ui/game_theme.tres, HUD estilizado con barra de nivel y Tweens, Tienda por pestañas con modo colocación verde, decoración low-poly y levitación de islas.",
+    "A2": "Patrulla autónoma de dragones, menú contextual de Hábitat (recoger oro flotante + alimentar con barra XP) y Arena/Motor 1v1 estilo Dragon City con relevos, embestidas y camera shake."
   }
 }
