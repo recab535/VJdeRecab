@@ -1,6 +1,6 @@
 {
   "estado": "EN_PROGRESO",
-  "fase_actual": 1,
+  "fase_actual": 2,
   "total_fases": 10,
   "turno_actual": "A1",
   "orden_agentes": [
@@ -12,7 +12,7 @@
   "test_clean_start_mode": true,
   "fases_plan_10": {
     "Fase_1": "COMPLETADA - TEST_CLEAN_START_MODE = true en GameCore (sin romper save/load real al cambiar a false) + shaders toon_stylized.gdshader, water_lava_flow.gdshader, sky_gradient.gdshader, VisualShaders y WorldEnvironment pulido en scenes/main.tscn.",
-    "Fase_2": "PENDIENTE",
+    "Fase_2": "COMPLETADA - 5 islas flotantes estratificadas/orgánicas con biomas propios, flujos animados (agua/lava/tormenta/astral), cuadrícula 14x14 legible con 4 parcelas comprables, puentes entre islas y 6 obstáculos estilizados con anillo de limpieza y aceleración con gemas.",
     "Fase_3": "PENDIENTE",
     "Fase_4": "PENDIENTE",
     "Fase_5": "PENDIENTE",

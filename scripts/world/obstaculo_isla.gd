@@ -1,6 +1,6 @@
 extends Node3D
 
-## Obstáculo temporizado en una isla (6 tipos oficiales).
+## Obstáculo temporizado en una isla (6 tipos oficiales) con estética 2.5D estilizada.
 ## Puede limpiarse con Oro esperando su temporizador o acelerarse con Gemas.
 
 signal obstacle_clicked(obstacle_node: Node3D)
@@ -26,13 +26,32 @@ const OBSTACLE_CATALOG: Dictionary = {
 var limpiando: bool = false
 var restante_seg: float = 600.0
 var duracion_seg: int = 600
+var _sway_time: float = 0.0
+var _work_ring: MeshInstance3D = null
 
 
 func _ready() -> void:
+	_sway_time = float(obstacle_id.hash() % 100) * 0.1
 	if area_click:
 		area_click.input_event.connect(_on_area_input_event)
 	_build_visual()
 	_refresh_label()
+
+
+func _process(delta: float) -> void:
+	_sway_time += delta * 2.2
+	if visual_root and obstacle_type in ["arbusto", "arbol_pequeno", "arbol_grande"]:
+		visual_root.rotation.z = sin(_sway_time) * 0.035
+	if limpiando:
+		restante_seg = maxf(0.0, restante_seg - delta)
+		if _work_ring and is_instance_valid(_work_ring):
+			_work_ring.visible = true
+			_work_ring.rotation.y += delta * 1.8
+			var s: float = 1.0 + sin(_sway_time * 2.0) * 0.08
+			_work_ring.scale = Vector3(s, 1.0, s)
+		_refresh_label()
+	elif _work_ring and is_instance_valid(_work_ring):
+		_work_ring.visible = false
 
 
 func configure(data: Dictionary) -> void:
@@ -63,7 +82,11 @@ func _refresh_label() -> void:
 		return
 	var spec: Dictionary = OBSTACLE_CATALOG.get(obstacle_type, OBSTACLE_CATALOG["arbusto"])
 	if limpiando:
-		label_3d.text = "%s\nLimpiando %s" % [str(spec["nombre"]), _format_time(int(ceil(restante_seg)))]
+		label_3d.text = "⛏ %s\n%s (⚡%d Gemas)" % [
+			str(spec["nombre"]),
+			_format_time(int(ceil(restante_seg))),
+			int(spec["gemas_acelerar"])
+		]
 		label_3d.modulate = Color(1.0, 0.88, 0.35, 1.0)
 	else:
 		label_3d.text = str(spec["nombre"])
@@ -78,55 +101,99 @@ func _build_visual() -> void:
 
 	match obstacle_type:
 		"arbusto":
-			_add_sphere(Vector3(0, 0.28, 0), 0.38, Color(0.2, 0.65, 0.24))
-			_add_sphere(Vector3(0.24, 0.22, 0.12), 0.26, Color(0.24, 0.72, 0.28))
+			_add_sphere(Vector3(0.0, 0.28, 0.0), 0.38, Color(0.20, 0.68, 0.24))
+			_add_sphere(Vector3(0.26, 0.22, 0.14), 0.27, Color(0.26, 0.76, 0.30))
+			_add_sphere(Vector3(-0.22, 0.24, -0.10), 0.24, Color(0.16, 0.58, 0.22))
+			_add_sphere(Vector3(0.08, 0.48, 0.16), 0.07, Color(1.0, 0.42, 0.58), 0.25)
+			_add_sphere(Vector3(-0.14, 0.40, 0.18), 0.06, Color(1.0, 0.86, 0.32), 0.25)
 		"arbol_pequeno":
-			_add_cylinder(Vector3(0, 0.28, 0), 0.1, 0.14, 0.56, Color(0.45, 0.28, 0.15))
-			_add_cylinder(Vector3(0, 0.78, 0), 0.04, 0.48, 0.75, Color(0.18, 0.62, 0.26))
+			_add_cylinder(Vector3(0.0, 0.30, 0.0), 0.10, 0.16, 0.62, Color(0.46, 0.28, 0.16))
+			_add_cylinder(Vector3(0.0, 0.76, 0.0), 0.05, 0.52, 0.72, Color(0.16, 0.60, 0.24))
+			_add_cylinder(Vector3(0.0, 1.18, 0.0), 0.03, 0.38, 0.55, Color(0.24, 0.72, 0.30))
 		"piedrita":
-			_add_sphere(Vector3(0, 0.2, 0), 0.3, Color(0.55, 0.58, 0.62))
+			_add_sphere(Vector3(0.0, 0.20, 0.0), 0.30, Color(0.56, 0.60, 0.66))
+			_add_sphere(Vector3(0.22, 0.12, 0.14), 0.18, Color(0.48, 0.52, 0.58))
+			_add_sphere(Vector3(-0.14, 0.26, -0.06), 0.12, Color(0.26, 0.66, 0.30))
 		"arbol_grande":
-			_add_cylinder(Vector3(0, 0.45, 0), 0.16, 0.24, 0.9, Color(0.42, 0.25, 0.14))
-			_add_cylinder(Vector3(0, 1.2, 0), 0.06, 0.78, 1.15, Color(0.14, 0.54, 0.22))
-			_add_cylinder(Vector3(0, 1.75, 0), 0.04, 0.55, 0.75, Color(0.2, 0.66, 0.28))
+			_add_cylinder(Vector3(0.0, 0.48, 0.0), 0.16, 0.28, 0.96, Color(0.42, 0.25, 0.14))
+			_add_cylinder(Vector3(0.0, 1.15, 0.0), 0.10, 0.86, 1.05, Color(0.13, 0.52, 0.21))
+			_add_cylinder(Vector3(0.0, 1.72, 0.0), 0.06, 0.66, 0.85, Color(0.19, 0.64, 0.27))
+			_add_cylinder(Vector3(0.0, 2.20, 0.0), 0.03, 0.42, 0.58, Color(0.28, 0.76, 0.34))
+			_add_sphere(Vector3(0.32, 1.25, 0.28), 0.08, Color(1.0, 0.78, 0.22), 0.2)
 		"piedra_mediana":
-			_add_sphere(Vector3(0, 0.34, 0), 0.52, Color(0.48, 0.5, 0.56))
-			_add_sphere(Vector3(-0.32, 0.22, 0.18), 0.3, Color(0.42, 0.44, 0.5))
+			_add_sphere(Vector3(0.0, 0.34, 0.0), 0.52, Color(0.48, 0.52, 0.58))
+			_add_sphere(Vector3(-0.34, 0.22, 0.18), 0.32, Color(0.42, 0.46, 0.52))
+			_add_sphere(Vector3(0.30, 0.18, -0.20), 0.26, Color(0.54, 0.58, 0.64))
+			_add_cylinder(Vector3(0.14, 0.54, 0.12), 0.02, 0.11, 0.28, Color(0.38, 0.86, 0.96), 0.55)
 		"roca_enorme":
-			_add_sphere(Vector3(0, 0.55, 0), 0.85, Color(0.38, 0.4, 0.46))
-			_add_sphere(Vector3(0.45, 0.35, -0.25), 0.5, Color(0.32, 0.34, 0.4))
+			_add_sphere(Vector3(0.0, 0.56, 0.0), 0.85, Color(0.38, 0.42, 0.48))
+			_add_sphere(Vector3(0.48, 0.36, -0.26), 0.52, Color(0.32, 0.36, 0.42))
+			_add_sphere(Vector3(-0.46, 0.30, 0.28), 0.44, Color(0.44, 0.48, 0.54))
+			_add_cylinder(Vector3(-0.18, 0.95, 0.22), 0.03, 0.15, 0.45, Color(0.95, 0.72, 0.22), 0.6)
+			_add_cylinder(Vector3(0.28, 0.82, -0.10), 0.02, 0.12, 0.38, Color(0.95, 0.72, 0.22), 0.6)
 		_:
-			_add_sphere(Vector3(0, 0.3, 0), 0.35, Color(0.4, 0.6, 0.3))
+			_add_sphere(Vector3(0.0, 0.30, 0.0), 0.35, Color(0.4, 0.6, 0.3))
+
+	# Anillo luminoso dorado de limpieza activa
+	_work_ring = MeshInstance3D.new()
+	var torus: TorusMesh = TorusMesh.new()
+	torus.inner_radius = 0.62
+	torus.outer_radius = 0.78
+	torus.rings = 14
+	torus.ring_segments = 8
+	_work_ring.mesh = torus
+	_work_ring.material_override = VisualShaders.make_toon(
+		Color(1.0, 0.84, 0.25),
+		Color(0.5, 0.35, 0.1),
+		0.5,
+		0.3,
+		0.2,
+		Color(1.0, 0.78, 0.18),
+		0.95
+	)
+	_work_ring.position = Vector3(0.0, 0.08, 0.0)
+	_work_ring.visible = limpiando
+	visual_root.add_child(_work_ring)
 
 
-func _add_sphere(pos: Vector3, radius: float, color: Color) -> void:
+func _add_sphere(pos: Vector3, radius: float, color: Color, emit_strength: float = 0.0) -> void:
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	var sm: SphereMesh = SphereMesh.new()
 	sm.radius = radius
 	sm.height = radius * 1.65
-	sm.radial_segments = 7
-	sm.rings = 4
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 0.92
-	sm.material = mat
+	sm.radial_segments = 9
+	sm.rings = 5
 	mi.mesh = sm
+	mi.material_override = VisualShaders.make_toon(
+		color,
+		Color(0.20, 0.24, 0.36),
+		0.36,
+		0.86,
+		0.0,
+		color,
+		emit_strength
+	)
 	mi.position = pos
 	visual_root.add_child(mi)
 
 
-func _add_cylinder(pos: Vector3, top_r: float, bot_r: float, h: float, color: Color) -> void:
+func _add_cylinder(pos: Vector3, top_r: float, bot_r: float, h: float, color: Color, emit_strength: float = 0.0) -> void:
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	var cm: CylinderMesh = CylinderMesh.new()
 	cm.top_radius = top_r
 	cm.bottom_radius = bot_r
 	cm.height = h
-	cm.radial_segments = 6
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 0.9
-	cm.material = mat
+	cm.radial_segments = 7
 	mi.mesh = cm
+	mi.material_override = VisualShaders.make_toon(
+		color,
+		Color(0.20, 0.24, 0.36),
+		0.34,
+		0.84,
+		0.0,
+		color,
+		emit_strength
+	)
 	mi.position = pos
 	visual_root.add_child(mi)
 
