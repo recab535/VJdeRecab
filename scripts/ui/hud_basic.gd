@@ -61,6 +61,9 @@ var _selected_obs_id: String = ""
 var _feed_dragons_list: Array[Dictionary] = []
 var _feed_selected_idx: int = 0
 var _current_comida: int = 0
+var _last_oro: int = -1
+var _last_comida: int = -1
+var _last_gemas: int = -1
 
 
 func _ready() -> void:
@@ -159,11 +162,42 @@ func _attach_button_tweens(root: Node) -> void:
 
 func set_resources(oro: int, comida: int, gemas: int) -> void:
 	_current_comida = comida
-	lbl_oro.text = "Oro: %d" % oro
-	lbl_comida.text = "Comida: %d" % comida
-	lbl_gemas.text = "Gemas: %d" % gemas
+	lbl_oro.text = "🪙 Oro: %d" % oro
+	lbl_comida.text = "🍎 Comida: %d" % comida
+	lbl_gemas.text = "💎 Gemas: %d" % gemas
+	if _last_oro >= 0 and oro > _last_oro:
+		_bump_label(lbl_oro)
+	if _last_comida >= 0 and comida > _last_comida:
+		_bump_label(lbl_comida)
+	if _last_gemas >= 0 and gemas > _last_gemas:
+		_bump_label(lbl_gemas)
+	_last_oro = oro
+	_last_comida = comida
+	_last_gemas = gemas
 	if panel_alimentar and panel_alimentar.visible:
 		_refresh_feed_panel_ui()
+
+
+func _bump_label(lbl: Control) -> void:
+	if lbl == null:
+		return
+	lbl.pivot_offset = lbl.size * 0.5
+	var tw: Tween = lbl.create_tween()
+	tw.tween_property(lbl, "scale", Vector2(1.16, 1.16), 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _pop_open(panel: Control) -> void:
+	if panel == null:
+		return
+	panel.visible = true
+	panel.pivot_offset = panel.size * 0.5
+	panel.scale = Vector2(0.92, 0.92)
+	panel.modulate.a = 0.0
+	var tw: Tween = panel.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(panel, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(panel, "modulate:a", 1.0, 0.14)
 
 
 func show_status_message(msg: String) -> void:
@@ -189,12 +223,12 @@ func show_island_preview(info: Dictionary, current_oro: int, player_level: int =
 	]
 	btn_desbloquear_isla.text = "Desbloquear (%d Oro)" % _preview_cost_oro
 	btn_desbloquear_isla.disabled = current_oro < _preview_cost_oro or player_level < _preview_level_req
-	panel_isla_preview.visible = true
+	_pop_open(panel_isla_preview)
 
 
 func show_parcel_preview(info: Dictionary, current_oro: int, player_level: int = 1) -> void:
 	_preview_island_id = int(info.get("island_id", 1))
-	_preview_parcel_idx = int(info.get("parcela", 1))
+	_preview_parcel_idx = int(info.get("parcel_index", info.get("parcela", 1)))
 	_preview_cost_oro = int(info.get("costo_oro", 750))
 	_preview_level_req = int(info.get("nivel_req", 1))
 	lbl_isla_titulo.text = "Parcela %d — Isla %d" % [_preview_parcel_idx + 1, _preview_island_id]
@@ -204,7 +238,7 @@ func show_parcel_preview(info: Dictionary, current_oro: int, player_level: int =
 	]
 	btn_desbloquear_isla.text = "Comprar Parcela (%d Oro)" % _preview_cost_oro
 	btn_desbloquear_isla.disabled = current_oro < _preview_cost_oro or player_level < _preview_level_req
-	panel_isla_preview.visible = true
+	_pop_open(panel_isla_preview)
 
 
 func hide_island_preview() -> void:

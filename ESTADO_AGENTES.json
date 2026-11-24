@@ -1,6 +1,6 @@
 {
   "estado": "EN_PROGRESO",
-  "fase_actual": 5,
+  "fase_actual": 6,
   "total_fases": 10,
   "turno_actual": "A1",
   "orden_agentes": [
@@ -16,7 +16,7 @@
     "Fase_3": "COMPLETADA - Estructuras 3D detalladas con VisualShaders: Torre Nido (1..4 huevos elementales dinámicos), Adoratorio + Adoratorio Extra (anillo rúnico + motas), Mina de Gemas, Portal de Historia (vórtice astral), Campo de Entrenamiento, Guardería (4 cunas) y 8 Tótems Potenciadores Elementales (BoosterTotem).",
     "Fase_4": "COMPLETADA - Generador pixel art 48x48 con contorno, sombreado 3 tonos, variantes híbridas/legendarias y etapas (Cría/Joven/Adulto) en Dragon2D + vida/patrulla/emotes/sombra en hábitats temáticos 2.5D con indicador flotante de oro.",
     "Fase_5": "COMPLETADA - Pantalla de carga animada con degradado, partículas mágicas, showcase de dragones 48x48 y carga asíncrona + tutorial narrativo del Maestro Kael con retrato 48x48, progreso por paso y flecha guía pulsante.",
-    "Fase_6": "PENDIENTE",
+    "Fase_6": "COMPLETADA - Tema UI global ampliado (TabContainer/LineEdit/PanelContainer/ProgressBar), HUD 1920x1080 con animaciones de recursos, fix parcel_index y modales contextuales de estructuras con conteo en vivo y retratos 48x48.",
     "Fase_7": "PENDIENTE",
     "Fase_8": "PENDIENTE",
     "Fase_9": "PENDIENTE",
