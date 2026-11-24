@@ -110,7 +110,7 @@ func _ready() -> void:
 					feed_dragon_requested.emit(uid)
 		)
 
-	for btn_name: String in ["BtnTienda", "BtnCruce", "BtnNido", "BtnAlimentar", "BtnBestiario", "BtnCombate"]:
+	for btn_name: String in ["BtnTienda", "BtnAlmacen", "BtnCruce", "BtnNido", "BtnAlimentar", "BtnBestiario", "BtnCombate"]:
 		var btn: Button = find_child(btn_name, true, false) as Button
 		if btn:
 			btn.pressed.connect(func() -> void: panel_requested.emit(btn.text))

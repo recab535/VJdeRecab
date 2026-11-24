@@ -5,9 +5,10 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/bestiario_panel.tscn" id="3_bestiario"]
 [ext_resource type="PackedScene" path="res://scenes/ui/breeding_panel.tscn" id="4_breeding"]
 [ext_resource type="PackedScene" path="res://scenes/ui/nest_panel.tscn" id="5_nest"]
-[ext_resource type="PackedScene" path="res://scenes/ui/shop_panel.tscn" id="6_shop"]
+[ext_resource type="PackedScene" path="res://scenes/ui/tienda_panel.tscn" id="6_shop"]
 [ext_resource type="PackedScene" path="res://scenes/ui/tutorial_dialog.tscn" id="7_tutorial"]
 [ext_resource type="PackedScene" path="res://scenes/ui/estructura_modal.tscn" id="8_est_modal"]
+[ext_resource type="PackedScene" path="res://scenes/ui/almacen_panel.tscn" id="9_almacen"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -245,45 +246,50 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -450.0
+offset_left = -520.0
 offset_top = -100.0
-offset_right = 450.0
+offset_right = 520.0
 offset_bottom = -18.0
 grow_horizontal = 2
 grow_vertical = 0
 
 [node name="AccionesBar" type="HBoxContainer" parent="RootControl/BottomDock"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 alignment = 1
 
 [node name="BtnTienda" type="Button" parent="RootControl/BottomDock/AccionesBar"]
-custom_minimum_size = Vector2(128, 52)
+custom_minimum_size = Vector2(124, 52)
 layout_mode = 2
 text = "Tienda"
 
+[node name="BtnAlmacen" type="Button" parent="RootControl/BottomDock/AccionesBar"]
+custom_minimum_size = Vector2(124, 52)
+layout_mode = 2
+text = "Almacén"
+
 [node name="BtnCruce" type="Button" parent="RootControl/BottomDock/AccionesBar"]
-custom_minimum_size = Vector2(128, 52)
+custom_minimum_size = Vector2(124, 52)
 layout_mode = 2
 text = "Cruce"
 
 [node name="BtnNido" type="Button" parent="RootControl/BottomDock/AccionesBar"]
-custom_minimum_size = Vector2(128, 52)
+custom_minimum_size = Vector2(124, 52)
 layout_mode = 2
 text = "Nido"
 
 [node name="BtnAlimentar" type="Button" parent="RootControl/BottomDock/AccionesBar"]
-custom_minimum_size = Vector2(128, 52)
+custom_minimum_size = Vector2(124, 52)
 layout_mode = 2
 text = "Alimentar"
 
 [node name="BtnBestiario" type="Button" parent="RootControl/BottomDock/AccionesBar"]
-custom_minimum_size = Vector2(128, 52)
+custom_minimum_size = Vector2(124, 52)
 layout_mode = 2
 text = "Bestiario"
 
 [node name="BtnCombate" type="Button" parent="RootControl/BottomDock/AccionesBar"]
-custom_minimum_size = Vector2(128, 52)
+custom_minimum_size = Vector2(124, 52)
 layout_mode = 2
 text = "Combate"
 
@@ -298,6 +304,8 @@ text = "Combate"
 [node name="TutorialDialog" parent="RootControl" instance=ExtResource("7_tutorial")]
 
 [node name="EstructuraModal" parent="RootControl" instance=ExtResource("8_est_modal")]
+
+[node name="AlmacenPanel" parent="RootControl" instance=ExtResource("9_almacen")]
 
 [node name="IslaNavBar" type="HBoxContainer" parent="RootControl"]
 layout_mode = 1

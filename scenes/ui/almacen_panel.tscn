@@ -1,0 +1,120 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/almacen_panel.gd" id="1_alm"]
+[ext_resource type="Theme" path="res://assets/ui/game_theme.tres" id="2_theme"]
+
+[node name="AlmacenPanel" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_alm")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.06, 0.12, 0.62)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -300.0
+offset_right = 460.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxMain" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Panel/VBoxMain"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LblTitulo" type="Label" parent="Panel/VBoxMain/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Almacén de Estructuras y Suelos"
+
+[node name="BtnAmpliarAlm" type="Button" parent="Panel/VBoxMain/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 40)
+layout_mode = 2
+text = "+5 Espacios (15 Gemas)"
+
+[node name="BtnCerrarAlm" type="Button" parent="Panel/VBoxMain/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 40)
+layout_mode = 2
+text = "Cerrar"
+
+[node name="LblAlmCapacidad" type="Label" parent="Panel/VBoxMain"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Estructuras guardadas: 0 / 5 | Suelos: ∞"
+
+[node name="Tabs" type="TabContainer" parent="Panel/VBoxMain"]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Estructuras y Tótems" type="VBoxContainer" parent="Panel/VBoxMain/Tabs"]
+layout_mode = 2
+theme_override_constants/separation = 12
+metadata/_tab_index = 0
+
+[node name="LblSubGuardadas" type="Label" parent="Panel/VBoxMain/Tabs/Estructuras y Tótems"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.34, 1)
+text = "Guardadas en Almacén (bono inactivo):"
+
+[node name="ScrollGuardadas" type="ScrollContainer" parent="Panel/VBoxMain/Tabs/Estructuras y Tótems"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListAlmEstructuras" type="VBoxContainer" parent="Panel/VBoxMain/Tabs/Estructuras y Tótems/ScrollGuardadas"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="LblSubActivos" type="Label" parent="Panel/VBoxMain/Tabs/Estructuras y Tótems"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.96, 0.56, 1)
+text = "Tótems Potenciadores activos en tus islas:"
+
+[node name="ScrollActivos" type="ScrollContainer" parent="Panel/VBoxMain/Tabs/Estructuras y Tótems"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListTotemsActivos" type="VBoxContainer" parent="Panel/VBoxMain/Tabs/Estructuras y Tótems/ScrollActivos"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Diseños de Suelo (∞)" type="ScrollContainer" parent="Panel/VBoxMain/Tabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="ListAlmBaldosas" type="VBoxContainer" parent="Panel/VBoxMain/Tabs/Diseños de Suelo (∞)"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10

@@ -16,12 +16,15 @@ const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_aren
 @onready var bestiario_panel: Control = $HUD/RootControl/BestiarioPanel
 @onready var breeding_panel: Control = $HUD/RootControl/BreedingPanel
 @onready var nest_panel: Control = $HUD/RootControl/NestPanel
-@onready var shop_panel: PanelContainer = $HUD/RootControl/ShopPanel
+@onready var shop_panel: Control = $HUD/RootControl/ShopPanel
 @onready var tutorial_dialog: Control = $HUD/RootControl/TutorialDialog
 @onready var estructura_modal: Control = $HUD/RootControl/EstructuraModal
+@onready var almacen_panel: Control = $HUD/RootControl/AlmacenPanel
 
 var _islands: Dictionary = {}
 var _built_habitats: Dictionary = {}
+var _booster_totems_root: Node3D = null
+var _placed_tiles_count: int = 0
 var _active_combat_arena: Node3D = null
 var _active_feed_filter_uids: Array[int] = []
 var _pending_habitat_purchase: Dictionary = {}
@@ -61,10 +64,13 @@ func _ready() -> void:
 	if shop_panel:
 		if shop_panel.has_signal("habitat_purchase_requested"):
 			shop_panel.connect("habitat_purchase_requested", _on_shop_habitat_requested)
-		if shop_panel.has_signal("egg_purchase_requested"):
-			shop_panel.connect("egg_purchase_requested", _on_shop_egg_requested)
-		if shop_panel.has_signal("farm_purchase_requested"):
-			shop_panel.connect("farm_purchase_requested", _on_shop_farm_requested)
+		if shop_panel.has_signal("status_message"):
+			shop_panel.connect("status_message", hud.show_status_message)
+	if almacen_panel:
+		if almacen_panel.has_signal("status_message"):
+			almacen_panel.connect("status_message", hud.show_status_message)
+		if almacen_panel.has_signal("place_tile_requested"):
+			almacen_panel.connect("place_tile_requested", _on_place_tile_requested)
 
 	_register_islands()
 	_close_overlay_panels()
@@ -76,6 +82,7 @@ func _ready() -> void:
 		core.player_level_changed.connect(_on_player_level_changed)
 		core.world_state_changed.connect(_sync_all_islands)
 		core.obstacles_updated.connect(_sync_all_islands)
+		core.boosters_updated.connect(_sync_booster_totems)
 
 		var res: Dictionary = core.get_resources()
 		hud.set_resources(int(res.get("oro", 0)), int(res.get("comida", 0)), int(res.get("gemas", 0)))
@@ -84,6 +91,7 @@ func _ready() -> void:
 		hud.set_player_level(lvl, float(exp_cur) / float(core.get_player_exp_needed(lvl)))
 
 		_sync_all_islands()
+		_sync_booster_totems()
 		_restore_world_from_save(core)
 		if tutorial_dialog and core.has_method("is_tutorial_completed") and not core.is_tutorial_completed():
 			tutorial_dialog.tutorial_finished.connect(core.complete_tutorial)
@@ -290,8 +298,13 @@ func _on_panel_requested(panel_name: String) -> void:
 		"Tienda":
 			_close_overlay_panels()
 			if shop_panel and shop_panel.has_method("open_shop"):
-				shop_panel.call("open_shop", int(core.get_resources().get("oro", 0)))
+				shop_panel.call("open_shop", int(core.get_resources().get("oro", 0)), _focused_island_id)
 				hud.show_status_message("Tienda abierta.")
+		"Almacén":
+			_close_overlay_panels()
+			if almacen_panel and almacen_panel.has_method("open_almacen"):
+				almacen_panel.call("open_almacen")
+				hud.show_status_message("Almacén abierto.")
 		"Cruce":
 			_close_overlay_panels()
 			if breeding_panel and breeding_panel.has_method("open_breeding"):
@@ -329,6 +342,8 @@ func _close_overlay_panels() -> void:
 		shop_panel.visible = false
 	if estructura_modal:
 		estructura_modal.visible = false
+	if almacen_panel:
+		almacen_panel.visible = false
 	if hud:
 		hud.hide_dragon_feed_panel()
 		hud.hide_island_preview()
@@ -544,3 +559,47 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pending_habitat_purchase.clear()
 		_sync_all_islands()
 		hud.show_status_message("Modo colocación cancelado.")
+
+
+func _sync_booster_totems() -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	var isl1: Node3D = _islands.get(1, null)
+	if core == null or isl1 == null:
+		return
+	if _booster_totems_root == null or not is_instance_valid(_booster_totems_root):
+		_booster_totems_root = Node3D.new()
+		_booster_totems_root.name = "PotenciadoresActivos"
+		isl1.add_child(_booster_totems_root)
+	for c: Node in _booster_totems_root.get_children():
+		c.queue_free()
+
+	var placed: Array = core.player_state.get("potenciadores_colocados", [])
+	var colors: Dictionary = {
+		1: Color(0.66, 0.44, 0.24), 2: Color(0.92, 0.34, 0.18), 3: Color(0.22, 0.62, 0.94), 4: Color(0.28, 0.78, 0.36),
+		5: Color(0.95, 0.82, 0.22), 6: Color(0.56, 0.88, 0.98), 7: Color(0.64, 0.68, 0.74), 8: Color(0.45, 0.24, 0.62)
+	}
+	for i: int in range(placed.size()):
+		var eid: int = int(placed[i])
+		var totem: MeshInstance3D = MeshInstance3D.new()
+		var cm: CylinderMesh = CylinderMesh.new()
+		cm.top_radius = 0.18
+		cm.bottom_radius = 0.32
+		cm.height = 1.45
+		cm.radial_segments = 6
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		var col: Color = colors.get(eid, Color.WHITE)
+		mat.albedo_color = col
+		mat.emission_enabled = true
+		mat.emission = col
+		mat.emission_energy_multiplier = 1.3
+		cm.material = mat
+		totem.mesh = cm
+		totem.position = Vector3(-5.8 + float(i) * 1.55, 1.3, 5.8)
+		_booster_totems_root.add_child(totem)
+
+
+func _on_place_tile_requested(_tile_id: String, tile_color: Color) -> void:
+	var isl: Node3D = _islands.get(_focused_island_id, _islands.get(1, null))
+	if isl and isl.has_method("add_decorative_tile"):
+		isl.call("add_decorative_tile", tile_color, _placed_tiles_count)
+		_placed_tiles_count += 1

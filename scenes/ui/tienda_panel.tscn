@@ -1,0 +1,126 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/tienda_panel.gd" id="1_tienda"]
+[ext_resource type="Theme" path="res://assets/ui/game_theme.tres" id="2_theme"]
+
+[node name="TiendaPanel" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_tienda")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.06, 0.12, 0.62)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -520.0
+offset_top = -320.0
+offset_right = 520.0
+offset_bottom = 320.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxMain" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Panel/VBoxMain"]
+layout_mode = 2
+
+[node name="LblTitulo" type="Label" parent="Panel/VBoxMain/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Tienda del Santuario"
+
+[node name="BtnCerrarTienda" type="Button" parent="Panel/VBoxMain/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+text = "Cerrar"
+
+[node name="Tabs" type="TabContainer" parent="Panel/VBoxMain"]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Hábitats" type="ScrollContainer" parent="Panel/VBoxMain/Tabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="GridHabitats" type="GridContainer" parent="Panel/VBoxMain/Tabs/Hábitats"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 4
+
+[node name="Estructuras Especiales" type="ScrollContainer" parent="Panel/VBoxMain/Tabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="GridEspeciales" type="GridContainer" parent="Panel/VBoxMain/Tabs/Estructuras Especiales"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 4
+
+[node name="Potenciadores Elementales" type="ScrollContainer" parent="Panel/VBoxMain/Tabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="GridPotenciadores" type="GridContainer" parent="Panel/VBoxMain/Tabs/Potenciadores Elementales"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 4
+
+[node name="Decoración de Suelo" type="ScrollContainer" parent="Panel/VBoxMain/Tabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 3
+
+[node name="GridSuelos" type="GridContainer" parent="Panel/VBoxMain/Tabs/Decoración de Suelo"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 4
+
+[node name="Paquetes (Gemas/Oro/Comida)" type="ScrollContainer" parent="Panel/VBoxMain/Tabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 4
+
+[node name="GridPaquetes" type="GridContainer" parent="Panel/VBoxMain/Tabs/Paquetes (Gemas/Oro/Comida)"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 4
