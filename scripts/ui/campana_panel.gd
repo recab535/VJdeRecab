@@ -51,6 +51,7 @@ func _ready() -> void:
 func open_campaign() -> void:
 	refresh()
 	visible = true
+	pivot_offset = size * 0.5
 	scale = Vector2(0.95, 0.95)
 	modulate.a = 0.0
 	var tw: Tween = create_tween()
@@ -58,6 +59,12 @@ func open_campaign() -> void:
 	tw.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "modulate:a", 1.0, 0.12)
 	call_deferred("_scroll_to_current_chapter")
+
+
+func _play_sfx(kind: String) -> void:
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am and am.has_method("play_sfx"):
+		am.call("play_sfx", kind)
 
 
 func _scroll_to_current_chapter() -> void:
@@ -73,6 +80,7 @@ func _scroll_to_current_chapter() -> void:
 func _scroll_by(delta_px: int) -> void:
 	if scroll_chapters == null:
 		return
+	_play_sfx("click")
 	var target: int = maxi(0, scroll_chapters.scroll_horizontal + delta_px)
 	var tw: Tween = create_tween()
 	tw.tween_property(scroll_chapters, "scroll_horizontal", target, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -192,6 +200,7 @@ func refresh() -> void:
 			btn.text = "Pelear (1v1)"
 			var captured: Dictionary = data
 			btn.pressed.connect(func() -> void:
+				_play_sfx("click")
 				visible = false
 				chapter_battle_requested.emit(captured)
 			)

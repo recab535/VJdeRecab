@@ -64,6 +64,13 @@ func open_nest() -> void:
 	visible = true
 	lbl_feedback.text = ""
 	refresh()
+	pivot_offset = size * 0.5
+	scale = Vector2(0.95, 0.95)
+	modulate.a = 0.0
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "modulate:a", 1.0, 0.12)
 
 
 func close_nest() -> void:
@@ -76,6 +83,10 @@ func _on_upgrade_nest_pressed() -> void:
 	if core and core.has_method("upgrade_nest_tower"):
 		var r: Dictionary = core.upgrade_nest_tower()
 		lbl_feedback.text = str(r.get("msg", ""))
+		if r.get("ok", false):
+			var am: Node = get_node_or_null("/root/AudioManager")
+			if am and am.has_method("play_sfx"):
+				am.call("play_sfx", "level_up")
 		refresh()
 
 

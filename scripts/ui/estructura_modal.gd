@@ -37,12 +37,19 @@ func open_for(kind: String, island_id: int = 1) -> void:
 	_live_accum = 0.0
 	_refresh()
 	visible = true
+	pivot_offset = size * 0.5
 	scale = Vector2(0.94, 0.94)
 	modulate.a = 0.0
 	var tw: Tween = create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "modulate:a", 1.0, 0.12)
+
+
+func _play_sfx(kind: String) -> void:
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am and am.has_method("play_sfx"):
+		am.call("play_sfx", kind)
 
 
 func _refresh() -> void:
@@ -114,6 +121,8 @@ func _render_training_camp(core: Node) -> void:
 		_add_action_button("Acelerar entrenamiento (3 💎)", func() -> void:
 			var r: Dictionary = core.speedup_training_with_gems(3)
 			status_message.emit(str(r.get("msg", "")))
+			if r.get("ok", false):
+				_play_sfx("level_up")
 			_refresh()
 		)
 	else:
@@ -133,6 +142,8 @@ func _render_training_camp(core: Node) -> void:
 					func() -> void:
 						var r: Dictionary = core.start_training(uid, 300, 300)
 						status_message.emit(str(r.get("msg", "")))
+						if r.get("ok", false):
+							_play_sfx("click")
 						_refresh()
 				)
 
@@ -161,6 +172,8 @@ func _render_nursery(core: Node) -> void:
 					func() -> void:
 						var r: Dictionary = core.retrieve_dragon_from_nursery(idx)
 						status_message.emit(str(r.get("msg", "")))
+						if r.get("ok", false):
+							_play_sfx("hatch")
 						_refresh()
 				)
 
@@ -179,6 +192,8 @@ func _render_nursery(core: Node) -> void:
 					core.player_state["dragones"] = dragones
 					var r: Dictionary = core.store_dragon_in_nursery(removed)
 					status_message.emit(str(r.get("msg", "")))
+					if r.get("ok", false):
+						_play_sfx("click")
 					_refresh()
 			)
 
@@ -193,6 +208,8 @@ func _render_food_farm(core: Node) -> void:
 		_add_action_button("Acelerar cosecha (2 💎)", func() -> void:
 			var r: Dictionary = core.speedup_food_farm(2)
 			status_message.emit(str(r.get("msg", "")))
+			if r.get("ok", false):
+				_play_sfx("coin")
 			_refresh()
 		)
 	else:
@@ -200,6 +217,8 @@ func _render_food_farm(core: Node) -> void:
 		_add_action_button("Sembrar Fruta (+180 Comida • 2 min • 200 Oro)", func() -> void:
 			var r: Dictionary = core.start_food_production(200, 180, 120)
 			status_message.emit(str(r.get("msg", "")))
+			if r.get("ok", false):
+				_play_sfx("click")
 			_refresh()
 		)
 

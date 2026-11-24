@@ -34,6 +34,13 @@ func open_breeding() -> void:
 	_selected_a = {}
 	_selected_b = {}
 	refresh()
+	pivot_offset = size * 0.5
+	scale = Vector2(0.95, 0.95)
+	modulate.a = 0.0
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "modulate:a", 1.0, 0.12)
 
 
 func close_breeding() -> void:
@@ -47,7 +54,8 @@ func refresh() -> void:
 		return
 
 	var huevos: Array = core.get_nest_eggs()
-	lbl_nido_estado.text = "Nido: %d / 3 huevos" % huevos.size()
+	var max_slots: int = core.get_nest_max_slots() if core.has_method("get_nest_max_slots") else 1
+	lbl_nido_estado.text = "Nido: %d / %d huevos" % [huevos.size(), max_slots]
 
 	var options_a: Array[Dictionary] = _build_parent_options(core, false)
 	var options_b: Array[Dictionary] = _build_parent_options(core, true)
@@ -129,7 +137,7 @@ func _populate_parent_list(core: Node, container: VBoxContainer, options: Array[
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.disabled = is_taken_by_other
-		btn.icon = _resolve_species_texture(sp_id, str(opt.get("prefijo", "")))
+		btn.icon = _resolve_species_texture(sp_id, str(opt.get("etapa", "cria")))
 		btn.expand_icon = true
 
 		var elem_str: String = _format_elements(core, opt.get("elementos", []))
@@ -145,6 +153,9 @@ func _populate_parent_list(core: Node, container: VBoxContainer, options: Array[
 			else:
 				_selected_b = opt
 			lbl_feedback.text = ""
+			var am: Node = get_node_or_null("/root/AudioManager")
+			if am and am.has_method("play_sfx"):
+				am.call("play_sfx", "click")
 			refresh()
 		)
 		container.add_child(btn)
@@ -172,8 +183,7 @@ func _update_preview(core: Node) -> void:
 		btn_iniciar_cruce.disabled = true
 		return
 
-	var first_sp: Dictionary = core.get_species(int(candidates[0]))
-	icon_resultado.texture = _resolve_species_texture(int(candidates[0]), str(first_sp.get("sprite_prefijo", "")))
+	icon_resultado.texture = _resolve_species_texture(int(candidates[0]), "cria")
 
 	var names: PackedStringArray = []
 	for cid: Variant in candidates:
@@ -187,9 +197,11 @@ func _update_preview(core: Node) -> void:
 	lbl_resultado_titulo.text = "Posible resultado (%d)" % candidates.size()
 	lbl_resultado_detalle.text = "%s\n\nIncubación: %s" % ["\n• ".join([""] + Array(names)).strip_edges(), time_str]
 
-	var nido_lleno: bool = core.get_nest_eggs().size() >= 3
+	var max_slots: int = core.get_nest_max_slots() if core.has_method("get_nest_max_slots") else 1
+	var cur_eggs: int = core.get_nest_eggs().size()
+	var nido_lleno: bool = cur_eggs >= max_slots
 	btn_iniciar_cruce.disabled = nido_lleno
-	btn_iniciar_cruce.text = "Nido Lleno (3/3)" if nido_lleno else "Iniciar Cruce"
+	btn_iniciar_cruce.text = "Nido Lleno (%d/%d)" % [cur_eggs, max_slots] if nido_lleno else "Iniciar Cruce"
 
 
 func _on_iniciar_cruce_pressed() -> void:
@@ -221,19 +233,5 @@ func _format_time(total_sec: int) -> String:
 	return "%02d:%02d" % [mins, secs]
 
 
-func _resolve_species_texture(sp_id: int, prefijo: String) -> Texture2D:
-	var tex_path: String = "res://assets/sprites/dragons/%s_cria.png" % prefijo
-	if ResourceLoader.exists(tex_path):
-		return load(tex_path) as Texture2D
-
-	var img: Image = Image.create(16, 16, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-	var body_color: Color = Color(0.84, 0.42, 0.22, 1.0) if sp_id == 1 else Color.from_hsv(fmod(sp_id * 0.13, 1.0), 0.72, 0.85, 1.0)
-	for y: int in range(4, 13):
-		for x: int in range(4, 12):
-			if (x == 4 or x == 11) and (y == 4 or y == 12):
-				continue
-			img.set_pixel(x, y, body_color)
-	img.set_pixel(6, 6, Color(1, 1, 1, 1))
-	img.set_pixel(9, 6, Color(1, 1, 1, 1))
-	return ImageTexture.create_from_image(img)
+func _resolve_species_texture(sp_id: int, etapa: String = "cria") -> Texture2D:
+	return Dragon2D.build_dragon_texture(sp_id, etapa)

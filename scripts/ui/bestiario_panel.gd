@@ -26,6 +26,13 @@ func _ready() -> void:
 func open_bestiario() -> void:
 	visible = true
 	refresh()
+	pivot_offset = size * 0.5
+	scale = Vector2(0.95, 0.95)
+	modulate.a = 0.0
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "modulate:a", 1.0, 0.12)
 
 
 func close_bestiario() -> void:
@@ -35,6 +42,9 @@ func close_bestiario() -> void:
 
 func _set_filter(filter_name: String) -> void:
 	_current_filter = filter_name
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am and am.has_method("play_sfx"):
+		am.call("play_sfx", "click")
 	refresh()
 
 
