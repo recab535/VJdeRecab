@@ -9,6 +9,7 @@ const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_aren
 
 @onready var archipielago: Node3D = $Archipielago
 @onready var adoratorio_cria: Node3D = $Archipielago/Isla1/AdoratorioCria
+@onready var adoratorio_extra: Node3D = $Archipielago/Isla1/AdoratorioExtra
 @onready var torre_nido: Node3D = $Archipielago/Isla1/TorreNido
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var hud: HudBasic = $HUD
@@ -17,6 +18,7 @@ const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_aren
 @onready var nest_panel: Control = $HUD/RootControl/NestPanel
 @onready var shop_panel: PanelContainer = $HUD/RootControl/ShopPanel
 @onready var tutorial_dialog: Control = $HUD/RootControl/TutorialDialog
+@onready var estructura_modal: Control = $HUD/RootControl/EstructuraModal
 
 var _islands: Dictionary = {}
 var _built_habitats: Dictionary = {}
@@ -44,8 +46,13 @@ func _ready() -> void:
 
 	if adoratorio_cria and adoratorio_cria.has_signal("adoratorio_clicked"):
 		adoratorio_cria.connect("adoratorio_clicked", func() -> void: _on_panel_requested("Cruce"))
+	if adoratorio_extra and adoratorio_extra.has_signal("adoratorio_clicked"):
+		adoratorio_extra.connect("adoratorio_clicked", func() -> void: _on_panel_requested("Cruce"))
 	if torre_nido and torre_nido.has_signal("torre_nido_clicked"):
 		torre_nido.connect("torre_nido_clicked", func() -> void: _on_panel_requested("Nido"))
+	if estructura_modal and estructura_modal.has_signal("status_message"):
+		estructura_modal.connect("status_message", hud.show_status_message)
+	_connect_special_structures(archipielago)
 
 	if breeding_panel and breeding_panel.has_signal("breeding_completed"):
 		breeding_panel.connect("breeding_completed", _on_breeding_completed)
@@ -107,6 +114,8 @@ func _sync_all_islands() -> void:
 	var core: Node = get_node_or_null("/root/GameCore")
 	if core == null:
 		return
+	if adoratorio_extra:
+		adoratorio_extra.visible = bool(core.player_state.get("segundo_adoratorio", false))
 	var obs: Array = core.player_state.get("obstaculos", [])
 	for iid: int in _islands.keys():
 		var isl: Node3D = _islands[iid]
@@ -114,6 +123,24 @@ func _sync_all_islands() -> void:
 			isl.call("apply_state", core.is_island_unlocked(iid), core.get_unlocked_parcels(iid), obs)
 		if isl.has_method("set_slots_placement_mode"):
 			isl.call("set_slots_placement_mode", not _pending_habitat_purchase.is_empty(), _built_habitats)
+
+
+func _connect_special_structures(root: Node) -> void:
+	if root == null:
+		return
+	for child: Node in root.get_children():
+		if child.has_signal("structure_clicked") and not child.is_connected("structure_clicked", _on_special_structure_clicked):
+			child.connect("structure_clicked", _on_special_structure_clicked)
+		_connect_special_structures(child)
+
+
+func _on_special_structure_clicked(kind: String, island_id: int) -> void:
+	_close_overlay_panels()
+	if kind == "portal_historia":
+		_on_panel_requested("Combate")
+		return
+	if estructura_modal and estructura_modal.has_method("open_for"):
+		estructura_modal.call("open_for", kind, island_id)
 
 
 func _restore_world_from_save(core: Node) -> void:
@@ -300,6 +327,8 @@ func _close_overlay_panels() -> void:
 		nest_panel.visible = false
 	if shop_panel:
 		shop_panel.visible = false
+	if estructura_modal:
+		estructura_modal.visible = false
 	if hud:
 		hud.hide_dragon_feed_panel()
 		hud.hide_island_preview()

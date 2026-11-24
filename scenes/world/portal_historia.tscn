@@ -1,0 +1,68 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/estructura_especial.gd" id="1_est"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_Coliseo"]
+albedo_color = Color(0.76, 0.72, 0.62, 1)
+roughness = 0.85
+
+[sub_resource type="CylinderMesh" id="Mesh_Pilar"]
+material = SubResource("Mat_Coliseo")
+top_radius = 0.18
+bottom_radius = 0.22
+height = 1.65
+radial_segments = 8
+
+[sub_resource type="BoxMesh" id="Mesh_ArcoTop"]
+material = SubResource("Mat_Coliseo")
+size = Vector3(1.75, 0.28, 0.42)
+
+[sub_resource type="StandardMaterial3D" id="Mat_PortalLuz"]
+transparency = 1
+albedo_color = Color(0.28, 0.68, 1, 0.72)
+emission_enabled = true
+emission = Color(0.25, 0.62, 1, 1)
+emission_energy_multiplier = 1.6
+
+[sub_resource type="CylinderMesh" id="Mesh_PortalLuz"]
+material = SubResource("Mat_PortalLuz")
+top_radius = 0.55
+bottom_radius = 0.55
+height = 0.12
+radial_segments = 12
+
+[sub_resource type="BoxShape3D" id="Shape_Portal"]
+size = Vector3(1.9, 2.0, 1.1)
+
+[node name="PortalHistoria" type="Node3D"]
+script = ExtResource("1_est")
+kind = "portal_historia"
+
+[node name="PilarIzq" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.68, 0.825, 0)
+mesh = SubResource("Mesh_Pilar")
+
+[node name="PilarDer" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.68, 0.825, 0)
+mesh = SubResource("Mesh_Pilar")
+
+[node name="Dintel" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.72, 0)
+mesh = SubResource("Mesh_ArcoTop")
+
+[node name="Vortice" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.9, 0)
+mesh = SubResource("Mesh_PortalLuz")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, 0)
+billboard = 1
+text = "Portal de Historia"
+font_size = 24
+outline_size = 6
+
+[node name="AreaClick" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaClick"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+shape = SubResource("Shape_Portal")

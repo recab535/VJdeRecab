@@ -6,6 +6,10 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hud_basic.tscn" id="4_hud_scene"]
 [ext_resource type="PackedScene" path="res://scenes/world/adoratorio_cria.tscn" id="5_adoratorio"]
 [ext_resource type="PackedScene" path="res://scenes/world/torre_nido.tscn" id="6_torre"]
+[ext_resource type="PackedScene" path="res://scenes/world/portal_historia.tscn" id="7_portal"]
+[ext_resource type="PackedScene" path="res://scenes/world/campo_entrenamiento.tscn" id="8_entr"]
+[ext_resource type="PackedScene" path="res://scenes/world/guarderia_crias.tscn" id="9_guarderia"]
+[ext_resource type="PackedScene" path="res://scenes/world/mina_gemas.tscn" id="10_mina"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.24, 0.58, 0.92, 1)
@@ -41,12 +45,33 @@ island_id = 1
 [node name="AdoratorioCria" parent="Archipielago/Isla1" instance=ExtResource("5_adoratorio")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0.56, -0.2)
 
+[node name="AdoratorioExtra" parent="Archipielago/Isla1" instance=ExtResource("5_adoratorio")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0.56, 2.5)
+visible = false
+
 [node name="TorreNido" parent="Archipielago/Isla1" instance=ExtResource("6_torre")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4, 0.56, -5.2)
+
+[node name="PortalHistoria" parent="Archipielago/Isla1" instance=ExtResource("7_portal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.9, 0.56, -5.1)
+
+[node name="CampoEntrenamiento" parent="Archipielago/Isla1" instance=ExtResource("8_entr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.1, 0.56, 0.4)
+
+[node name="GuarderiaCrias" parent="Archipielago/Isla1" instance=ExtResource("9_guarderia")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 0.56, 5.2)
+
+[node name="MinaGemas1" parent="Archipielago/Isla1" instance=ExtResource("10_mina")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0.56, -5.2)
+island_id = 1
 
 [node name="Isla2" type="Node3D" parent="Archipielago"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -24)
 script = ExtResource("3_island")
+island_id = 2
+
+[node name="MinaGemas2" parent="Archipielago/Isla2" instance=ExtResource("10_mina")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0.56, -5.2)
 island_id = 2
 
 [node name="Isla3" type="Node3D" parent="Archipielago"]
@@ -54,14 +79,26 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -48)
 script = ExtResource("3_island")
 island_id = 3
 
+[node name="MinaGemas3" parent="Archipielago/Isla3" instance=ExtResource("10_mina")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0.56, -5.2)
+island_id = 3
+
 [node name="Isla4" type="Node3D" parent="Archipielago"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -72)
 script = ExtResource("3_island")
 island_id = 4
 
+[node name="MinaGemas4" parent="Archipielago/Isla4" instance=ExtResource("10_mina")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0.56, -5.2)
+island_id = 4
+
 [node name="Isla5" type="Node3D" parent="Archipielago"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -96)
 script = ExtResource("3_island")
+island_id = 5
+
+[node name="MinaGemas5" parent="Archipielago/Isla5" instance=ExtResource("10_mina")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0.56, -5.2)
 island_id = 5
 
 [node name="CameraRig" type="Node3D" parent="."]

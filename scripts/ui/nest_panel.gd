@@ -7,6 +7,7 @@ signal closed
 signal egg_hatched(result: Dictionary)
 
 @onready var lbl_capacidad: Label = %LblCapacidad
+@onready var btn_mejorar_nido: Button = %BtnMejorarNido
 @onready var btn_cerrar: Button = %BtnCerrar
 @onready var list_huevos: VBoxContainer = %ListHuevos
 @onready var lbl_feedback: Label = %LblFeedback
@@ -17,6 +18,8 @@ var _slot_widgets: Array[Dictionary] = []
 func _ready() -> void:
 	visible = false
 	btn_cerrar.pressed.connect(close_nest)
+	if btn_mejorar_nido:
+		btn_mejorar_nido.pressed.connect(_on_upgrade_nest_pressed)
 	var core: Node = get_node_or_null("/root/GameCore")
 	if core:
 		core.nest_updated.connect(_on_nest_updated)
@@ -68,6 +71,14 @@ func close_nest() -> void:
 	closed.emit()
 
 
+func _on_upgrade_nest_pressed() -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core and core.has_method("upgrade_nest_tower"):
+		var r: Dictionary = core.upgrade_nest_tower()
+		lbl_feedback.text = str(r.get("msg", ""))
+		refresh()
+
+
 func _on_nest_updated() -> void:
 	if visible:
 		refresh()
@@ -88,7 +99,17 @@ func refresh() -> void:
 		return
 
 	var huevos: Array = core.get_nest_eggs()
-	lbl_capacidad.text = "Huevos: %d / 3" % huevos.size()
+	var max_slots: int = core.get_nest_max_slots() if core.has_method("get_nest_max_slots") else 4
+	lbl_capacidad.text = "Huevos: %d / %d" % [huevos.size(), max_slots]
+	if btn_mejorar_nido and core.has_method("get_next_nest_upgrade_cost"):
+		var up_cost: int = core.get_next_nest_upgrade_cost()
+		if up_cost < 0:
+			btn_mejorar_nido.text = "Máx. Ranuras (4/4)"
+			btn_mejorar_nido.disabled = true
+		else:
+			var cur_gems: int = int(core.get_resources().get("gemas", 0))
+			btn_mejorar_nido.text = "+1 Ranura (%d Gemas)" % up_cost
+			btn_mejorar_nido.disabled = cur_gems < up_cost
 
 	if huevos.is_empty():
 		var empty_lbl: Label = Label.new()
