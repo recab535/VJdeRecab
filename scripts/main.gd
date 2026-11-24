@@ -246,6 +246,7 @@ func _on_unlock_island_requested(island_id: int, cost_oro: int, level_req: int) 
 	var res: Dictionary = core.unlock_island_with_level(island_id, cost_oro, level_req)
 	if res.get("ok", false):
 		hud.hide_island_preview()
+		_play_sfx("coin")
 	hud.show_status_message(str(res.get("msg", "")))
 
 
@@ -256,6 +257,7 @@ func _on_unlock_parcel_requested(island_id: int, parcel_idx: int, cost_oro: int,
 	var res: Dictionary = core.unlock_parcel(island_id, parcel_idx, cost_oro, level_req)
 	if res.get("ok", false):
 		hud.hide_island_preview()
+		_play_sfx("coin")
 	hud.show_status_message(str(res.get("msg", "")))
 
 
@@ -280,6 +282,7 @@ func _on_clear_obstacle_requested(obs_id: String) -> void:
 	hud.show_status_message(str(res.get("msg", "")))
 	if res.get("ok", false):
 		hud.hide_obstacle_panel()
+		_play_sfx("coin")
 
 
 func _on_speedup_obstacle_requested(obs_id: String) -> void:
@@ -290,6 +293,7 @@ func _on_speedup_obstacle_requested(obs_id: String) -> void:
 	hud.show_status_message(str(res.get("msg", "")))
 	if res.get("ok", false):
 		hud.hide_obstacle_panel()
+		_play_sfx("coin")
 
 
 func _on_panel_requested(panel_name: String) -> void:
@@ -360,8 +364,10 @@ func _close_overlay_panels() -> void:
 
 func _on_breeding_completed(res: Dictionary) -> void:
 	hud.show_status_message(str(res.get("msg", "")))
-	if res.get("ok", false) and tutorial_dialog and tutorial_dialog.has_method("notify_action"):
-		tutorial_dialog.call("notify_action", "cruce")
+	if res.get("ok", false):
+		_play_sfx("hatch")
+		if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
+			tutorial_dialog.call("notify_action", "cruce")
 
 
 func _on_egg_hatched(res: Dictionary) -> void:
@@ -563,16 +569,42 @@ func _on_island_slot_clicked(_island_id: int, global_slot_idx: int, _slot_node: 
 	if res.get("ok", false):
 		_spawn_habitat_at_slot(global_slot_idx, elem_id)
 		core.add_player_exp(30)
+		_play_sfx("coin")
 	_pending_habitat_purchase.clear()
 	_sync_all_islands()
 	hud.show_status_message(str(res.get("msg", "")))
 
 
+func _has_open_overlay_panel() -> bool:
+	var panels: Array = [bestiario_panel, breeding_panel, nest_panel, shop_panel, estructura_modal, almacen_panel, campana_panel]
+	for p: Variant in panels:
+		if p is Control and (p as Control).visible:
+			return true
+	if hud:
+		if (hud.panel_alimentar and hud.panel_alimentar.visible) \
+		or (hud.panel_isla_preview and hud.panel_isla_preview.visible) \
+		or (hud.panel_habitat_menu and hud.panel_habitat_menu.visible) \
+		or (hud.panel_obstaculo and hud.panel_obstaculo.visible):
+			return true
+	return false
+
+
+func _play_sfx(kind: String) -> void:
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am and am.has_method("play_sfx"):
+		am.call("play_sfx", kind)
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if not _pending_habitat_purchase.is_empty() and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		_pending_habitat_purchase.clear()
-		_sync_all_islands()
-		hud.show_status_message("Modo colocación cancelado.")
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if not _pending_habitat_purchase.is_empty():
+			_pending_habitat_purchase.clear()
+			_sync_all_islands()
+			_play_sfx("click")
+			hud.show_status_message("Modo colocación cancelado.")
+		elif _has_open_overlay_panel():
+			_close_overlay_panels()
+			_play_sfx("click")
 
 
 func _sync_booster_totems() -> void:

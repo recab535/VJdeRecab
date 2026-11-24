@@ -30,9 +30,16 @@ func _ready() -> void:
 		btn_ampliar.pressed.connect(_on_expand_pressed)
 
 
+func _play_sfx(kind: String) -> void:
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am and am.has_method("play_sfx"):
+		am.call("play_sfx", kind)
+
+
 func open_almacen() -> void:
 	refresh()
 	visible = true
+	pivot_offset = size * 0.5
 	scale = Vector2(0.95, 0.95)
 	modulate.a = 0.0
 	var tw: Tween = create_tween()
@@ -74,6 +81,8 @@ func refresh() -> void:
 			var idx: int = i
 			btn.pressed.connect(func() -> void:
 				var r: Dictionary = core.deploy_structure_from_warehouse(idx)
+				if r.get("ok", false):
+					_play_sfx("click")
 				status_message.emit(str(r.get("msg", "")))
 				refresh()
 			)
@@ -98,6 +107,8 @@ func refresh() -> void:
 			btn.text = "Guardar (desactiva bono)"
 			btn.pressed.connect(func() -> void:
 				var r: Dictionary = core.store_booster_in_warehouse(eid)
+				if r.get("ok", false):
+					_play_sfx("click")
 				status_message.emit(str(r.get("msg", "")))
 				refresh()
 			)
@@ -121,6 +132,7 @@ func refresh() -> void:
 			var btn: Button = Button.new()
 			btn.text = "Decorar Isla"
 			btn.pressed.connect(func() -> void:
+				_play_sfx("click")
 				place_tile_requested.emit(key, TILE_COLORS.get(key, Color(0.8, 0.8, 0.8)))
 				status_message.emit("Baldosa '%s' colocada en la isla actual." % key.replace("_", " ").capitalize())
 			)
@@ -133,5 +145,7 @@ func _on_expand_pressed() -> void:
 	var core: Node = get_node_or_null("/root/GameCore")
 	if core:
 		var r: Dictionary = core.expand_warehouse_slots(15)
+		if r.get("ok", false):
+			_play_sfx("coin")
 		status_message.emit(str(r.get("msg", "")))
 		refresh()

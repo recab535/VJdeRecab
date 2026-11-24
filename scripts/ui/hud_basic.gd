@@ -291,7 +291,7 @@ func show_obstacle_panel(obs: Dictionary, spec: Dictionary, current_oro: int, cu
 	btn_limpiar_obs.disabled = limpiando or current_oro < cost_oro
 	btn_acelerar_obs.text = "Acelerar (%d Gemas)" % cost_gems
 	btn_acelerar_obs.disabled = current_gems < cost_gems
-	panel_obstaculo.visible = true
+	_pop_open(panel_obstaculo)
 
 
 func hide_obstacle_panel() -> void:
@@ -306,7 +306,7 @@ func show_dragon_feed_panel(dragons_info: Array[Dictionary], current_comida: int
 	_current_comida = current_comida
 	_feed_selected_idx = clampi(selected_index, 0, _feed_dragons_list.size() - 1)
 	_refresh_feed_panel_ui()
-	panel_alimentar.visible = true
+	_pop_open(panel_alimentar)
 
 
 func hide_dragon_feed_panel() -> void:
@@ -324,7 +324,7 @@ func show_habitat_menu(info_text: String, oro_acumulado: int, has_dragons: bool)
 		btn_recoger_oro.disabled = oro_acumulado <= 0
 	if btn_habitat_alimentar:
 		btn_habitat_alimentar.disabled = not has_dragons
-	panel_habitat_menu.visible = true
+	_pop_open(panel_habitat_menu)
 
 
 func hide_habitat_menu() -> void:

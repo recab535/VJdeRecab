@@ -70,10 +70,23 @@ func _ready() -> void:
 		btn_cerrar.pressed.connect(func() -> void: visible = false)
 
 
+func _play_sfx(kind: String) -> void:
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am and am.has_method("play_sfx"):
+		am.call("play_sfx", kind)
+
+
 func open_shop(_oro: int = 0, focused_island_id: int = 1) -> void:
 	_focused_island_id = focused_island_id
 	_refresh_all()
 	visible = true
+	pivot_offset = size * 0.5
+	scale = Vector2(0.95, 0.95)
+	modulate.a = 0.0
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "modulate:a", 1.0, 0.12)
 
 
 func _refresh_all() -> void:
@@ -119,6 +132,8 @@ func _populate_especiales(core: Node, oro: int, gemas: int) -> void:
 	var c1: PanelContainer = _build_card("Segundo Adoratorio", "Cría simultánea extra", Color(0.84, 0.36, 0.94), "Desbloqueado" if has_second else "20 Gemas", not has_second and gemas >= 20)
 	(c1.get_meta("btn") as Button).pressed.connect(func() -> void:
 		var r: Dictionary = core.unlock_second_adoratorio()
+		if r.get("ok", false):
+			_play_sfx("coin")
 		status_message.emit(str(r.get("msg", "")))
 		_refresh_all()
 	)
@@ -130,6 +145,8 @@ func _populate_especiales(core: Node, oro: int, gemas: int) -> void:
 	var c2: PanelContainer = _build_card("Mina Gemas (Isla %d)" % _focused_island_id, "1 Gema / 24h (máx 1/isla)", Color(0.24, 0.88, 1.0), "Construida" if mine_built else "10 Gemas", not mine_built and gemas >= 10)
 	(c2.get_meta("btn") as Button).pressed.connect(func() -> void:
 		var r: Dictionary = core.build_gem_mine_on_island(_focused_island_id)
+		if r.get("ok", false):
+			_play_sfx("coin")
 		status_message.emit(str(r.get("msg", "")))
 		_refresh_all()
 	)
@@ -141,6 +158,8 @@ func _populate_especiales(core: Node, oro: int, gemas: int) -> void:
 	var c3: PanelContainer = _build_card("Mejorar Torre Nido", "Ranuras actuales: %d/4" % cur_slots, Color(0.95, 0.78, 0.34), "Máximo" if nest_cost < 0 else ("%d Gemas" % nest_cost), nest_cost > 0 and gemas >= nest_cost)
 	(c3.get_meta("btn") as Button).pressed.connect(func() -> void:
 		var r: Dictionary = core.upgrade_nest_tower()
+		if r.get("ok", false):
+			_play_sfx("coin")
 		status_message.emit(str(r.get("msg", "")))
 		_refresh_all()
 	)
@@ -150,6 +169,8 @@ func _populate_especiales(core: Node, oro: int, gemas: int) -> void:
 	var c4: PanelContainer = _build_card("Granja de Comida", "Sembrar +180 Comida (2m)", Color(0.34, 0.84, 0.38), "200 Oro", oro >= 200)
 	(c4.get_meta("btn") as Button).pressed.connect(func() -> void:
 		var r: Dictionary = core.start_food_production(200, 180, 120)
+		if r.get("ok", false):
+			_play_sfx("coin")
 		status_message.emit(str(r.get("msg", "")))
 		_refresh_all()
 	)
@@ -170,6 +191,8 @@ func _populate_potenciadores(core: Node, oro: int) -> void:
 		var card: PanelContainer = _build_card(title, "×2 (1 elem.) • ×3 (híbrido)\nExcluye Legendarios", ELEMENT_COLORS.get(eid, Color.WHITE), btn_label, can_buy)
 		(card.get_meta("btn") as Button).pressed.connect(func() -> void:
 			var r: Dictionary = core.buy_elemental_booster(eid, cost)
+			if r.get("ok", false):
+				_play_sfx("coin")
 			status_message.emit(str(r.get("msg", "")))
 			_refresh_all()
 		)
@@ -185,6 +208,8 @@ func _populate_suelos(core: Node, oro: int) -> void:
 		var card: PanelContainer = _build_card(title, "Almacén infinito de suelos", item["color"], "%d Oro" % cost, oro >= cost)
 		(card.get_meta("btn") as Button).pressed.connect(func() -> void:
 			var r: Dictionary = core.buy_floor_tile(tid, title, cost)
+			if r.get("ok", false):
+				_play_sfx("coin")
 			status_message.emit(str(r.get("msg", "")))
 			_refresh_all()
 		)
@@ -198,6 +223,8 @@ func _populate_paquetes(core: Node) -> void:
 		var card: PanelContainer = _build_card(title, str(item["desc"]), item["color"], "Reclamar (Demo)", true)
 		(card.get_meta("btn") as Button).pressed.connect(func() -> void:
 			var r: Dictionary = core.grant_demo_package(int(item["oro"]), int(item["comida"]), int(item["gemas"]), title)
+			if r.get("ok", false):
+				_play_sfx("coin")
 			status_message.emit(str(r.get("msg", "")))
 			_refresh_all()
 		)
