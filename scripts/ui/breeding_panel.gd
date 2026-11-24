@@ -169,6 +169,7 @@ func _update_preview(core: Node) -> void:
 		lbl_resultado_titulo.text = "Selecciona 2 dragones"
 		lbl_resultado_detalle.text = "Elige un Padre 1 y un Padre 2 para previsualizar el huevo resultante."
 		btn_iniciar_cruce.disabled = true
+		btn_iniciar_cruce.text = "Iniciar Cruce"
 		icon_resultado.texture = null
 		return
 
@@ -176,16 +177,25 @@ func _update_preview(core: Node) -> void:
 	var sp_b_id: int = int(_selected_b.get("especie_id", 1))
 	var preview: Dictionary = core.get_breeding_preview(sp_a_id, sp_b_id)
 	var candidates: Array = preview.get("candidates", [])
+	var leg_id: int = int(preview.get("legendary_id", 0))
+	var leg_prob: float = float(preview.get("legendary_prob", 0.0))
+	var blocked_reason: String = str(preview.get("blocked_reason", ""))
 
 	if candidates.is_empty():
-		lbl_resultado_titulo.text = "Sin resultado"
-		lbl_resultado_detalle.text = "No se encontró combinación válida."
+		lbl_resultado_titulo.text = "Cruce no compatible"
+		lbl_resultado_detalle.text = blocked_reason if not blocked_reason.is_empty() else "No se encontró combinación válida."
 		btn_iniciar_cruce.disabled = true
+		btn_iniciar_cruce.text = "No compatible"
+		icon_resultado.texture = null
 		return
 
-	icon_resultado.texture = _resolve_species_texture(int(candidates[0]), "cria")
+	var preview_icon_id: int = leg_id if leg_id > 0 else int(candidates[0])
+	icon_resultado.texture = _resolve_species_texture(preview_icon_id, "cria")
 
 	var names: PackedStringArray = []
+	if leg_id > 0:
+		var sp_leg: Dictionary = core.get_species(leg_id)
+		names.append("★ %s (Legendario %.0f%%)" % [str(sp_leg.get("nombre", "?")), leg_prob * 100.0])
 	for cid: Variant in candidates:
 		var sp: Dictionary = core.get_species(int(cid))
 		names.append("%s (%s)" % [str(sp.get("nombre", "?")), _format_elements(core, sp.get("elementos", []))])
@@ -194,7 +204,8 @@ func _update_preview(core: Node) -> void:
 	var max_t: int = int(preview.get("max_time_seg", 300))
 	var time_str: String = _format_time(min_t) if min_t == max_t else "%s - %s" % [_format_time(min_t), _format_time(max_t)]
 
-	lbl_resultado_titulo.text = "Posible resultado (%d)" % candidates.size()
+	var total_possible: int = candidates.size() + (1 if leg_id > 0 else 0)
+	lbl_resultado_titulo.text = "Posible resultado (%d)" % total_possible
 	lbl_resultado_detalle.text = "%s\n\nIncubación: %s" % ["\n• ".join([""] + Array(names)).strip_edges(), time_str]
 
 	var max_slots: int = core.get_nest_max_slots() if core.has_method("get_nest_max_slots") else 1

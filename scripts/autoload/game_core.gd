@@ -42,6 +42,7 @@ var elementos_by_id: Dictionary = {}
 var especies_by_id: Dictionary = {}
 var multiplicadores: Dictionary = {}
 var reglas_cruce: Dictionary = {}
+var recetas_legendarias: Array = []
 var player_state: Dictionary = {}
 
 var _passive_accum_sec: float = 0.0
@@ -128,6 +129,7 @@ func _load_catalog() -> void:
 	var data: Dictionary = parsed
 	reglas_cruce = data.get("reglas_cruce", {})
 	multiplicadores = data.get("multiplicadores_elementales", {})
+	recetas_legendarias = data.get("recetas_legendarias", [])
 
 	elementos_by_id.clear()
 	for elem: Variant in data.get("elementos", []):
@@ -313,9 +315,48 @@ func load_game() -> void:
 			player_state["potenciadores_colocados"] = []
 		if not player_state.has("campana"):
 			player_state["campana"] = {"capitulo_desbloqueado": int(player_state.get("capitulo_pve_actual", 1)), "completados": []}
+		_normalize_loaded_int_arrays()
 
 	save_loaded.emit()
 	_emit_resources()
+
+
+func _normalize_loaded_int_arrays() -> void:
+	var islas_norm: Array = []
+	for item: Variant in player_state.get("islas_desbloqueadas", [1]):
+		var v: int = int(item)
+		if not islas_norm.has(v):
+			islas_norm.append(v)
+	player_state["islas_desbloqueadas"] = islas_norm if not islas_norm.is_empty() else [1]
+
+	var pot_norm: Array = []
+	for item: Variant in player_state.get("potenciadores_colocados", []):
+		var v: int = int(item)
+		if v >= 1 and v <= 8 and not pot_norm.has(v):
+			pot_norm.append(v)
+	player_state["potenciadores_colocados"] = pot_norm
+
+	var parc_map: Dictionary = player_state.get("parcelas_desbloqueadas", {})
+	for key: Variant in parc_map.keys():
+		var raw_list: Variant = parc_map[key]
+		if raw_list is Array:
+			var norm_list: Array = []
+			for p: Variant in raw_list:
+				var pv: int = int(p)
+				if not norm_list.has(pv):
+					norm_list.append(pv)
+			parc_map[str(key)] = norm_list
+	player_state["parcelas_desbloqueadas"] = parc_map
+
+	var camp: Dictionary = player_state.get("campana", {})
+	if camp.has("completados") and camp["completados"] is Array:
+		var comp_norm: Array = []
+		for c: Variant in camp["completados"]:
+			var cv: int = int(c)
+			if not comp_norm.has(cv):
+				comp_norm.append(cv)
+		camp["completados"] = comp_norm
+		player_state["campana"] = camp
 
 
 func save_game() -> bool:
@@ -414,11 +455,13 @@ func buy_egg(especie_id: int, cost_oro: int) -> Dictionary:
 		return {"ok": false, "msg": "El Nido está lleno (%d/%d). Mejora la Torre Nido con Gemas." % [huevos.size(), max_slots]}
 
 	var sp: Dictionary = get_species(especie_id)
+	var total_sec: int = maxi(5, int(sp.get("tiempo_incubacion_seg", 300)))
 	var egg: Dictionary = {
 		"especie_id": especie_id,
 		"nombre": str(sp.get("nombre", "Dragón")),
-		"tiempo_incubacion_seg": int(sp.get("tiempo_incubacion_seg", 300)),
-		"restante_seg": 5.0
+		"tiempo_incubacion_seg": total_sec,
+		"tiempo_restante_seg": 5.0,
+		"listo": false
 	}
 	huevos.append(egg)
 	player_state["nido_huevos"] = huevos
@@ -426,7 +469,8 @@ func buy_egg(especie_id: int, cost_oro: int) -> Dictionary:
 	player_state["recursos"] = res
 	save_game()
 	_emit_resources()
-	return {"ok": true, "msg": "Huevo de %s comprado y enviado al Nido (-%d Oro)." % [egg["nombre"], cost_oro]}
+	nest_updated.emit()
+	return {"ok": true, "egg": egg, "msg": "Huevo de %s comprado y enviado al Nido (-%d Oro)." % [egg["nombre"], cost_oro]}
 
 
 func buy_food_farm(cost_oro: int = 300) -> Dictionary:
@@ -497,10 +541,30 @@ func get_nest_eggs() -> Array:
 
 
 func get_breeding_preview(parent_a_id: int, parent_b_id: int) -> Dictionary:
+	var sp_a: Dictionary = get_species(parent_a_id)
+	var sp_b: Dictionary = get_species(parent_b_id)
+	if _is_pure_opposite_pair(sp_a, sp_b):
+		return {
+			"candidates": [],
+			"min_time_seg": 0,
+			"max_time_seg": 0,
+			"legendary_id": 0,
+			"legendary_prob": 0.0,
+			"blocked_reason": "Elementos opuestos puros no se cruzan directamente; usa dragones híbridos."
+		}
+
 	var candidates: Array[int] = _get_breeding_candidates(parent_a_id, parent_b_id)
+	var leg_recipe: Dictionary = _get_legendary_recipe(parent_a_id, parent_b_id)
+	var leg_id: int = int(leg_recipe.get("legendario_id", 0))
+	var leg_prob: float = float(leg_recipe.get("probabilidad", reglas_cruce.get("probabilidad_legendario_defecto", 0.04))) if leg_id > 0 else 0.0
+
+	var all_ids: Array[int] = candidates.duplicate()
+	if leg_id > 0 and not all_ids.has(leg_id):
+		all_ids.append(leg_id)
+
 	var min_time: int = 0
 	var max_time: int = 0
-	for sp_id: int in candidates:
+	for sp_id: int in all_ids:
 		var sp: Dictionary = get_species(sp_id)
 		var t: int = maxi(5, int(sp.get("tiempo_incubacion_seg", 300)))
 		if min_time == 0 or t < min_time:
@@ -510,7 +574,10 @@ func get_breeding_preview(parent_a_id: int, parent_b_id: int) -> Dictionary:
 	return {
 		"candidates": candidates,
 		"min_time_seg": min_time,
-		"max_time_seg": max_time
+		"max_time_seg": max_time,
+		"legendary_id": leg_id,
+		"legendary_prob": leg_prob,
+		"blocked_reason": ""
 	}
 
 
@@ -522,6 +589,9 @@ func start_breeding(parent_a_id: int, parent_b_id: int) -> Dictionary:
 
 	if not especies_by_id.has(parent_a_id) or not especies_by_id.has(parent_b_id):
 		return {"ok": false, "msg": "Selecciona dos especies válidas para cruzar."}
+
+	if _is_pure_opposite_pair(get_species(parent_a_id), get_species(parent_b_id)):
+		return {"ok": false, "msg": "Elementos opuestos puros no se cruzan directamente; usa dragones híbridos."}
 
 	var result_id: int = _resolve_breeding_species(parent_a_id, parent_b_id)
 	var sp: Dictionary = get_species(result_id)
@@ -600,7 +670,8 @@ func hatch_egg_at(egg_index: int) -> Dictionary:
 		"especie_id": int(egg.get("especie_id", 1)),
 		"nivel": 1,
 		"etapa": "cria",
-		"xp": 0
+		"xp": 0,
+		"entrenamiento_nivel": 0
 	}
 	dragones.append(new_dragon)
 	player_state["dragones"] = dragones
@@ -622,30 +693,89 @@ func hatch_next_egg() -> Dictionary:
 	return hatch_egg_at(0)
 
 
+func _is_pure_opposite_pair(sp_a: Dictionary, sp_b: Dictionary) -> bool:
+	if sp_a.is_empty() or sp_b.is_empty():
+		return false
+	if sp_a.get("elemento_secundario_id", null) != null or sp_b.get("elemento_secundario_id", null) != null:
+		return false
+	var elem_a: int = int(sp_a.get("elemento_primario_id", 0))
+	var elem_b: int = int(sp_b.get("elemento_primario_id", 0))
+	if elem_a < 1 or elem_a > 8 or elem_b < 1 or elem_b > 8:
+		return false
+	var elem_data: Dictionary = get_element(elem_a)
+	var opp_var: Variant = elem_data.get("elemento_opuesto_id", null)
+	return opp_var != null and int(opp_var) == elem_b
+
+
+func _get_legendary_recipe(parent_a_id: int, parent_b_id: int) -> Dictionary:
+	for rec_var: Variant in recetas_legendarias:
+		if not (rec_var is Dictionary):
+			continue
+		var rec: Dictionary = rec_var
+		var pa: int = int(rec.get("padre_a_id", 0))
+		var pb: int = int(rec.get("padre_b_id", 0))
+		if (pa == parent_a_id and pb == parent_b_id) or (pa == parent_b_id and pb == parent_a_id):
+			return rec
+	return {}
+
+
+func _extract_base_elements(sp: Dictionary) -> Array[int]:
+	var elems: Array[int] = []
+	var prim: int = int(sp.get("elemento_primario_id", 0))
+	if prim >= 1 and prim <= 8:
+		elems.append(prim)
+	var sec_var: Variant = sp.get("elemento_secundario_id", null)
+	if sec_var != null:
+		var sec: int = int(sec_var)
+		if sec >= 1 and sec <= 8 and not elems.has(sec):
+			elems.append(sec)
+	return elems
+
+
 func _get_breeding_candidates(parent_a_id: int, parent_b_id: int) -> Array[int]:
 	var sp_a: Dictionary = get_species(parent_a_id)
 	var sp_b: Dictionary = get_species(parent_b_id)
-	var elem_a: int = int(sp_a.get("elemento_primario_id", 1))
-	var elem_b: int = int(sp_b.get("elemento_primario_id", 1))
+	if _is_pure_opposite_pair(sp_a, sp_b):
+		return []
 
-	if elem_a == elem_b:
-		return [elem_a]
-
+	var elems_a: Array[int] = _extract_base_elements(sp_a)
+	var elems_b: Array[int] = _extract_base_elements(sp_b)
 	var candidates: Array[int] = []
-	for sp: Variant in especies_by_id.values():
-		if sp is Dictionary:
-			var p: int = int(sp.get("elemento_primario_id", 0))
-			var s: Variant = sp.get("elemento_secundario_id", null)
-			if s != null and ((p == elem_a and int(s) == elem_b) or (p == elem_b and int(s) == elem_a)):
-				candidates.append(int(sp.get("id", 1)))
+
+	for ea: int in elems_a:
+		for eb: int in elems_b:
+			if ea == eb:
+				if especies_by_id.has(ea) and not candidates.has(ea):
+					candidates.append(ea)
+			else:
+				for sp: Variant in especies_by_id.values():
+					if sp is Dictionary:
+						var p: int = int(sp.get("elemento_primario_id", 0))
+						var s: Variant = sp.get("elemento_secundario_id", null)
+						if s != null and ((p == ea and int(s) == eb) or (p == eb and int(s) == ea)):
+							var sp_id: int = int(sp.get("id", 0))
+							if sp_id > 0 and not candidates.has(sp_id):
+								candidates.append(sp_id)
 
 	if candidates.is_empty():
-		candidates.append(elem_a)
+		if especies_by_id.has(parent_a_id):
+			candidates.append(parent_a_id)
+		if especies_by_id.has(parent_b_id) and not candidates.has(parent_b_id):
+			candidates.append(parent_b_id)
 	return candidates
 
 
 func _resolve_breeding_species(parent_a_id: int, parent_b_id: int) -> int:
+	var leg_recipe: Dictionary = _get_legendary_recipe(parent_a_id, parent_b_id)
+	if not leg_recipe.is_empty():
+		var leg_id: int = int(leg_recipe.get("legendario_id", 0))
+		var prob: float = float(leg_recipe.get("probabilidad", reglas_cruce.get("probabilidad_legendario_defecto", 0.04)))
+		if leg_id > 0 and especies_by_id.has(leg_id) and randf() < prob:
+			return leg_id
+
 	var candidates: Array[int] = _get_breeding_candidates(parent_a_id, parent_b_id)
+	if candidates.is_empty():
+		return parent_a_id
 	return candidates[randi() % candidates.size()]
 
 
@@ -1326,6 +1456,9 @@ func grant_demo_package(oro: int, comida: int, gemas: int, pack_name: String) ->
 func has_species_in_collection(species_id: int) -> bool:
 	for d: Variant in player_state.get("dragones", []):
 		if d is Dictionary and int(d.get("especie_id", 0)) == species_id:
+			return true
+	for g: Variant in player_state.get("guarderia", []):
+		if g is Dictionary and int(g.get("especie_id", 0)) == species_id:
 			return true
 	return false
 
