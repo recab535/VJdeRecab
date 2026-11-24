@@ -20,6 +20,18 @@ const ELEMENT_COLORS: Dictionary = {
 	8: Color(0.36, 0.22, 0.48, 1.0)
 }
 
+const HABITAT_MAX_GOLD: Dictionary = {
+	1: 500,
+	2: 1200,
+	3: 2000,
+	4: 3500,
+	5: 6000,
+	6: 9000,
+	7: 14000,
+	8: 20000,
+	9: 35000
+}
+
 @onready var spots: Array[Node3D] = [$AreaDragones/DragonSpot1, $AreaDragones/DragonSpot2]
 @onready var area_click: Area3D = get_node_or_null("AreaClick")
 
@@ -55,15 +67,21 @@ func _ensure_gold_badge() -> void:
 	add_child(_gold_badge)
 
 
+func get_max_gold() -> int:
+	return int(HABITAT_MAX_GOLD.get(elemento_id, 500))
+
+
 func _process(delta: float) -> void:
+	var cap_gold: float = float(get_max_gold())
 	if dragons_count > 0:
-		accumulated_oro = minf(accumulated_oro + (oro_per_minute_total / 60.0) * delta, 500.0)
+		accumulated_oro = minf(accumulated_oro + (oro_per_minute_total / 60.0) * delta, cap_gold)
 	if _gold_badge:
 		var ready_gold: int = int(floor(accumulated_oro))
 		if ready_gold >= 5:
 			_badge_time += delta * 3.0
 			_gold_badge.visible = true
-			_gold_badge.text = "🪙 +%d Oro" % ready_gold
+			_gold_badge.text = "🪙"
+			_gold_badge.modulate = Color(1.0, 0.95, 0.35, 1.0) if accumulated_oro >= cap_gold else Color(1.0, 0.86, 0.32, 0.95)
 			_gold_badge.position.y = 1.68 + sin(_badge_time) * 0.08
 		else:
 			_gold_badge.visible = false

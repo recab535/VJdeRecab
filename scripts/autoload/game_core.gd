@@ -38,6 +38,14 @@ const GEM_MINE_BUILD_COST: int = 10
 const EXTRA_BREEDING_COST_GEMS: int = 20
 const NURSERY_MAX_CAPACITY: int = 4
 
+const FOOD_CROPS: Array[Dictionary] = [
+	{"nombre": "Baya Rápida", "etiqueta": "30 s", "duracion_seg": 30, "costo_oro": 50, "comida": 25, "gemas_acelerar": 1},
+	{"nombre": "Campana Azul", "etiqueta": "5 min", "duracion_seg": 300, "costo_oro": 250, "comida": 140, "gemas_acelerar": 2},
+	{"nombre": "Fruta Dragón", "etiqueta": "1 h", "duracion_seg": 3600, "costo_oro": 1200, "comida": 750, "gemas_acelerar": 4},
+	{"nombre": "Estrella Solar", "etiqueta": "6 h", "duracion_seg": 21600, "costo_oro": 5000, "comida": 3600, "gemas_acelerar": 8},
+	{"nombre": "Árbol Dorado", "etiqueta": "24 h", "duracion_seg": 86400, "costo_oro": 18000, "comida": 15000, "gemas_acelerar": 15}
+]
+
 var elementos_by_id: Dictionary = {}
 var especies_by_id: Dictionary = {}
 var multiplicadores: Dictionary = {}
@@ -836,7 +844,13 @@ func get_element(element_id: int) -> Dictionary:
 
 
 func get_feed_cost(nivel: int) -> int:
-	return 50 + (maxi(1, nivel) - 1) * 50
+	return maxi(15, int(round((40.0 + float(maxi(1, nivel) - 1) * 45.0) * 0.35)))
+
+
+func start_food_crop(crop_idx: int) -> Dictionary:
+	var idx: int = clampi(crop_idx, 0, FOOD_CROPS.size() - 1)
+	var crop: Dictionary = FOOD_CROPS[idx]
+	return start_food_production(int(crop["costo_oro"]), int(crop["comida"]), int(crop["duracion_seg"]))
 
 
 func get_stage_for_level(nivel: int) -> String:
@@ -926,28 +940,53 @@ func feed_dragon(dragon_uid: int) -> Dictionary:
 	if comida_actual < cost_comida:
 		return {"ok": false, "msg": "Comida insuficiente para %s (%d/%d)." % [nombre, comida_actual, cost_comida]}
 
-	var nuevo_nivel: int = nivel_actual + 1
-	var nueva_etapa: String = get_stage_for_level(nuevo_nivel)
-	d["nivel"] = nuevo_nivel
-	d["etapa"] = nueva_etapa
-	dragones[target_idx] = d
-	player_state["dragones"] = dragones
-
 	res["comida"] = comida_actual - cost_comida
 	player_state["recursos"] = res
 
+	# Sistema clásico de 4 pasos de alimentación por nivel (feed_steps 0..3 -> sube nivel en el 4º)
+	var cur_steps: int = clampi(int(d.get("feed_steps", 0)), 0, 3) + 1
+	var leveled_up: bool = false
+	var nuevo_nivel: int = nivel_actual
+	var nueva_etapa: String = str(d.get("etapa", get_stage_for_level(nivel_actual)))
+
+	if cur_steps >= 4:
+		cur_steps = 0
+		nuevo_nivel = nivel_actual + 1
+		nueva_etapa = get_stage_for_level(nuevo_nivel)
+		d["nivel"] = nuevo_nivel
+		d["etapa"] = nueva_etapa
+		leveled_up = true
+
+	d["feed_steps"] = cur_steps
+	dragones[target_idx] = d
+	player_state["dragones"] = dragones
+
 	save_game()
 	_emit_resources()
-	dragon_leveled_up.emit(dragon_uid, nuevo_nivel, nueva_etapa)
-
+	if leveled_up:
+		add_player_exp(18)
+		dragon_leveled_up.emit(dragon_uid, nuevo_nivel, nueva_etapa)
+		return {
+			"ok": true,
+			"dragon": d,
+			"cost": cost_comida,
+			"nivel": nuevo_nivel,
+			"etapa": nueva_etapa,
+			"feed_steps": cur_steps,
+			"leveled_up": true,
+			"stats": get_dragon_stats(d),
+			"msg": "¡%s subió a Nivel %d (%s)! (-%d Comida, +18 EXP)" % [nombre, nuevo_nivel, nueva_etapa.capitalize(), cost_comida]
+		}
 	return {
 		"ok": true,
 		"dragon": d,
 		"cost": cost_comida,
 		"nivel": nuevo_nivel,
 		"etapa": nueva_etapa,
+		"feed_steps": cur_steps,
+		"leveled_up": false,
 		"stats": get_dragon_stats(d),
-		"msg": "¡%s subió a Nivel %d (%s)! (-%d Comida)" % [nombre, nuevo_nivel, nueva_etapa.capitalize(), cost_comida]
+		"msg": "%s alimentado (%d/4 para Nv.%d) (-%d Comida)" % [nombre, cur_steps, nuevo_nivel + 1, cost_comida]
 	}
 
 

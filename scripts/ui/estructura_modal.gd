@@ -209,23 +209,34 @@ func _render_food_farm(core: Node) -> void:
 	var g: Dictionary = granjas[0] if not granjas.is_empty() else {}
 	if bool(g.get("produciendo", false)):
 		var rem: int = int(ceil(float(g.get("restante_seg", 0.0))))
-		lbl_detalle.text = "Cosecha en progreso: +%d Comida (%02d:%02d restantes)." % [int(g.get("cantidad", 180)), rem / 60, rem % 60]
-		_add_action_button("Acelerar cosecha (2 💎)", func() -> void:
-			var r: Dictionary = core.speedup_food_farm(2)
+		var hh: int = rem / 3600
+		var mm: int = (rem % 3600) / 60
+		var ss: int = rem % 60
+		var t_str: String = "%dh %02dm" % [hh, mm] if hh > 0 else "%02d:%02d" % [mm, ss]
+		lbl_detalle.text = "Cosecha en progreso: +%d Comida (%s restantes)." % [int(g.get("cantidad", 140)), t_str]
+		var gem_cost: int = maxi(1, int(ceil(float(rem) / 1800.0)))
+		_add_action_button("Acelerar cosecha (%d 💎)" % gem_cost, func() -> void:
+			var r: Dictionary = core.speedup_food_farm(gem_cost)
 			status_message.emit(str(r.get("msg", "")))
 			if r.get("ok", false):
 				_play_sfx("coin")
 			_refresh()
 		)
 	else:
-		lbl_detalle.text = "Produce Comida por tiempo para subir de nivel a tus dragones."
-		_add_action_button("Sembrar Fruta (+180 Comida • 2 min • 200 Oro)", func() -> void:
-			var r: Dictionary = core.start_food_production(200, 180, 120)
-			status_message.emit(str(r.get("msg", "")))
-			if r.get("ok", false):
-				_play_sfx("click")
-			_refresh()
-		)
+		lbl_detalle.text = "Elige un cultivo escalonado para transformar Oro en Comida:"
+		var crops: Array = core.FOOD_CROPS
+		for idx: int in range(crops.size()):
+			var c: Dictionary = crops[idx]
+			var c_idx: int = idx
+			_add_action_button("%s (%s) • +%d Comida — %d Oro" % [
+				str(c["nombre"]), str(c["etiqueta"]), int(c["comida"]), int(c["costo_oro"])
+			], func() -> void:
+				var r: Dictionary = core.start_food_crop(c_idx)
+				status_message.emit(str(r.get("msg", "")))
+				if r.get("ok", false):
+					_play_sfx("click")
+				_refresh()
+			)
 
 
 func _add_dragon_action_row(sp_id: int, etapa: String, btn_text: String, cb: Callable) -> void:

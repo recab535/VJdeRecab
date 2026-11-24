@@ -511,9 +511,10 @@ func _on_habitat_clicked(hab: HabitatBase) -> void:
 	var elem_info: Dictionary = core.get_element(hab.elemento_id)
 	var elem_name: String = str(elem_info.get("nombre", "Tierra"))
 	var oro_acum: int = int(floor(hab.accumulated_oro))
+	var oro_max: int = hab.get_max_gold()
 	var oro_rate: int = int(round(hab.recalculate_oro_rate(core)))
 	hud.show_habitat_menu(
-		"Hábitat %s (%d/%d • %d Oro/min)" % [elem_name, hab.dragons_count, hab.capacidad_maxima, oro_rate],
+		"Hábitat %s (%d/%d • %d/%d Oro • %d/min)" % [elem_name, hab.dragons_count, hab.capacidad_maxima, oro_acum, oro_max, oro_rate],
 		oro_acum,
 		not hab.hosted_dragon_uids.is_empty()
 	)
@@ -596,6 +597,7 @@ func _build_feed_info_list(core: Node, filter_uids: Array[int]) -> Array[Diction
 			"nombre": str(sp.get("nombre", "Dragón")),
 			"nivel": nivel,
 			"max_nivel": core.MAX_DRAGON_LEVEL,
+			"feed_steps": int(d.get("feed_steps", 0)),
 			"etapa": str(d.get("etapa", "cria")),
 			"cost_comida": core.get_feed_cost(nivel),
 			"hp": int(stats.get("hp", 100)),

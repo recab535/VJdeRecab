@@ -422,10 +422,13 @@ func _refresh_feed_panel_ui() -> void:
 		bonus_parts.append("Entr. +%d%%" % (entr_lvl * 10))
 	var bonus_suffix: String = ("  |  " + " · ".join(bonus_parts)) if not bonus_parts.is_empty() else ""
 
+	var feed_steps: int = clampi(int(info.get("feed_steps", 0)), 0, 3)
 	lbl_dragon_titulo.text = "%s — Nv. %d/%d (%s)" % [nombre, nivel, max_nivel, etapa]
-	lbl_dragon_stats.text = "HP: %d  |  ATK: %d  |  SPD: %d\nProducción: %d Oro/min%s" % [hp, atk, spd, oro_min, bonus_suffix]
+	lbl_dragon_stats.text = "HP: %d  |  ATK: %d  |  SPD: %d\nProducción: %d Oro/min%s  |  Progreso nivel: %d/4" % [hp, atk, spd, oro_min, bonus_suffix, feed_steps]
 	if pb_dragon_xp:
-		pb_dragon_xp.value = clampf((float(nivel) / float(max_nivel)) * 100.0, 0.0, 100.0)
+		var target_val: float = 100.0 if nivel >= max_nivel else float(feed_steps) * 25.0
+		var tw_xp: Tween = create_tween()
+		tw_xp.tween_property(pb_dragon_xp, "value", target_val, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 	var multiple: bool = _feed_dragons_list.size() > 1
 	btn_anterior_dragon.visible = multiple
