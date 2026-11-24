@@ -1,10 +1,14 @@
-# Roadmap de Rediseño Radical — VJdeRecab
+# Roadmap Definitivo de 10 Fases — VJdeRecab
 
-Plan de 6 tareas secuenciales para transformar la jugabilidad, interfaz y visuales (combate 1v1 con equipo de 3, UI estilizada, Tienda por categorías con colocación y vida en las islas).
+Sucesor espiritual de Dragon City (2012) en Godot 4 con identidad original, estética 2.5D pulida y bandera temporal `TEST_CLEAN_START_MODE = true`.
 
-- [x] Tarea 1 (Diseño y Contrato): Actualizar `docs/game_design_base.md` y `docs/contrato_datos_godot.md` para establecer el Combate 1v1 con equipo de 3 dragones (1 activo en arena + 2 en banca intercambiables, estilo Dragon City), 4 ataques por dragón, Tienda por categorías con modo colocación y menú contextual de Hábitat.
-- [x] Tarea 2 (Tema UI Global y HUD Estilizado): Crear `assets/ui/game_theme.tres` (`StyleBoxFlat` redondeados, bordes brillantes, sombras paralelas) + helper de animación de botones con `Tween`, y rediseñar el HUD (`scenes/ui/hud_basic.tscn` + `scripts/ui/hud_basic.gd` integrado en `scenes/main.tscn`) con paneles de recursos estilizados, barra de nivel de jugador y barra inferior pulida.
-- [x] Tarea 3 (Tienda por Pestañas y Modo Colocación): Reemplazar la compra directa del botón `Tienda` por una ventana modal (`scenes/ui/shop_panel.tscn` + `scripts/ui/shop_panel.gd`) con pestañas (Hábitats por elemento con colores propios, Huevos y Granja de Comida) y activar un modo de colocación resaltando en verde los slots libres de la isla.
-- [x] Tarea 4 (Menú de Hábitat y Vida en la Isla): Añadir decoración low-poly (árboles, rocas, nubes ambientales y levitación suave en `scenes/main.tscn`), movimiento autónomo de los dragones dentro de su hábitat con volteo horizontal (`flip_h`) y un panel inferior al clicar un hábitat para Recoger Oro (con texto flotante) y Alimentar dragones con barra de XP y subida de nivel.
-- [x] Tarea 5 (Arena 1v1 Estilo Dragon City - Escena y UI): Reconstruir `scenes/combat/combat_arena.tscn` y `scripts/combat/combat_arena.gd` para mostrar únicamente 1 dragón aliado vs 1 enemigo en pedestales 3D con cámara dinámica, 4 botones de ataque elemental (Fuerte/Normal/Débil), 2 botones laterales de relevo y barras de HP animadas con `Tween`.
-- [x] Tarea 6 (Motor de Combate 1v1 con Relevos y Animaciones): Reescribir `scripts/systems/combat_manager.gd` para gestionar relevos en batalla, 4 ataques por especie, animaciones de embestida/impacto, sacudida de cámara (`camera shake`), números de daño flotantes y victoria al derrotar a los 3 dragones rivales, actualizando `ESTADO_AGENTES.json`.
+- [x] **Fase 1:** Modo prueba limpio (`TEST_CLEAN_START_MODE = true` en `GameCore`) y shaders 2.5D/ambientales (`toon_stylized.gdshader`, `water_lava_flow.gdshader`, `sky_gradient.gdshader`, `VisualShaders`, `WorldEnvironment` en `scenes/main.tscn`).
+- [ ] **Fase 2:** 5 islas flotantes consecutivas orgánicas/estratificadas (biomas diferenciados), cuadrícula 14x14 con 4 parcelas comprables y 6 obstáculos temporizados con opción de acelerar con gemas.
+- [ ] **Fase 3:** Estructuras 3D detalladas (Torre Nido mejorable de 1 a 4 ranuras por 10/15/20 gemas, Adoratorio + Adoratorio Extra de 20 gemas, Mina de Gemas de 10 gemas/1 gema cada 24h por isla, Portal de Historia, Campo de Entrenamiento, Guardería de 4 espacios y 8 Tótems Potenciadores Elementales).
+- [ ] **Fase 4:** Sprites pixel art más detallados (32x32/48x48 con contorno, sombreado y variantes por elemento/etapa) y vida/movimiento/reacciones en hábitats.
+- [ ] **Fase 5:** Pantalla de carga animada (`loading_screen.tscn`) y tutorial narrativo guiado (`tutorial_dialog.tscn`).
+- [ ] **Fase 6:** HUD a 1920x1080, tema UI pulido y paneles contextuales de estructuras.
+- [ ] **Fase 7:** Tienda por pestañas, Almacén (5 espacios iniciales ampliables con gemas + baldosas de suelo infinitas) y lógica real de Potenciadores Elementales (x2 si coincide 1 elemento, x3 si coinciden ambos en híbridos, excluyendo Legendarios y desactivándose al guardar el tótem en Almacén).
+- [ ] **Fase 8:** Carrusel horizontal de 50 capítulos (exigiendo 1 especie específica por capítulo) y Bestiario de las 68 especies.
+- [ ] **Fase 9:** Combate 1v1 con relevos (1 activo + 2 en banca intercambiables, sin pantalla previa de presentación de rival), animaciones/efectos, XP de jugador y persistencia completa.
+- [ ] **Fase 10:** Audio procedural (SFX y música ambiental con botón de silencio) y auditoría final completa.

@@ -1,21 +1,25 @@
 {
-  "estado": "COMPLETADO",
-  "turno_actual": "G1",
-  "rondas_completadas": 4,
-  "max_rondas_limite": 4,
+  "estado": "EN_PROGRESO",
+  "fase_actual": 1,
+  "total_fases": 10,
+  "turno_actual": "A1",
   "orden_agentes": [
     "G1",
     "G2",
     "A1",
     "A2"
   ],
-  "ultimo_ciclo": {
-    "Fase_1_Docs": "docs/game_design_base.md y docs/contrato_datos_godot.md actualizados con especificación definitiva (demo itch.io/Steam, 5 islas 14x14, 4 parcelas, 6 obstáculos, estructuras, 8 potenciadores x2/x3, almacén y 50 capítulos).",
-    "Fase_2_Inicio": "Pantalla de carga animada scenes/ui/loading_screen.tscn como escena principal en project.godot + tutorial del Maestro Kael actualizado.",
-    "Fase_3_Islas": "5 islas flotantes consecutivas en eje Z (floating_island.gd), 4 parcelas comprables por nivel/oro y 6 obstáculos temporizados acelerables con gemas (obstaculo_isla.tscn).",
-    "Fase_4_Estructuras": "Torre Nido mejorable (1->4 ranuras por 10/15/20 gemas), Adoratorio Extra (20 gemas), Minas de Gemas (1/isla, 24h), Portal de Historia, Campo de Entrenamiento y Guardería (4 crías).",
-    "Fase_5_Economia_UI": "8 Tótems Potenciadores Elementales (x2/x3, desactivables al guardar), Almacén UI (5 espacios ampliables + suelos infinitos) y Tienda definitiva de 5 pestañas (tienda_panel.tscn).",
-    "Fase_6_Campana": "Carrusel horizontal de 50 capítulos (campana_panel.tscn) con especie obligatoria (especie_requerida_id) por capítulo.",
-    "Fase_7_Combate_EXP": "Combate 1v1 con relevos sincronizado con dragón obligatorio, bonos de Potenciadores y Entrenamiento, EXP de jugador y persistencia completa en user://savegame.json."
+  "test_clean_start_mode": true,
+  "fases_plan_10": {
+    "Fase_1": "COMPLETADA - TEST_CLEAN_START_MODE = true en GameCore (sin romper save/load real al cambiar a false) + shaders toon_stylized.gdshader, water_lava_flow.gdshader, sky_gradient.gdshader, VisualShaders y WorldEnvironment pulido en scenes/main.tscn.",
+    "Fase_2": "PENDIENTE",
+    "Fase_3": "PENDIENTE",
+    "Fase_4": "PENDIENTE",
+    "Fase_5": "PENDIENTE",
+    "Fase_6": "PENDIENTE",
+    "Fase_7": "PENDIENTE",
+    "Fase_8": "PENDIENTE",
+    "Fase_9": "PENDIENTE",
+    "Fase_10": "PENDIENTE"
   }
 }

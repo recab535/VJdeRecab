@@ -6,6 +6,7 @@ extends Node
 
 const CATALOG_PATH: String = "res://data/especies_68.json"
 const SAVE_PATH: String = "user://savegame.json"
+const TEST_CLEAN_START_MODE: bool = true
 const HABITAT_COST_ORO: int = 250
 const PASSIVE_TICK_SEC: float = 5.0
 const MAX_DRAGON_LEVEL: int = 10
@@ -248,6 +249,12 @@ func complete_tutorial() -> void:
 
 
 func load_game() -> void:
+	if TEST_CLEAN_START_MODE:
+		player_state = _create_default_state()
+		save_loaded.emit()
+		_emit_resources()
+		return
+
 	if not FileAccess.file_exists(SAVE_PATH):
 		player_state = _create_default_state()
 		save_game()
@@ -307,6 +314,8 @@ func load_game() -> void:
 
 
 func save_game() -> bool:
+	if TEST_CLEAN_START_MODE:
+		return true
 	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
 		push_error("[GameCore] No se pudo escribir en: " + SAVE_PATH)
