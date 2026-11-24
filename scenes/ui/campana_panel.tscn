@@ -1,0 +1,93 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/campana_panel.gd" id="1_camp"]
+[ext_resource type="Theme" path="res://assets/ui/game_theme.tres" id="2_theme"]
+
+[node name="CampanaPanel" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_camp")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.06, 0.12, 0.68)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -740.0
+offset_top = -300.0
+offset_right = 740.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxMain" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="HBoxContainer" parent="Panel/VBoxMain"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="LblTitulo" type="Label" parent="Panel/VBoxMain/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Campaña Historia — 50 Capítulos"
+
+[node name="LblCampProgreso" type="Label" parent="Panel/VBoxMain/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Progreso: 0 / 50"
+
+[node name="BtnCerrarCamp" type="Button" parent="Panel/VBoxMain/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+text = "Cerrar"
+
+[node name="ScrollChapters" type="ScrollContainer" parent="Panel/VBoxMain"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 0
+
+[node name="ChaptersRow" type="HBoxContainer" parent="Panel/VBoxMain/ScrollChapters"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="FooterNav" type="HBoxContainer" parent="Panel/VBoxMain"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="BtnScrollIzq" type="Button" parent="Panel/VBoxMain/FooterNav"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 44)
+layout_mode = 2
+text = "◀ Capítulos Anteriores"
+
+[node name="BtnScrollDer" type="Button" parent="Panel/VBoxMain/FooterNav"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 44)
+layout_mode = 2
+text = "Capítulos Siguientes ▶"

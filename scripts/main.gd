@@ -20,6 +20,7 @@ const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_aren
 @onready var tutorial_dialog: Control = $HUD/RootControl/TutorialDialog
 @onready var estructura_modal: Control = $HUD/RootControl/EstructuraModal
 @onready var almacen_panel: Control = $HUD/RootControl/AlmacenPanel
+@onready var campana_panel: Control = $HUD/RootControl/CampanaPanel
 
 var _islands: Dictionary = {}
 var _built_habitats: Dictionary = {}
@@ -71,6 +72,8 @@ func _ready() -> void:
 			almacen_panel.connect("status_message", hud.show_status_message)
 		if almacen_panel.has_signal("place_tile_requested"):
 			almacen_panel.connect("place_tile_requested", _on_place_tile_requested)
+	if campana_panel and campana_panel.has_signal("chapter_battle_requested"):
+		campana_panel.connect("chapter_battle_requested", _on_chapter_battle_requested)
 
 	_register_islands()
 	_close_overlay_panels()
@@ -326,7 +329,9 @@ func _on_panel_requested(panel_name: String) -> void:
 				hud.show_status_message("Bestiario abierto.")
 		"Combate":
 			_close_overlay_panels()
-			_open_combat_arena(1)
+			if campana_panel and campana_panel.has_method("open_campaign"):
+				campana_panel.call("open_campaign")
+				hud.show_status_message("Carrusel de 50 capítulos abierto.")
 		_:
 			hud.show_status_message("Panel %s seleccionado." % panel_name)
 
@@ -344,6 +349,8 @@ func _close_overlay_panels() -> void:
 		estructura_modal.visible = false
 	if almacen_panel:
 		almacen_panel.visible = false
+	if campana_panel:
+		campana_panel.visible = false
 	if hud:
 		hud.hide_dragon_feed_panel()
 		hud.hide_island_preview()
@@ -371,7 +378,11 @@ func _on_egg_hatched(res: Dictionary) -> void:
 		hud.show_status_message(str(res.get("msg", "")))
 
 
-func _open_combat_arena(chapter_id: int = 1) -> void:
+func _on_chapter_battle_requested(chapter_data: Dictionary) -> void:
+	_open_combat_arena(chapter_data)
+
+
+func _open_combat_arena(chapter_data: Variant = {}) -> void:
 	if is_instance_valid(_active_combat_arena):
 		return
 	if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
@@ -392,8 +403,8 @@ func _open_combat_arena(chapter_id: int = 1) -> void:
 	if mgr:
 		if not mgr.is_connected("combat_finished", _on_combat_finished):
 			mgr.connect("combat_finished", _on_combat_finished)
-		if chapter_id > 1 and mgr.has_method("start_chapter"):
-			mgr.call("start_chapter", chapter_id, _active_combat_arena)
+		if chapter_data is Dictionary and not chapter_data.is_empty() and mgr.has_method("start_chapter_data"):
+			mgr.call("start_chapter_data", chapter_data, _active_combat_arena)
 
 
 func _on_combat_finished(victory: bool, rewards: Dictionary) -> void:

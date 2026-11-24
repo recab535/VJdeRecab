@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/tutorial_dialog.tscn" id="7_tutorial"]
 [ext_resource type="PackedScene" path="res://scenes/ui/estructura_modal.tscn" id="8_est_modal"]
 [ext_resource type="PackedScene" path="res://scenes/ui/almacen_panel.tscn" id="9_almacen"]
+[ext_resource type="PackedScene" path="res://scenes/ui/campana_panel.tscn" id="10_campana"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -306,6 +307,8 @@ text = "Combate"
 [node name="EstructuraModal" parent="RootControl" instance=ExtResource("8_est_modal")]
 
 [node name="AlmacenPanel" parent="RootControl" instance=ExtResource("9_almacen")]
+
+[node name="CampanaPanel" parent="RootControl" instance=ExtResource("10_campana")]
 
 [node name="IslaNavBar" type="HBoxContainer" parent="RootControl"]
 layout_mode = 1
