@@ -1,6 +1,6 @@
 {
   "estado": "EN_PROGRESO",
-  "fase_actual": 8,
+  "fase_actual": 9,
   "total_fases": 10,
   "turno_actual": "A2",
   "orden_agentes": [
@@ -19,7 +19,7 @@
     "Fase_6": "COMPLETADA - Tema UI global ampliado (TabContainer/LineEdit/PanelContainer/ProgressBar), HUD 1920x1080 con animaciones de recursos, fix parcel_index y modales contextuales de estructuras con conteo en vivo y retratos 48x48.",
     "Fase_7": "COMPLETADA - Tienda de 5 pestañas, Almacén (5 espacios ampliables + suelos infinitos) y Potenciadores Elementales x2/x3 (excluyendo Legendarios, desactivables en Almacén y validación is_booster_in_warehouse contra compra duplicada).",
     "Fase_8": "COMPLETADA - Carrusel horizontal de 50 capítulos con especie obligatoria, auto-scroll y retratos/siluetas 48x48 + Bestiario completo de las 68 especies con siluetas, stats base y rarezas.",
-    "Fase_9": "PENDIENTE",
+    "Fase_9": "COMPLETADA - Combate 1v1 con relevos directo (sin pantalla previa de rival), proyectiles elementales VFX, flash de daño, pedestales estilizados con VisualShaders, orientación frente a frente, fix de título de arco, XP de jugador y persistencia.",
     "Fase_10": "PENDIENTE"
   }
 }

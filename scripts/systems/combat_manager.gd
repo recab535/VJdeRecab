@@ -202,6 +202,8 @@ func _on_attack_selected(attack_idx: int) -> void:
 	var dmg: int = maxi(10, roundi((float(ally["atk"]) * (float(mv["potencia"]) / 35.0)) * mult))
 
 	_arena.play_lunge_animation(true)
+	if _arena.has_method("play_attack_vfx"):
+		_arena.play_attack_vfx(true, elem_id, mult)
 	enemy["hp"] = maxi(0, int(enemy["hp"]) - dmg)
 	_arena.spawn_damage_number(false, dmg, mult)
 	_arena.shake_camera(0.24 if mult >= 1.9 else 0.16, 0.22)
@@ -258,8 +260,11 @@ func _execute_enemy_turn() -> void:
 	var mult: float = _core.get_elemental_multiplier(elem_id, ally.get("species", {})) if _core else 1.0
 	var dmg: int = maxi(8, roundi((float(enemy["atk"]) * (float(mv["potencia"]) / 38.0)) * mult))
 
-	_arena.set_header_info("Capítulo %d — Sendero Terracota (1v1)" % _chapter_id, "Turno Enemigo")
+	var arco: String = str(_chapter_data.get("arco", "Tierra"))
+	_arena.set_header_info("Capítulo %d — Arco %s (1v1)" % [_chapter_id, arco], "Turno Enemigo")
 	_arena.play_lunge_animation(false)
+	if _arena.has_method("play_attack_vfx"):
+		_arena.play_attack_vfx(false, elem_id, mult)
 	ally["hp"] = maxi(0, int(ally["hp"]) - dmg)
 	_arena.spawn_damage_number(true, dmg, mult)
 	_arena.shake_camera(0.18, 0.2)
@@ -280,7 +285,7 @@ func _execute_enemy_turn() -> void:
 		_refresh_arena_state()
 
 	_arena.update_bench_buttons(_ally_team, _active_ally_idx)
-	_arena.set_header_info("Capítulo %d — Sendero Terracota (1v1)" % _chapter_id, "Tu Turno")
+	_arena.set_header_info("Capítulo %d — Arco %s (1v1)" % [_chapter_id, arco], "Tu Turno")
 	_busy = false
 	_arena.set_controls_enabled(true)
 

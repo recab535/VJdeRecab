@@ -34,6 +34,18 @@ const DRAGON_SCENE: PackedScene = preload("res://scenes/dragons/dragon_2d.tscn")
 @onready var btn_relevo_1: Button = %BtnRelevo1
 @onready var attack_buttons_container: HBoxContainer = %AttackButtonsContainer
 
+const ELEMENT_VFX_COLORS: Dictionary = {
+	1: Color(0.76, 0.48, 0.24),
+	2: Color(1.0, 0.36, 0.12),
+	3: Color(0.20, 0.70, 1.0),
+	4: Color(0.28, 0.88, 0.36),
+	5: Color(1.0, 0.90, 0.22),
+	6: Color(0.62, 0.94, 1.0),
+	7: Color(0.76, 0.80, 0.88),
+	8: Color(0.62, 0.24, 0.86),
+	9: Color(1.0, 0.84, 0.32)
+}
+
 var _active_ally_node: Dragon2D = null
 var _active_enemy_node: Dragon2D = null
 var _bench_team_indices: Array[int] = [-1, -1]
@@ -44,6 +56,7 @@ var _cam_base_pos: Vector3 = Vector3.ZERO
 func _ready() -> void:
 	if arena_camera:
 		_cam_base_pos = arena_camera.position
+	_stylize_pedestals()
 	btn_retreat.pressed.connect(func() -> void: retreat_requested.emit())
 	btn_relevo_0.pressed.connect(func() -> void:
 		if _bench_team_indices[0] >= 0:
@@ -106,11 +119,53 @@ func _spawn_fighter_on_spot(spot: Marker3D, unit: Dictionary, is_ally: bool) -> 
 	)
 	if is_ally:
 		_active_ally_node = d
+		if d.sprite:
+			d.sprite.flip_h = false
 	else:
 		_active_enemy_node = d
+		if d.sprite:
+			d.sprite.flip_h = true
 
 	var tw: Tween = create_tween()
 	tw.tween_property(d, "position:y", 0.0, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _stylize_pedestals() -> void:
+	var p_ally: MeshInstance3D = get_node_or_null("PedestalAliado") as MeshInstance3D
+	if p_ally:
+		p_ally.material_override = VisualShaders.make_toon(Color(0.28, 0.62, 0.92), Color(0.14, 0.24, 0.42), 0.45, 0.65)
+	var p_enemy: MeshInstance3D = get_node_or_null("PedestalEnemigo") as MeshInstance3D
+	if p_enemy:
+		p_enemy.material_override = VisualShaders.make_toon(Color(0.84, 0.30, 0.26), Color(0.32, 0.12, 0.16), 0.45, 0.65)
+
+
+func play_attack_vfx(is_ally_attacker: bool, elem_id: int, mult: float) -> void:
+	var start_spot: Marker3D = ally_spot if is_ally_attacker else enemy_spot
+	var end_spot: Marker3D = enemy_spot if is_ally_attacker else ally_spot
+	var defender: Dragon2D = _active_enemy_node if is_ally_attacker else _active_ally_node
+	if start_spot == null or end_spot == null:
+		return
+
+	var vfx_col: Color = ELEMENT_VFX_COLORS.get(elem_id, Color(1.0, 0.85, 0.32))
+	var orb: MeshInstance3D = MeshInstance3D.new()
+	var sm: SphereMesh = SphereMesh.new()
+	sm.radius = 0.28 if mult >= 1.9 else 0.20
+	sm.height = sm.radius * 2.0
+	orb.mesh = sm
+	orb.material_override = VisualShaders.make_toon(vfx_col, vfx_col.darkened(0.4), 0.7, 0.1, 0.2, vfx_col, 2.0)
+	add_child(orb)
+	orb.global_position = start_spot.global_position + Vector3(0.0, 0.85, 0.0)
+
+	var target_pos: Vector3 = end_spot.global_position + Vector3(0.0, 0.85, 0.0)
+	var tw: Tween = create_tween()
+	tw.tween_property(orb, "global_position", target_pos, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func() -> void:
+		orb.queue_free()
+		if defender and is_instance_valid(defender) and defender.sprite:
+			var hit_tw: Tween = defender.create_tween()
+			defender.sprite.modulate = Color(1.0, 0.35, 0.35, 1.0)
+			hit_tw.tween_property(defender.sprite, "modulate", Color.WHITE, 0.24)
+	)
 
 
 func update_hp_bars(ally_hp: int, ally_max: int, enemy_hp: int, enemy_max: int, instant: bool = false) -> void:
