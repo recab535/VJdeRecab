@@ -25,12 +25,32 @@ var _enemy_team: Array[Dictionary] = []
 var _active_ally_idx: int = 0
 var _active_enemy_idx: int = 0
 var _chapter_id: int = 1
+var _chapter_data: Dictionary = {}
 var _busy: bool = false
 var _ended: bool = false
 
 
 func start_chapter(chapter_id: int, arena: CombatArena) -> void:
-	_chapter_id = chapter_id
+	var fallback_data: Dictionary = {
+		"capitulo": chapter_id,
+		"arco": "Tierra",
+		"especie_requerida_id": 1,
+		"oro": 350 + chapter_id * 180,
+		"comida": 180 + chapter_id * 95,
+		"gemas": 5 if (chapter_id == 1 or chapter_id % 5 == 0) else 1,
+		"exp": 60 + chapter_id * 25,
+		"enemigos": [
+			{"especie_id": 2, "nivel": 1},
+			{"especie_id": 5, "nivel": 1},
+			{"especie_id": 9, "nivel": 2}
+		]
+	}
+	start_chapter_data(fallback_data, arena)
+
+
+func start_chapter_data(chapter_data: Dictionary, arena: CombatArena) -> void:
+	_chapter_data = chapter_data
+	_chapter_id = int(chapter_data.get("capitulo", 1))
 	_arena = arena
 	_core = get_node_or_null("/root/GameCore")
 	_ended = false
@@ -44,29 +64,53 @@ func start_chapter(chapter_id: int, arena: CombatArena) -> void:
 		_arena.retreat_requested.connect(_on_retreat_requested)
 
 	_build_teams()
-	_arena.set_header_info("Capítulo %d — Sendero Terracota (1v1)" % _chapter_id, "Tu Turno")
+	var arco: String = str(_chapter_data.get("arco", "Tierra"))
+	_arena.set_header_info("Capítulo %d — Arco %s (1v1)" % [_chapter_id, arco], "Tu Turno")
 	_refresh_arena_state()
-	_arena.set_combat_log("¡Combate iniciado! Elige un ataque o releva a un dragón de reserva.")
+
+	var ally: Dictionary = _ally_team[_active_ally_idx]
+	var b_mult: float = float(ally.get("booster_mult", 1.0))
+	var t_lvl: int = int(ally.get("entrenamiento_nivel", 0))
+	var bonus_txt: String = ""
+	if b_mult > 1.0:
+		bonus_txt += " [Tótem ×%.0f]" % b_mult
+	if t_lvl > 0:
+		bonus_txt += " [Entrenamiento +%d%%]" % (t_lvl * 10)
+	_arena.set_combat_log("¡Combate directo! %s lidera tu equipo%s." % [str(ally.get("nombre", "Dragón")), bonus_txt])
 
 
 func _build_teams() -> void:
 	_ally_team.clear()
 	_enemy_team.clear()
 
+	var req_species_id: int = int(_chapter_data.get("especie_requerida_id", 1))
+
 	if _core:
 		var owned: Array = _core.player_state.get("dragones", [])
-		for i: int in range(mini(3, owned.size())):
-			var d: Variant = owned[i]
-			if d is Dictionary:
+		var used_uids: Dictionary = {}
+		# 1. Colocar primero el dragón obligatorio del capítulo
+		for d: Variant in owned:
+			if d is Dictionary and int(d.get("especie_id", 0)) == req_species_id:
 				_ally_team.append(_make_unit_from_owned(d))
+				used_uids[int(d.get("uid", -1))] = true
+				break
+		# 2. Completar hasta 3 dragones (1 activo + 2 en banca)
+		for d: Variant in owned:
+			if _ally_team.size() >= 3:
+				break
+			if d is Dictionary and not used_uids.has(int(d.get("uid", -1))):
+				_ally_team.append(_make_unit_from_owned(d))
+				used_uids[int(d.get("uid", -1))] = true
 
 	if _ally_team.is_empty():
-		_ally_team.append(_make_unit_from_species_id(1, 1, 1))
+		_ally_team.append(_make_unit_from_species_id(req_species_id, 1, 1))
 
-	# Equipo rival de 3 dragones del Capítulo 1
-	_enemy_team.append(_make_unit_from_species_id(2, 1, -1))
-	_enemy_team.append(_make_unit_from_species_id(5, 1, -2))
-	_enemy_team.append(_make_unit_from_species_id(9, 2, -3))
+	var enemies_cfg: Array = _chapter_data.get("enemigos", [])
+	if enemies_cfg.is_empty():
+		enemies_cfg = [{"especie_id": 2, "nivel": 1}, {"especie_id": 5, "nivel": 1}, {"especie_id": 9, "nivel": 2}]
+	for i: int in range(enemies_cfg.size()):
+		var ec: Dictionary = enemies_cfg[i]
+		_enemy_team.append(_make_unit_from_species_id(int(ec.get("especie_id", 2)), int(ec.get("nivel", 1)), -(i + 1)))
 
 	_active_ally_idx = 0
 	_active_enemy_idx = 0
@@ -76,7 +120,7 @@ func _make_unit_from_owned(d: Dictionary) -> Dictionary:
 	var sp_id: int = int(d.get("especie_id", 1))
 	var nivel: int = maxi(1, int(d.get("nivel", 1)))
 	var sp: Dictionary = _core.get_species(sp_id) if _core else {}
-	var stats: Dictionary = _core.get_dragon_stats(d) if _core else {"hp": 420, "atk": 85, "spd": 40}
+	var stats: Dictionary = _core.get_dragon_stats(d) if _core else {"hp": 420, "atk": 85, "spd": 40, "booster_mult": 1.0, "entrenamiento_nivel": 0}
 	var hp: int = int(stats.get("hp", 420))
 	return {
 		"uid": int(d.get("uid", 1)),
@@ -89,6 +133,8 @@ func _make_unit_from_owned(d: Dictionary) -> Dictionary:
 		"max_hp": hp,
 		"atk": int(stats.get("atk", 85)),
 		"spd": int(stats.get("spd", 40)),
+		"booster_mult": float(stats.get("booster_mult", 1.0)),
+		"entrenamiento_nivel": int(stats.get("entrenamiento_nivel", 0)),
 		"species": sp,
 		"moves": _build_moves_for_species(sp)
 	}
@@ -252,13 +298,17 @@ func _finish_battle(victory: bool) -> void:
 	_arena.set_controls_enabled(false)
 	var rewards: Dictionary = {}
 	if victory:
-		if _core:
-			rewards = _core.grant_combat_rewards(800, 400, 5, _chapter_id + 1)
+		var oro_r: int = int(_chapter_data.get("oro", 800))
+		var comida_r: int = int(_chapter_data.get("comida", 400))
+		var gemas_r: int = int(_chapter_data.get("gemas", 5))
+		var exp_r: int = int(_chapter_data.get("exp", 85))
+		if _core and _core.has_method("complete_campaign_chapter"):
+			rewards = _core.complete_campaign_chapter(_chapter_id, oro_r, comida_r, gemas_r, exp_r)
 		else:
-			rewards = {"oro": 800, "comida": 400, "gemas": 5}
-		_arena.set_combat_log("¡VICTORIA! Derrotaste a los 3 dragones rivales (+800 Oro, +400 Comida, +5 Gemas).")
+			rewards = {"oro": oro_r, "comida": comida_r, "gemas": gemas_r, "exp": exp_r}
+		_arena.set_combat_log("¡VICTORIA Cap. %d! +%d Oro, +%d Comida, +%d Gemas, +%d EXP." % [_chapter_id, oro_r, comida_r, gemas_r, exp_r])
 	else:
-		_arena.set_combat_log("Derrota... Alimenta a tus dragones e inténtalo de nuevo.")
+		_arena.set_combat_log("Derrota... Alimenta o entrena tus dragones e inténtalo de nuevo.")
 
 	await get_tree().create_timer(1.2).timeout
 	combat_finished.emit(victory, rewards)

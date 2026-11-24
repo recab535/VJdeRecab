@@ -1,7 +1,7 @@
 {
   "estado": "COMPLETADO",
   "turno_actual": "G1",
-  "rondas_completadas": 3,
+  "rondas_completadas": 4,
   "max_rondas_limite": 4,
   "orden_agentes": [
     "G1",
@@ -10,9 +10,12 @@
     "A2"
   ],
   "ultimo_ciclo": {
-    "G1": "Rediseño en docs/game_design_base.md: combate 1v1 con equipo de 3 (1 activo + 2 relevos), tienda por categorías y menú contextual de hábitat.",
-    "G2": "Contrato actualizado en docs/contrato_datos_godot.md: 4 movimientos por especie, relevos en combate 1v1 y estructura de tiendas/hábitats.",
-    "A1": "Tema global assets/ui/game_theme.tres, HUD estilizado con barra de nivel y Tweens, Tienda por pestañas con modo colocación verde, decoración low-poly y levitación de islas.",
-    "A2": "Patrulla autónoma de dragones, menú contextual de Hábitat (recoger oro flotante + alimentar con barra XP) y Arena/Motor 1v1 estilo Dragon City con relevos, embestidas y camera shake."
+    "Fase_1_Docs": "docs/game_design_base.md y docs/contrato_datos_godot.md actualizados con especificación definitiva (demo itch.io/Steam, 5 islas 14x14, 4 parcelas, 6 obstáculos, estructuras, 8 potenciadores x2/x3, almacén y 50 capítulos).",
+    "Fase_2_Inicio": "Pantalla de carga animada scenes/ui/loading_screen.tscn como escena principal en project.godot + tutorial del Maestro Kael actualizado.",
+    "Fase_3_Islas": "5 islas flotantes consecutivas en eje Z (floating_island.gd), 4 parcelas comprables por nivel/oro y 6 obstáculos temporizados acelerables con gemas (obstaculo_isla.tscn).",
+    "Fase_4_Estructuras": "Torre Nido mejorable (1->4 ranuras por 10/15/20 gemas), Adoratorio Extra (20 gemas), Minas de Gemas (1/isla, 24h), Portal de Historia, Campo de Entrenamiento y Guardería (4 crías).",
+    "Fase_5_Economia_UI": "8 Tótems Potenciadores Elementales (x2/x3, desactivables al guardar), Almacén UI (5 espacios ampliables + suelos infinitos) y Tienda definitiva de 5 pestañas (tienda_panel.tscn).",
+    "Fase_6_Campana": "Carrusel horizontal de 50 capítulos (campana_panel.tscn) con especie obligatoria (especie_requerida_id) por capítulo.",
+    "Fase_7_Combate_EXP": "Combate 1v1 con relevos sincronizado con dragón obligatorio, bonos de Potenciadores y Entrenamiento, EXP de jugador y persistencia completa en user://savegame.json."
   }
 }
