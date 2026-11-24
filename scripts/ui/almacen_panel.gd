@@ -33,6 +33,12 @@ func _ready() -> void:
 func open_almacen() -> void:
 	refresh()
 	visible = true
+	scale = Vector2(0.95, 0.95)
+	modulate.a = 0.0
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "modulate:a", 1.0, 0.12)
 
 
 func refresh() -> void:

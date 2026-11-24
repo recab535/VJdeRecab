@@ -164,7 +164,10 @@ func _populate_potenciadores(core: Node, oro: int) -> void:
 		var cost: int = int(item["costo"])
 		var title: String = str(item["nombre"])
 		var active: bool = placed.has(eid)
-		var card: PanelContainer = _build_card(title, "×2 stats (×3 híbridos)", ELEMENT_COLORS.get(eid, Color.WHITE), "ACTIVO" if active else ("%d Oro" % cost), not active and oro >= cost)
+		var stored: bool = core.has_method("is_booster_in_warehouse") and core.is_booster_in_warehouse(eid)
+		var btn_label: String = "ACTIVO (×2/×3)" if active else ("EN ALMACÉN" if stored else ("%d Oro" % cost))
+		var can_buy: bool = not active and not stored and oro >= cost
+		var card: PanelContainer = _build_card(title, "×2 (1 elem.) • ×3 (híbrido)\nExcluye Legendarios", ELEMENT_COLORS.get(eid, Color.WHITE), btn_label, can_buy)
 		(card.get_meta("btn") as Button).pressed.connect(func() -> void:
 			var r: Dictionary = core.buy_elemental_booster(eid, cost)
 			status_message.emit(str(r.get("msg", "")))

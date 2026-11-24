@@ -1204,12 +1204,22 @@ func retrieve_dragon_from_nursery(idx: int) -> Dictionary:
 # POTENCIADORES ELEMENTALES (x2 / x3), ALMACÉN DE ESTRUCTURAS Y BALDOSAS
 # ============================================================================
 
+func is_booster_in_warehouse(elem_id: int) -> bool:
+	var alm: Dictionary = player_state.get("almacen", {})
+	for item_var: Variant in alm.get("estructuras", []):
+		if item_var is Dictionary and str(item_var.get("tipo", "")) == "potenciador" and int(item_var.get("elemento_id", 0)) == elem_id:
+			return true
+	return false
+
+
 func buy_elemental_booster(elem_id: int, cost_oro: int) -> Dictionary:
 	if elem_id < 1 or elem_id > 8:
 		return {"ok": false, "msg": "Elemento inválido (solo 8 elementos base)."}
 	var placed: Array = player_state.get("potenciadores_colocados", [])
 	if placed.has(elem_id):
 		return {"ok": false, "msg": "Ya tienes este Potenciador Elemental activo."}
+	if is_booster_in_warehouse(elem_id):
+		return {"ok": false, "msg": "Ya posees este Tótem en tu Almacén. Colócalo desde allí."}
 	var res: Dictionary = get_resources()
 	if int(res.get("oro", 0)) < cost_oro:
 		return {"ok": false, "msg": "Oro insuficiente (%d/%d)." % [int(res.get("oro", 0)), cost_oro]}
