@@ -29,23 +29,24 @@ static func _get_flow_shader() -> Shader:
 
 static func make_toon(
 	albedo: Color,
-	shadow_tint: Color = Color(0.24, 0.28, 0.44, 1.0),
-	rim_strength: float = 0.36,
-	roughness: float = 0.72,
+	shadow_tint: Color = Color(0.28, 0.34, 0.48, 1.0),
+	rim_strength: float = 0.08,
+	roughness: float = 0.88,
 	metallic: float = 0.0,
 	emission: Color = Color(0.0, 0.0, 0.0, 1.0),
 	emission_strength: float = 0.0,
-	toon_steps: float = 3.0
+	toon_steps: float = 4.0
 ) -> ShaderMaterial:
 	var mat: ShaderMaterial = ShaderMaterial.new()
 	mat.shader = _get_toon_shader()
 	mat.set_shader_parameter("albedo_color", albedo)
 	mat.set_shader_parameter("shadow_tint", shadow_tint)
-	mat.set_shader_parameter("rim_strength", rim_strength)
-	mat.set_shader_parameter("roughness_val", roughness)
-	mat.set_shader_parameter("metallic_val", metallic)
+	mat.set_shader_parameter("rim_strength", minf(rim_strength, 0.18))
+	mat.set_shader_parameter("roughness_val", maxf(roughness, 0.72))
+	mat.set_shader_parameter("metallic_val", minf(metallic, 0.15))
+	mat.set_shader_parameter("specular_strength", 0.02 if metallic <= 0.05 else 0.06)
 	mat.set_shader_parameter("emission_color", emission)
-	mat.set_shader_parameter("emission_strength", emission_strength)
+	mat.set_shader_parameter("emission_strength", minf(emission_strength, 0.85))
 	mat.set_shader_parameter("toon_steps", toon_steps)
 	return mat
 

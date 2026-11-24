@@ -46,14 +46,24 @@ func _ready() -> void:
 	hud.feed_dragon_requested.connect(_on_feed_dragon_requested)
 	hud.collect_habitat_oro_requested.connect(_on_collect_habitat_oro_requested)
 	hud.open_habitat_feed_requested.connect(_on_open_habitat_feed_requested)
+	hud.context_panel_closed.connect(camera_rig.clear_entity_focus)
 	camera_rig.focused_island_changed.connect(_on_focused_island_changed)
 
 	if adoratorio_cria and adoratorio_cria.has_signal("adoratorio_clicked"):
-		adoratorio_cria.connect("adoratorio_clicked", func() -> void: _on_panel_requested("Cruce"))
+		adoratorio_cria.connect("adoratorio_clicked", func() -> void:
+			camera_rig.focus_on_target(adoratorio_cria.global_position, 13.5)
+			_on_panel_requested("Cruce")
+		)
 	if adoratorio_extra and adoratorio_extra.has_signal("adoratorio_clicked"):
-		adoratorio_extra.connect("adoratorio_clicked", func() -> void: _on_panel_requested("Cruce"))
+		adoratorio_extra.connect("adoratorio_clicked", func() -> void:
+			camera_rig.focus_on_target(adoratorio_extra.global_position, 13.5)
+			_on_panel_requested("Cruce")
+		)
 	if torre_nido and torre_nido.has_signal("torre_nido_clicked"):
-		torre_nido.connect("torre_nido_clicked", func() -> void: _on_panel_requested("Nido"))
+		torre_nido.connect("torre_nido_clicked", func() -> void:
+			camera_rig.focus_on_target(torre_nido.global_position, 13.5)
+			_on_panel_requested("Nido")
+		)
 	if estructura_modal:
 		if estructura_modal.has_signal("status_message"):
 			estructura_modal.connect("status_message", hud.show_status_message)
@@ -146,7 +156,12 @@ func _connect_special_structures(root: Node) -> void:
 		return
 	for child: Node in root.get_children():
 		if child.has_signal("structure_clicked") and not child.is_connected("structure_clicked", _on_special_structure_clicked):
-			child.connect("structure_clicked", _on_special_structure_clicked)
+			var node_ref: Node3D = child as Node3D
+			child.connect("structure_clicked", func(k: String, iid: int) -> void:
+				if node_ref:
+					camera_rig.focus_on_target(node_ref.global_position, 13.5)
+				_on_special_structure_clicked(k, iid)
+			)
 		_connect_special_structures(child)
 
 
@@ -267,6 +282,8 @@ func _on_player_level_changed(level: int, exp_cur: int, exp_needed: int) -> void
 
 
 func _on_island_preview_requested(info: Dictionary) -> void:
+	if info.has("world_pos") and info["world_pos"] is Vector3:
+		camera_rig.focus_on_target(info["world_pos"], 18.5)
 	var core: Node = get_node_or_null("/root/GameCore")
 	var oro_actual: int = int(core.get_resources().get("oro", 0)) if core else 0
 	var lvl: int = core.get_player_level() if core else 1
@@ -274,6 +291,8 @@ func _on_island_preview_requested(info: Dictionary) -> void:
 
 
 func _on_parcel_preview_requested(_island_id: int, _parcel_idx: int, info: Dictionary) -> void:
+	if info.has("world_pos") and info["world_pos"] is Vector3:
+		camera_rig.focus_on_target(info["world_pos"], 15.0)
 	var core: Node = get_node_or_null("/root/GameCore")
 	var oro_actual: int = int(core.get_resources().get("oro", 0)) if core else 0
 	var lvl: int = core.get_player_level() if core else 1
@@ -306,6 +325,7 @@ func _on_obstacle_clicked(obs_node: Node3D) -> void:
 	var core: Node = get_node_or_null("/root/GameCore")
 	if core == null or obs_node == null:
 		return
+	camera_rig.focus_on_target(obs_node.global_position, 13.0)
 	var oid: String = str(obs_node.get("obstacle_id"))
 	var obs: Dictionary = core.get_obstacle_by_id(oid)
 	if obs.is_empty():
@@ -484,6 +504,7 @@ func _on_habitat_clicked(hab: HabitatBase) -> void:
 		return
 	_close_overlay_panels()
 	_selected_habitat = hab
+	camera_rig.focus_on_target(hab.global_position, 13.2)
 	var elem_info: Dictionary = core.get_element(hab.elemento_id)
 	var elem_name: String = str(elem_info.get("nombre", "Tierra"))
 	var oro_acum: int = int(floor(hab.accumulated_oro))

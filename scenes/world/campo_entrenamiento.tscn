@@ -42,6 +42,7 @@ mesh = SubResource("Mesh_Diana")
 
 [node name="Label3D" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
+visible = false
 billboard = 1
 text = "Entrenamiento"
 font_size = 22

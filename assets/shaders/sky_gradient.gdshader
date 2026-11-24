@@ -59,8 +59,8 @@ void sky() {
 	vec3 sun_dir = LIGHT0_ENABLED ? normalize(LIGHT0_DIRECTION) : normalize(vec3(0.45, 0.58, -0.68));
 	float sun_dot = max(dot(dir, sun_dir), 0.0);
 	float sun_disc = smoothstep(1.0 - sun_size * 0.05, 1.0 - sun_size * 0.012, sun_dot);
-	float sun_halo = pow(sun_dot, 12.0) * 0.35 + pow(sun_dot, 48.0) * 0.45;
-	col += sun_color * (sun_halo + sun_disc * 1.35);
+	float sun_halo = pow(sun_dot, 12.0) * 0.22 + pow(sun_dot, 48.0) * 0.28;
+	col += sun_color * (sun_halo + sun_disc * 0.55);
 
 	// Nubes estilizadas sobre el horizonte
 	if (y > 0.02) {

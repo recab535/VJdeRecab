@@ -1,25 +1,15 @@
 {
-  "estado": "COMPLETADO",
-  "fase_actual": 10,
-  "total_fases": 10,
-  "turno_actual": "G1",
+  "estado": "EN_PROGRESO",
+  "turno_actual": "A1",
+  "rondas_completadas": 5,
+  "max_rondas_limite": 10,
   "orden_agentes": [
     "G1",
     "G2",
     "A1",
     "A2"
   ],
-  "test_clean_start_mode": true,
-  "fases_plan_10": {
-    "Fase_1": "COMPLETADA - TEST_CLEAN_START_MODE = true en GameCore (sin romper save/load real al cambiar a false) + shaders toon_stylized.gdshader, water_lava_flow.gdshader, sky_gradient.gdshader, VisualShaders y WorldEnvironment pulido en scenes/main.tscn.",
-    "Fase_2": "COMPLETADA - 5 islas flotantes estratificadas/orgánicas con biomas propios, flujos animados (agua/lava/tormenta/astral), cuadrícula 14x14 legible con 4 parcelas comprables, puentes entre islas y 6 obstáculos estilizados con anillo de limpieza y aceleración con gemas.",
-    "Fase_3": "COMPLETADA - Estructuras 3D detalladas con VisualShaders: Torre Nido (1..4 huevos elementales dinámicos), Adoratorio + Adoratorio Extra (anillo rúnico + motas), Mina de Gemas, Portal de Historia (vórtice astral), Campo de Entrenamiento, Guardería (4 cunas) y 8 Tótems Potenciadores Elementales (BoosterTotem).",
-    "Fase_4": "COMPLETADA - Generador pixel art 48x48 con contorno, sombreado 3 tonos, variantes híbridas/legendarias y etapas (Cría/Joven/Adulto) en Dragon2D + vida/patrulla/emotes/sombra en hábitats temáticos 2.5D con indicador flotante de oro.",
-    "Fase_5": "COMPLETADA - Pantalla de carga animada con degradado, partículas mágicas, showcase de dragones 48x48 y carga asíncrona + tutorial narrativo del Maestro Kael con retrato 48x48, progreso por paso y flecha guía pulsante.",
-    "Fase_6": "COMPLETADA - Tema UI global ampliado (TabContainer/LineEdit/PanelContainer/ProgressBar), HUD 1920x1080 con animaciones de recursos, fix parcel_index y modales contextuales de estructuras con conteo en vivo y retratos 48x48.",
-    "Fase_7": "COMPLETADA - Tienda de 5 pestañas, Almacén (5 espacios ampliables + suelos infinitos) y Potenciadores Elementales x2/x3 (excluyendo Legendarios, desactivables en Almacén y validación is_booster_in_warehouse contra compra duplicada).",
-    "Fase_8": "COMPLETADA - Carrusel horizontal de 50 capítulos con especie obligatoria, auto-scroll y retratos/siluetas 48x48 + Bestiario completo de las 68 especies con siluetas, stats base y rarezas.",
-    "Fase_9": "COMPLETADA - Combate 1v1 con relevos directo (sin pantalla previa de rival), proyectiles elementales VFX, flash de daño, pedestales estilizados con VisualShaders, orientación frente a frente, fix de título de arco, XP de jugador y persistencia.",
-    "Fase_10": "COMPLETADA - AudioManager autoload procedural (música ambiental pentatónica + 8 SFX WAV incluyendo derrota conectados en combate/hábitats/nido/level-up/mina/tienda/almacén/desbloqueos/obstáculos/cría/entrenamiento/guardería/granja/campaña/bestiario + botón de silencio sincronizado en HUD + atajo teclado M + guardia driver Dummy headless sin leaks y limpieza _exit_tree), fix de carga diferida de shaders en VisualShaders y carga lazy de obstaculo_isla.tscn en FloatingIsland para load_threaded_request sin errores de parseo en loading_screen -> main, pulido UX/UI/Combate/Cruces/Hábitats (tecla ESC para cerrar paneles/cancelar colocación, pop-open centrado unificado, huevos pixel art 48x48 elementales con contorno y sombreado en NestPanel, retrato 48x48 y bonos de Tótem/Entrenamiento en PanelAlimentar, fix de ranuras dinámicas 1..4 y sprites 48x48 en BreedingPanel + soporte real de elementos opuestos puros bloqueados, cruces híbridos y recetas_legendarias con probabilidad visible, fix de tiempo_restante_seg/nest_updated en buy_egg, normalización int de arrays al cargar savegame JSON, inclusión de Guardería en has_species_in_collection, producción real dinámica de Oro/min por dragón alojado y nivel en HabitatBase + ubicación preferente por afinidad elemental + sincronización visual completa de Guardería al enviar/retirar crías sin solapar spots, fix de reactivación de botones de relevo tras KO enemigo y prevención de doble inicio de capítulo en CombatArena, guardia de escena tras timer en CombatManager, etapas visuales Cría/Joven/Adulto en rivales), limpieza de cachés estáticos en GameCore._exit_tree y auditoría headless real en Godot 4.7.2 (0 errores de sintaxis, 0 errores runtime en loading_screen -> main y 0 leaks en main.tscn directo, TEST_CLEAN_START_MODE = true verificado)."
+  "ultimo_ciclo": {
+    "Fase_1_Iluminacion_Islas_Camara": "Shader toon_stylized.gdshader sin ruido cuadriculado ni fogonazo especular al rotar 360°, 5 islas orgánicas esculpidas con SurfaceTool, etiquetas flotantes ocultas en reposo y enfoque suave de cámara (Tween) al clicar entidades."
   }
 }

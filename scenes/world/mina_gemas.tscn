@@ -46,6 +46,7 @@ mesh = SubResource("Mesh_Gema")
 
 [node name="Label3D" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.95, 0)
+visible = false
 billboard = 1
 text = "Mina de Gemas"
 font_size = 22

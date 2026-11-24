@@ -152,42 +152,18 @@ func _enrich_nursery() -> void:
 func _refresh_status_label() -> void:
 	if label_3d == null:
 		return
+	# Sin etiquetas flotantes en reposo; solo mostrar indicador de recolección lista en Mina de Gemas
+	label_3d.visible = false
 	var core: Node = get_node_or_null("/root/GameCore")
 	if core == null:
 		return
-
-	match kind:
-		"mina_gemas":
-			var mines: Dictionary = core.player_state.get("minas_gemas", {})
-			var m: Dictionary = mines.get(str(island_id), {})
-			if not bool(m.get("construida", false)):
-				label_3d.text = "Mina de Gemas\n(Construir: 10 💎)"
-				label_3d.modulate = Color(0.76, 0.90, 1.0, 0.92)
-			elif bool(m.get("lista", false)):
-				label_3d.text = "✨ Mina de Gemas ✨\n¡+1 Gema lista!"
-				label_3d.modulate = Color(0.35, 1.0, 0.85, 1.0)
-			else:
-				var rem: int = int(ceil(float(m.get("restante_seg", 86400.0))))
-				label_3d.text = "Mina de Gemas\n%dh %02dm" % [rem / 3600, (rem % 3600) / 60]
-				label_3d.modulate = Color(0.88, 0.96, 1.0, 1.0)
-		"campo_entrenamiento":
-			var tr: Dictionary = core.player_state.get("entrenamiento", {})
-			if bool(tr.get("activo", false)):
-				var rem: int = int(ceil(float(tr.get("restante_seg", 0.0))))
-				label_3d.text = "⚔ Entrenando\n%02d:%02d" % [rem / 60, rem % 60]
-				label_3d.modulate = Color(1.0, 0.86, 0.36, 1.0)
-			else:
-				label_3d.text = "Campo de Entrenamiento"
-				label_3d.modulate = Color(1.0, 0.96, 0.90, 1.0)
-		"guarderia_crias":
-			var g: Array = core.player_state.get("guarderia", [])
-			label_3d.text = "Guardería (%d/4)" % g.size()
-			label_3d.modulate = Color(0.92, 1.0, 0.92, 1.0)
-		"portal_historia":
-			var camp: Dictionary = core.player_state.get("campana", {})
-			var cap: int = int(camp.get("capitulo_desbloqueado", 1))
-			label_3d.text = "Portal de Historia\nCap. %d / 50" % cap
-			label_3d.modulate = Color(0.74, 0.92, 1.0, 1.0)
+	if kind == "mina_gemas":
+		var mines: Dictionary = core.player_state.get("minas_gemas", {})
+		var m: Dictionary = mines.get(str(island_id), {})
+		if bool(m.get("construida", false)) and bool(m.get("lista", false)):
+			label_3d.text = "💎"
+			label_3d.modulate = Color(0.35, 1.0, 0.90, 1.0)
+			label_3d.visible = true
 
 
 func _process(delta: float) -> void:

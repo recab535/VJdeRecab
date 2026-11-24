@@ -15,6 +15,8 @@ signal speedup_obstacle_requested(obs_id: String)
 signal feed_dragon_requested(dragon_uid: int)
 signal collect_habitat_oro_requested
 signal open_habitat_feed_requested
+signal move_habitat_requested
+signal context_panel_closed
 
 @onready var lbl_nivel_jugador: Label = %LblNivelJugador
 @onready var pb_nivel_jugador: ProgressBar = %PbNivelJugador
@@ -75,7 +77,10 @@ func _ready() -> void:
 		btn_isla_ant.pressed.connect(func() -> void: prev_island_requested.emit())
 	if btn_isla_sig:
 		btn_isla_sig.pressed.connect(func() -> void: next_island_requested.emit())
-	btn_cerrar_preview.pressed.connect(hide_island_preview)
+	btn_cerrar_preview.pressed.connect(func() -> void:
+		hide_island_preview()
+		context_panel_closed.emit()
+	)
 	btn_desbloquear_isla.pressed.connect(func() -> void:
 		if _preview_parcel_idx >= 0:
 			unlock_parcel_requested.emit(_preview_island_id, _preview_parcel_idx, _preview_cost_oro, _preview_level_req)
@@ -83,7 +88,10 @@ func _ready() -> void:
 			unlock_island_requested.emit(_preview_island_id, _preview_cost_oro, _preview_level_req)
 	)
 	if btn_cerrar_obs:
-		btn_cerrar_obs.pressed.connect(hide_obstacle_panel)
+		btn_cerrar_obs.pressed.connect(func() -> void:
+			hide_obstacle_panel()
+			context_panel_closed.emit()
+		)
 	if btn_limpiar_obs:
 		btn_limpiar_obs.pressed.connect(func() -> void:
 			if not _selected_obs_id.is_empty():
@@ -102,7 +110,19 @@ func _ready() -> void:
 	if btn_habitat_alimentar:
 		btn_habitat_alimentar.pressed.connect(func() -> void: open_habitat_feed_requested.emit())
 	if btn_cerrar_habitat_menu:
-		btn_cerrar_habitat_menu.pressed.connect(hide_habitat_menu)
+		btn_cerrar_habitat_menu.pressed.connect(func() -> void:
+			hide_habitat_menu()
+			context_panel_closed.emit()
+		)
+	var hbox_hab: HBoxContainer = panel_habitat_menu.get_node_or_null("HBoxHabitatMenu") as HBoxContainer if panel_habitat_menu else null
+	if hbox_hab and hbox_hab.get_node_or_null("BtnMoverHabitat") == null:
+		var btn_move: Button = Button.new()
+		btn_move.name = "BtnMoverHabitat"
+		btn_move.custom_minimum_size = Vector2(96, 44)
+		btn_move.text = "Mover"
+		btn_move.pressed.connect(func() -> void: move_habitat_requested.emit())
+		hbox_hab.add_child(btn_move)
+		hbox_hab.move_child(btn_move, max(0, hbox_hab.get_child_count() - 2))
 	if btn_anterior_dragon:
 		btn_anterior_dragon.pressed.connect(func() -> void: _cycle_feed_dragon(-1))
 	if btn_siguiente_dragon:

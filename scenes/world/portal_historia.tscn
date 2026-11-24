@@ -56,6 +56,7 @@ mesh = SubResource("Mesh_PortalLuz")
 
 [node name="Label3D" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, 0)
+visible = false
 billboard = 1
 text = "Portal de Historia"
 font_size = 24

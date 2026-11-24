@@ -81,6 +81,7 @@ func _refresh_label() -> void:
 	if label_3d == null:
 		return
 	var spec: Dictionary = OBSTACLE_CATALOG.get(obstacle_type, OBSTACLE_CATALOG["arbusto"])
+	label_3d.visible = limpiando
 	if limpiando:
 		label_3d.text = "⛏ %s\n%s (⚡%d Gemas)" % [
 			str(spec["nombre"]),

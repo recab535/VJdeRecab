@@ -1,8 +1,8 @@
 extends Node3D
 
-## Isla Flotante 3D orgánica y estratificada (archipiélago de 5 islas consecutivas en eje Z).
-## Cuadrícula de 14x14 dividida en 4 parcelas comprables (0..3) con biomas diferenciados,
-## cascadas/flujos shader 2.5D, rocas flotantes satélite y obstáculos temporizados.
+## Isla Flotante 3D orgánica y esculpida (silueta irregular sin plato circular ni césped cuadriculado).
+## Cuadrícula lógica de 14x14 dividida en 4 parcelas comprables (0..3) con rejilla visible
+## únicamente durante modo colocación o movimiento.
 
 signal island_locked_clicked(island_info: Dictionary)
 signal parcel_locked_clicked(island_id: int, parcel_index: int, info: Dictionary)
@@ -17,12 +17,12 @@ var _obstacle_scene_cache: PackedScene = null
 const ISLAND_CONFIGS: Dictionary = {
 	1: {
 		"nombre": "Isla 1 — Santuario Verde",
-		"color": Color(0.30, 0.78, 0.34),
-		"rim_color": Color(0.24, 0.64, 0.28),
-		"rock_top": Color(0.56, 0.42, 0.30),
-		"rock_mid": Color(0.44, 0.33, 0.25),
-		"rock_deep": Color(0.32, 0.24, 0.20),
-		"accent": Color(0.95, 0.82, 0.24),
+		"color": Color(0.32, 0.72, 0.32),
+		"rim_color": Color(0.24, 0.56, 0.25),
+		"rock_top": Color(0.54, 0.40, 0.28),
+		"rock_mid": Color(0.42, 0.32, 0.24),
+		"rock_deep": Color(0.30, 0.23, 0.19),
+		"accent": Color(0.92, 0.78, 0.26),
 		"flow_type": "water",
 		"costo_oro": 0,
 		"nivel_req": 1,
@@ -30,12 +30,12 @@ const ISLAND_CONFIGS: Dictionary = {
 	},
 	2: {
 		"nombre": "Isla 2 — Bruma Volcánica",
-		"color": Color(0.68, 0.34, 0.22),
-		"rim_color": Color(0.42, 0.20, 0.16),
+		"color": Color(0.64, 0.34, 0.22),
+		"rim_color": Color(0.44, 0.22, 0.16),
 		"rock_top": Color(0.34, 0.24, 0.22),
 		"rock_mid": Color(0.24, 0.17, 0.17),
 		"rock_deep": Color(0.16, 0.11, 0.12),
-		"accent": Color(1.0, 0.45, 0.12),
+		"accent": Color(0.96, 0.44, 0.14),
 		"flow_type": "lava",
 		"costo_oro": 2500,
 		"nivel_req": 3,
@@ -43,12 +43,12 @@ const ISLAND_CONFIGS: Dictionary = {
 	},
 	3: {
 		"nombre": "Isla 3 — Atolón Cristalino",
-		"color": Color(0.24, 0.70, 0.84),
-		"rim_color": Color(0.18, 0.56, 0.72),
-		"rock_top": Color(0.68, 0.62, 0.48),
-		"rock_mid": Color(0.46, 0.50, 0.56),
-		"rock_deep": Color(0.26, 0.34, 0.46),
-		"accent": Color(0.58, 0.96, 1.0),
+		"color": Color(0.26, 0.66, 0.78),
+		"rim_color": Color(0.18, 0.52, 0.66),
+		"rock_top": Color(0.64, 0.58, 0.46),
+		"rock_mid": Color(0.44, 0.48, 0.54),
+		"rock_deep": Color(0.26, 0.34, 0.44),
+		"accent": Color(0.54, 0.90, 0.96),
 		"flow_type": "water",
 		"costo_oro": 8000,
 		"nivel_req": 6,
@@ -56,12 +56,12 @@ const ISLAND_CONFIGS: Dictionary = {
 	},
 	4: {
 		"nombre": "Isla 4 — Cumbre Tormenta",
-		"color": Color(0.46, 0.44, 0.78),
-		"rim_color": Color(0.34, 0.32, 0.62),
-		"rock_top": Color(0.36, 0.38, 0.52),
-		"rock_mid": Color(0.26, 0.28, 0.42),
-		"rock_deep": Color(0.18, 0.20, 0.32),
-		"accent": Color(0.54, 0.92, 1.0),
+		"color": Color(0.44, 0.42, 0.72),
+		"rim_color": Color(0.32, 0.30, 0.58),
+		"rock_top": Color(0.36, 0.38, 0.50),
+		"rock_mid": Color(0.26, 0.28, 0.40),
+		"rock_deep": Color(0.18, 0.20, 0.30),
+		"accent": Color(0.52, 0.86, 0.96),
 		"flow_type": "storm",
 		"costo_oro": 20000,
 		"nivel_req": 10,
@@ -69,12 +69,12 @@ const ISLAND_CONFIGS: Dictionary = {
 	},
 	5: {
 		"nombre": "Isla 5 — Bastión Astral",
-		"color": Color(0.32, 0.26, 0.54),
-		"rim_color": Color(0.22, 0.18, 0.42),
-		"rock_top": Color(0.28, 0.22, 0.40),
-		"rock_mid": Color(0.20, 0.15, 0.30),
-		"rock_deep": Color(0.12, 0.09, 0.20),
-		"accent": Color(1.0, 0.82, 0.36),
+		"color": Color(0.32, 0.26, 0.50),
+		"rim_color": Color(0.22, 0.18, 0.38),
+		"rock_top": Color(0.28, 0.22, 0.38),
+		"rock_mid": Color(0.20, 0.15, 0.28),
+		"rock_deep": Color(0.12, 0.09, 0.18),
+		"accent": Color(0.95, 0.78, 0.36),
 		"flow_type": "astral",
 		"costo_oro": 45000,
 		"nivel_req": 15,
@@ -93,15 +93,14 @@ const PARCEL_OFFSETS: Array[Vector3] = [
 
 var is_island_unlocked: bool = false
 var unlocked_parcels: Array = []
-var parcel_meshes: Array[MeshInstance3D] = []
-var parcel_trim_meshes: Array[MeshInstance3D] = []
-var parcel_lock_labels: Array[Label3D] = []
+var meadow_mesh_node: MeshInstance3D = null
+var parcel_veil_meshes: Array[MeshInstance3D] = []
 var parcel_areas: Array[Area3D] = []
 var slot_nodes: Array[Node3D] = []
 var obstacle_nodes: Dictionary = {}
 var floor_tile_root: Node3D = null
+var _grid_overlay_root: Node3D = null
 var _floating_satellites: Array[Node3D] = []
-var _island_title_label: Label3D = null
 
 var _base_y: float = 0.0
 var _bob_time: float = 0.0
@@ -114,59 +113,151 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_bob_time += delta * 1.05
-	position.y = _base_y + sin(_bob_time) * 0.14
+	_bob_time += delta * 0.95
+	position.y = _base_y + sin(_bob_time) * 0.11
 	for i: int in range(_floating_satellites.size()):
 		var sat: Node3D = _floating_satellites[i]
 		if is_instance_valid(sat):
 			var base_sy: float = float(sat.get_meta("base_y", sat.position.y))
-			sat.position.y = base_sy + sin(_bob_time * 1.4 + float(i) * 1.7) * 0.22
-			sat.rotation.y += delta * (0.18 + float(i % 2) * 0.12)
+			sat.position.y = base_sy + sin(_bob_time * 1.35 + float(i) * 1.7) * 0.20
+			sat.rotation.y += delta * (0.14 + float(i % 2) * 0.10)
+
+
+func _organic_radius(angle: float, base_r: float) -> float:
+	var s: float = float(island_id) * 1.37
+	var wave: float = (
+		sin(angle * 2.0 + s) * 0.085
+		+ cos(angle * 3.0 - s * 1.4) * 0.065
+		+ sin(angle * 5.0 + s * 2.1) * 0.032
+		+ cos(angle * 4.0 + s * 0.7) * 0.028
+	)
+	return base_r * (1.0 + wave)
+
+
+func _create_organic_cliff_mesh(
+	rings: Array[Dictionary],
+	segments: int = 28
+) -> ArrayMesh:
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	var ring_verts: Array = []
+	for r_idx: int in range(rings.size()):
+		var r_cfg: Dictionary = rings[r_idx]
+		var r_base: float = float(r_cfg["radius"])
+		var y_val: float = float(r_cfg["y"])
+		var crag: float = float(r_cfg.get("crag", 0.0))
+		var shift: Vector2 = r_cfg.get("shift", Vector2.ZERO)
+		var pts: PackedVector3Array = PackedVector3Array()
+		for i: int in range(segments):
+			var ang: float = (float(i) / float(segments)) * TAU
+			var rad: float = _organic_radius(ang, r_base)
+			if crag > 0.0:
+				rad *= 1.0 + sin(ang * 7.0 + float(r_idx) * 2.3 + float(island_id)) * crag
+			var py: float = y_val + sin(ang * 4.0 + float(r_idx)) * (crag * 0.55)
+			pts.append(Vector3(cos(ang) * rad + shift.x, py, sin(ang) * rad + shift.y))
+		ring_verts.append(pts)
+
+	# Tapa superior orgánica suave
+	var top_pts: PackedVector3Array = ring_verts[0]
+	var top_center: Vector3 = Vector3(0.0, float(rings[0]["y"]) + 0.03, 0.0)
+	for i: int in range(segments):
+		var next_i: int = (i + 1) % segments
+		st.add_vertex(top_center)
+		st.add_vertex(top_pts[next_i])
+		st.add_vertex(top_pts[i])
+
+	# Paredes laterales esculpidas entre anillos
+	for r_idx: int in range(rings.size() - 1):
+		var upper: PackedVector3Array = ring_verts[r_idx]
+		var lower: PackedVector3Array = ring_verts[r_idx + 1]
+		for i: int in range(segments):
+			var next_i: int = (i + 1) % segments
+			st.add_vertex(upper[i])
+			st.add_vertex(upper[next_i])
+			st.add_vertex(lower[i])
+
+			st.add_vertex(upper[next_i])
+			st.add_vertex(lower[next_i])
+			st.add_vertex(lower[i])
+
+	# Punta inferior asimétrica
+	var bot_pts: PackedVector3Array = ring_verts[rings.size() - 1]
+	var bot_tip: Vector3 = Vector3(
+		sin(float(island_id) * 1.9) * 0.55,
+		float(rings[rings.size() - 1]["y"]) - 1.15,
+		cos(float(island_id) * 1.3) * 0.45
+	)
+	for i: int in range(segments):
+		var next_i: int = (i + 1) % segments
+		st.add_vertex(bot_tip)
+		st.add_vertex(bot_pts[i])
+		st.add_vertex(bot_pts[next_i])
+
+	st.generate_normals()
+	return st.commit()
 
 
 func _build_island_geometry() -> void:
 	var cfg: Dictionary = ISLAND_CONFIGS.get(island_id, ISLAND_CONFIGS[1])
-	var rock_top_mat: ShaderMaterial = VisualShaders.make_toon(cfg["rock_top"], Color(0.22, 0.24, 0.36), 0.28, 0.88)
-	var rock_mid_mat: ShaderMaterial = VisualShaders.make_toon(cfg["rock_mid"], Color(0.18, 0.20, 0.32), 0.22, 0.92)
-	var rock_deep_mat: ShaderMaterial = VisualShaders.make_toon(cfg["rock_deep"], Color(0.14, 0.16, 0.26), 0.18, 0.95)
-	var rim_mat: ShaderMaterial = VisualShaders.make_toon(cfg["rim_color"], Color(0.20, 0.26, 0.38), 0.36, 0.78)
+	var rock_mat: ShaderMaterial = VisualShaders.make_toon(cfg["rock_mid"], Color(0.18, 0.22, 0.34), 0.06, 0.94)
+	var rock_deep_mat: ShaderMaterial = VisualShaders.make_toon(cfg["rock_deep"], Color(0.14, 0.17, 0.28), 0.05, 0.96)
+	var meadow_mat: ShaderMaterial = VisualShaders.make_toon(cfg["color"], Color(0.22, 0.30, 0.42), 0.05, 0.94)
+	var rim_mat: ShaderMaterial = VisualShaders.make_toon(cfg["rim_color"], Color(0.20, 0.28, 0.38), 0.06, 0.90)
 
-	# 1. Plataforma estratificada orgánica (3 estratos + estalactitas colgantes)
-	_add_rock_stratum(Vector3(0.0, -0.42, 0.0), 10.2, 9.5, 1.05, 12, rock_top_mat)
-	_add_rock_stratum(Vector3(0.15, -1.65, -0.1), 8.8, 5.4, 1.85, 10, rock_mid_mat)
-	_add_rock_stratum(Vector3(-0.1, -3.55, 0.12), 5.0, 1.35, 2.55, 8, rock_deep_mat)
+	# 1. Acantilado rocoso orgánico irregular debajo de la pradera
+	var cliff_rings: Array[Dictionary] = [
+		{"radius": 9.85, "y": 0.14, "crag": 0.04, "shift": Vector2.ZERO},
+		{"radius": 9.15, "y": -0.75, "crag": 0.09, "shift": Vector2(0.18, -0.12)},
+		{"radius": 6.40, "y": -2.35, "crag": 0.14, "shift": Vector2(-0.22, 0.16)},
+		{"radius": 2.95, "y": -4.10, "crag": 0.18, "shift": Vector2(0.14, 0.10)}
+	]
+	var cliff_node: MeshInstance3D = MeshInstance3D.new()
+	cliff_node.name = "AcantiladoOrganico"
+	cliff_node.mesh = _create_organic_cliff_mesh(cliff_rings, 28)
+	cliff_node.material_override = rock_mat
+	add_child(cliff_node)
 
-	# Cornisa orgánica perimetral bajo el césped
-	var rim_ring: MeshInstance3D = MeshInstance3D.new()
-	var rim_mesh: CylinderMesh = CylinderMesh.new()
-	rim_mesh.top_radius = 10.35
-	rim_mesh.bottom_radius = 9.95
-	rim_mesh.height = 0.42
-	rim_mesh.radial_segments = 12
-	rim_ring.mesh = rim_mesh
-	rim_ring.material_override = rim_mat
-	rim_ring.position = Vector3(0.0, 0.02, 0.0)
-	add_child(rim_ring)
+	# 2. Pradera superior continua orgánica con borde de césped colgante (sin plato circular)
+	var meadow_rings: Array[Dictionary] = [
+		{"radius": 10.15, "y": 0.56, "crag": 0.025, "shift": Vector2.ZERO},
+		{"radius": 10.35, "y": 0.30, "crag": 0.04, "shift": Vector2.ZERO},
+		{"radius": 9.80, "y": 0.06, "crag": 0.05, "shift": Vector2.ZERO}
+	]
+	meadow_mesh_node = MeshInstance3D.new()
+	meadow_mesh_node.name = "PraderaOrganica"
+	meadow_mesh_node.mesh = _create_organic_cliff_mesh(meadow_rings, 28)
+	meadow_mesh_node.material_override = meadow_mat
+	add_child(meadow_mesh_node)
 
-	# Estalactitas asimétricas y rocas satélite flotantes
+	# Estalactitas asimétricas esculpidas bajo el acantilado
 	var stalactite_offsets: Array[Vector3] = [
-		Vector3(-5.8, -2.2, -3.4),
-		Vector3(5.6, -2.5, -2.8),
-		Vector3(-4.6, -2.8, 4.9),
-		Vector3(4.8, -2.1, 4.2),
-		Vector3(0.4, -4.7, -0.3)
+		Vector3(-5.6, -2.1, -3.2),
+		Vector3(5.4, -2.4, -2.6),
+		Vector3(-4.4, -2.7, 4.7),
+		Vector3(4.6, -2.0, 4.0)
 	]
 	for idx: int in range(stalactite_offsets.size()):
-		var st_r: float = 1.65 - float(idx % 3) * 0.32
-		var st_h: float = 2.6 + float(idx % 2) * 0.9
-		_add_rock_stratum(stalactite_offsets[idx], st_r, 0.25, st_h, 6, rock_mid_mat if idx % 2 == 0 else rock_deep_mat)
+		var st_r: float = 1.45 - float(idx % 3) * 0.25
+		var st_h: float = 2.4 + float(idx % 2) * 0.85
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		var cm: CylinderMesh = CylinderMesh.new()
+		cm.top_radius = st_r
+		cm.bottom_radius = 0.22
+		cm.height = st_h
+		cm.radial_segments = 6
+		mi.mesh = cm
+		mi.material_override = rock_deep_mat
+		mi.position = stalactite_offsets[idx]
+		add_child(mi)
 
+	# Rocas flotantes satélite orgánicas
 	_floating_satellites.clear()
 	var sat_positions: Array[Vector3] = [
-		Vector3(-10.8, -1.4, -4.5),
-		Vector3(10.6, -0.9, 3.2),
-		Vector3(-9.4, -2.6, 6.2),
-		Vector3(9.8, -2.1, -6.4)
+		Vector3(-11.2, -1.2, -4.4),
+		Vector3(11.0, -0.8, 3.4),
+		Vector3(-9.8, -2.4, 6.4),
+		Vector3(10.2, -2.0, -6.2)
 	]
 	for s_idx: int in range(sat_positions.size()):
 		var sat_root: Node3D = Node3D.new()
@@ -174,39 +265,37 @@ func _build_island_geometry() -> void:
 		sat_root.set_meta("base_y", sat_positions[s_idx].y)
 		var sat_top: MeshInstance3D = MeshInstance3D.new()
 		var sat_cap: CylinderMesh = CylinderMesh.new()
-		sat_cap.top_radius = 1.05 - float(s_idx % 2) * 0.25
-		sat_cap.bottom_radius = 0.22
-		sat_cap.height = 1.35
+		sat_cap.top_radius = 1.0 - float(s_idx % 2) * 0.22
+		sat_cap.bottom_radius = 0.2
+		sat_cap.height = 1.3
 		sat_cap.radial_segments = 6
 		sat_top.mesh = sat_cap
-		sat_top.material_override = rock_mid_mat
+		sat_top.material_override = rock_mat
 		sat_root.add_child(sat_top)
 
 		var grass_cap: MeshInstance3D = MeshInstance3D.new()
 		var g_mesh: CylinderMesh = CylinderMesh.new()
-		g_mesh.top_radius = sat_cap.top_radius * 1.04
+		g_mesh.top_radius = sat_cap.top_radius * 1.06
 		g_mesh.bottom_radius = sat_cap.top_radius * 0.96
 		g_mesh.height = 0.22
 		g_mesh.radial_segments = 6
 		grass_cap.mesh = g_mesh
 		grass_cap.material_override = rim_mat
-		grass_cap.position = Vector3(0.0, 0.68, 0.0)
+		grass_cap.position = Vector3(0.0, 0.66, 0.0)
 		sat_root.add_child(grass_cap)
-
 		add_child(sat_root)
 		_floating_satellites.append(sat_root)
 
-	# 2. Detalles de bioma diferenciados (cascada/lava/cristal/flujo astral + ornamentos perimetrales)
+	# 3. Detalles ambientales de bioma y puente inter-isla
 	_build_biome_features(cfg)
-
-	# 3. Puente de piedras flotantes hacia la siguiente isla en el eje -Z
 	if island_id < 5:
-		_build_inter_island_bridge(rock_top_mat, rim_mat)
+		_build_inter_island_bridge(rock_mat, rim_mat)
 
-	# 4. 4 Parcelas de 7x7 conformando la cuadrícula 14x14
-	parcel_meshes.clear()
-	parcel_trim_meshes.clear()
-	parcel_lock_labels.clear()
+	# 4. Rejilla lógica 14x14 (OCULTA en reposo; solo visible al colocar o mover)
+	_build_placement_grid_overlay()
+
+	# 5. 4 Parcelas (0..3) con velo suave solo cuando están bloqueadas + áreas clicables
+	parcel_veil_meshes.clear()
 	parcel_areas.clear()
 	slot_nodes.clear()
 
@@ -216,45 +305,21 @@ func _build_island_geometry() -> void:
 		p_root.position = PARCEL_OFFSETS[p_idx]
 		add_child(p_root)
 
-		var slab: MeshInstance3D = MeshInstance3D.new()
-		var box: BoxMesh = BoxMesh.new()
-		box.size = Vector3(6.72, 0.56, 6.72)
-		slab.mesh = box
-		slab.position = Vector3(0.0, 0.28, 0.0)
-		p_root.add_child(slab)
-		parcel_meshes.append(slab)
-
-		# Borde biselado sutil por parcela + retícula visual 7x7 (14x14 total)
-		var trim: MeshInstance3D = MeshInstance3D.new()
-		var trim_box: BoxMesh = BoxMesh.new()
-		trim_box.size = Vector3(6.86, 0.16, 6.86)
-		trim.mesh = trim_box
-		trim.position = Vector3(0.0, 0.12, 0.0)
-		trim.material_override = rim_mat
-		p_root.add_child(trim)
-		parcel_trim_meshes.append(trim)
-
-		_add_parcel_grid_lines(p_root)
-
-		# Etiqueta de parcela bloqueada (solo visible cuando la isla está abierta pero la parcela cerrada)
-		var p_lbl: Label3D = Label3D.new()
-		p_lbl.text = "Parcela %d\nClick para expandir" % (p_idx + 1)
-		p_lbl.position = Vector3(0.0, 1.05, 0.0)
-		p_lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		p_lbl.font_size = 24
-		p_lbl.outline_size = 6
-		p_lbl.modulate = Color(1.0, 0.92, 0.55, 0.95)
-		p_lbl.visible = false
-		p_root.add_child(p_lbl)
-		parcel_lock_labels.append(p_lbl)
+		var veil: MeshInstance3D = MeshInstance3D.new()
+		var v_box: BoxMesh = BoxMesh.new()
+		v_box.size = Vector3(6.6, 0.08, 6.6)
+		veil.mesh = v_box
+		veil.position = Vector3(0.0, 0.60, 0.0)
+		p_root.add_child(veil)
+		parcel_veil_meshes.append(veil)
 
 		var p_area: Area3D = Area3D.new()
 		var col: CollisionShape3D = CollisionShape3D.new()
 		var bshape: BoxShape3D = BoxShape3D.new()
-		bshape.size = Vector3(6.72, 0.85, 6.72)
+		bshape.size = Vector3(6.6, 0.85, 6.6)
 		col.shape = bshape
 		p_area.add_child(col)
-		p_area.position = Vector3(0.0, 0.36, 0.0)
+		p_area.position = Vector3(0.0, 0.42, 0.0)
 		var captured_p: int = p_idx
 		p_area.input_event.connect(func(_cam: Node, ev: InputEvent, _pos: Vector3, _n: Vector3, _s: int) -> void:
 			if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
@@ -263,8 +328,8 @@ func _build_island_geometry() -> void:
 		p_root.add_child(p_area)
 		parcel_areas.append(p_area)
 
-		# 2 Slots construibles por parcela (8 por isla -> 40 en las 5 islas)
-		var local_offsets: Array[Vector3] = [Vector3(-1.55, 0.58, -1.2), Vector3(1.55, 0.58, 1.3)]
+		# 2 Slots construibles por parcela (8 por isla)
+		var local_offsets: Array[Vector3] = [Vector3(-1.55, 0.60, -1.2), Vector3(1.55, 0.60, 1.3)]
 		for s_local: int in range(local_offsets.size()):
 			var slot: Marker3D = Marker3D.new()
 			slot.name = "Slot_%d_%d" % [p_idx, s_local]
@@ -273,7 +338,7 @@ func _build_island_geometry() -> void:
 			var pad_mesh: CylinderMesh = CylinderMesh.new()
 			pad_mesh.top_radius = 1.35
 			pad_mesh.bottom_radius = 1.35
-			pad_mesh.height = 0.04
+			pad_mesh.height = 0.03
 			pad_mesh.radial_segments = 16
 			pad.mesh = pad_mesh
 			slot.add_child(pad)
@@ -294,54 +359,35 @@ func _build_island_geometry() -> void:
 	floor_tile_root.name = "FloorTiles"
 	add_child(floor_tile_root)
 
-	# Etiqueta flotante de la isla
-	_island_title_label = Label3D.new()
-	_island_title_label.text = str(cfg["nombre"])
-	_island_title_label.position = Vector3(0.0, 3.0, -7.4)
-	_island_title_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_island_title_label.font_size = 36
-	_island_title_label.outline_size = 9
-	add_child(_island_title_label)
 
+func _build_placement_grid_overlay() -> void:
+	_grid_overlay_root = Node3D.new()
+	_grid_overlay_root.name = "GridOverlay"
+	_grid_overlay_root.visible = false
+	add_child(_grid_overlay_root)
 
-func _add_rock_stratum(pos: Vector3, top_r: float, bot_r: float, height: float, segs: int, mat: Material) -> void:
-	var mi: MeshInstance3D = MeshInstance3D.new()
-	var cm: CylinderMesh = CylinderMesh.new()
-	cm.top_radius = top_r
-	cm.bottom_radius = bot_r
-	cm.height = height
-	cm.radial_segments = segs
-	mi.mesh = cm
-	mi.material_override = mat
-	mi.position = pos
-	add_child(mi)
-
-
-func _add_parcel_grid_lines(p_root: Node3D) -> void:
-	# Líneas sutiles divisorias para evidenciar la cuadrícula 7x7 de cada parcela (14x14 total)
 	var line_mat: StandardMaterial3D = StandardMaterial3D.new()
 	line_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	line_mat.albedo_color = Color(1.0, 1.0, 1.0, 0.12)
+	line_mat.albedo_color = Color(0.88, 1.0, 0.88, 0.24)
 	line_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
-	var step: float = 6.72 / 7.0
-	for i: int in range(1, 7):
-		var offset: float = -3.36 + float(i) * step
+	for i: int in range(15):
+		var coord: float = -7.0 + float(i)
 		var lx: MeshInstance3D = MeshInstance3D.new()
 		var bx: BoxMesh = BoxMesh.new()
-		bx.size = Vector3(6.64, 0.012, 0.028)
+		bx.size = Vector3(14.0, 0.012, 0.032)
 		lx.mesh = bx
 		lx.material_override = line_mat
-		lx.position = Vector3(0.0, 0.568, offset)
-		p_root.add_child(lx)
+		lx.position = Vector3(0.0, 0.605, coord)
+		_grid_overlay_root.add_child(lx)
 
 		var lz: MeshInstance3D = MeshInstance3D.new()
 		var bz: BoxMesh = BoxMesh.new()
-		bz.size = Vector3(0.028, 0.012, 6.64)
+		bz.size = Vector3(0.032, 0.012, 14.0)
 		lz.mesh = bz
 		lz.material_override = line_mat
-		lz.position = Vector3(offset, 0.568, 0.0)
-		p_root.add_child(lz)
+		lz.position = Vector3(coord, 0.605, 0.0)
+		_grid_overlay_root.add_child(lz)
 
 
 func _build_biome_features(cfg: Dictionary) -> void:
@@ -351,91 +397,73 @@ func _build_biome_features(cfg: Dictionary) -> void:
 		"lava":
 			flow_mat = VisualShaders.make_lava()
 		"storm":
-			flow_mat = VisualShaders.make_water(
-				Color(0.28, 0.72, 0.98, 0.90),
-				Color(0.12, 0.24, 0.68, 0.95),
-				Color(0.86, 0.96, 1.0, 1.0),
-				0.95,
-				0.05
-			)
+			flow_mat = VisualShaders.make_water(Color(0.28, 0.68, 0.92, 0.90), Color(0.12, 0.24, 0.62, 0.95), Color(0.82, 0.94, 1.0, 1.0), 0.85, 0.04)
 		"astral":
 			flow_mat = VisualShaders.make_astral_flow()
 		_:
 			flow_mat = VisualShaders.make_water()
 
-	# Estanque / fuente de borde + cascada animada cayendo por el acantilado lateral
 	var pool: MeshInstance3D = MeshInstance3D.new()
 	var pool_mesh: CylinderMesh = CylinderMesh.new()
-	pool_mesh.top_radius = 1.65
-	pool_mesh.bottom_radius = 1.55
-	pool_mesh.height = 0.14
+	pool_mesh.top_radius = 1.55
+	pool_mesh.bottom_radius = 1.45
+	pool_mesh.height = 0.10
 	pool_mesh.radial_segments = 14
 	pool.mesh = pool_mesh
 	pool.material_override = flow_mat
-	pool.position = Vector3(7.35, 0.42, -1.2)
+	pool.position = Vector3(7.4, 0.54, -1.2)
 	add_child(pool)
 
 	var fall: MeshInstance3D = MeshInstance3D.new()
 	var fall_mesh: BoxMesh = BoxMesh.new()
-	fall_mesh.size = Vector3(0.45, 5.4, 1.35)
+	fall_mesh.size = Vector3(0.42, 5.2, 1.25)
 	fall.mesh = fall_mesh
 	fall.material_override = flow_mat
-	fall.position = Vector3(8.75, -2.25, -1.2)
+	fall.position = Vector3(8.9, -2.15, -1.2)
 	fall.rotation_degrees = Vector3(0.0, 0.0, 8.0)
 	add_child(fall)
 
-	# Cristales / pilares / ornamentos perimetrales según bioma
 	var accent_col: Color = cfg["accent"]
-	var accent_mat: ShaderMaterial = VisualShaders.make_toon(
-		accent_col,
-		Color(0.2, 0.22, 0.36),
-		0.55,
-		0.35,
-		0.15,
-		accent_col,
-		0.35 if flow_type != "water" else 0.08
-	)
-	var decor_angles: Array[float] = [0.42, 1.15, 2.28, 3.65, 4.82, 5.65]
+	var accent_mat: ShaderMaterial = VisualShaders.make_toon(accent_col, Color(0.22, 0.24, 0.36), 0.10, 0.72, 0.05, accent_col, 0.18 if flow_type != "water" else 0.0)
+	var decor_angles: Array[float] = [0.42, 1.18, 2.32, 3.68, 4.86, 5.62]
 	for a_idx: int in range(decor_angles.size()):
 		var ang: float = decor_angles[a_idx]
-		var px: float = cos(ang) * 8.65
-		var pz: float = sin(ang) * 8.65
+		var r_edge: float = _organic_radius(ang, 8.55)
+		var px: float = cos(ang) * r_edge
+		var pz: float = sin(ang) * r_edge
 		var spire: MeshInstance3D = MeshInstance3D.new()
 		var sm: CylinderMesh = CylinderMesh.new()
 		if island_id == 1:
-			# Arbustos florales en el perímetro del Santuario Verde
-			sm.top_radius = 0.48
-			sm.bottom_radius = 0.62
-			sm.height = 0.65
+			sm.top_radius = 0.44
+			sm.bottom_radius = 0.58
+			sm.height = 0.62
 			sm.radial_segments = 7
-			spire.material_override = VisualShaders.make_toon(Color(0.20, 0.68, 0.26), Color(0.14, 0.30, 0.22), 0.4)
-			spire.position = Vector3(px, 0.52, pz)
+			spire.material_override = VisualShaders.make_toon(Color(0.22, 0.62, 0.26), Color(0.16, 0.30, 0.22), 0.06, 0.92)
+			spire.position = Vector3(px, 0.76, pz)
 		else:
-			# Cristales / obeliscos elementales según el bioma
 			sm.top_radius = 0.06
-			sm.bottom_radius = 0.42
-			sm.height = 1.4 + float(a_idx % 2) * 0.55
+			sm.bottom_radius = 0.38
+			sm.height = 1.3 + float(a_idx % 2) * 0.45
 			sm.radial_segments = 5
 			spire.material_override = accent_mat
-			spire.position = Vector3(px, 0.72 + float(a_idx % 2) * 0.2, pz)
-			spire.rotation_degrees = Vector3(float((a_idx % 3) - 1) * 10.0, float(a_idx) * 35.0, float((a_idx % 2) * 8 - 4))
+			spire.position = Vector3(px, 0.92 + float(a_idx % 2) * 0.18, pz)
+			spire.rotation_degrees = Vector3(float((a_idx % 3) - 1) * 9.0, float(a_idx) * 35.0, float((a_idx % 2) * 8 - 4))
 		spire.mesh = sm
 		add_child(spire)
 
 
 func _build_inter_island_bridge(rock_mat: Material, rim_mat: Material) -> void:
-	# 3 piedras flotantes puente hacia la siguiente isla en Z = -24
-	var bridge_z: Array[float] = [-10.2, -12.0, -13.8]
+	var bridge_z: Array[float] = [-10.4, -12.1, -13.8]
 	for i: int in range(bridge_z.size()):
 		var stone: MeshInstance3D = MeshInstance3D.new()
 		var sm: CylinderMesh = CylinderMesh.new()
-		sm.top_radius = 1.15 - absf(float(i - 1)) * 0.15
-		sm.bottom_radius = 0.65
-		sm.height = 0.68
+		sm.top_radius = 1.1 - absf(float(i - 1)) * 0.15
+		sm.bottom_radius = 0.62
+		sm.height = 0.65
 		sm.radial_segments = 7
 		stone.mesh = sm
 		stone.material_override = rock_mat
-		stone.position = Vector3(sin(float(i) * 1.3) * 0.45, -0.1 + float(i % 2) * 0.12, bridge_z[i])
+		stone.position = Vector3(sin(float(i) * 1.3) * 0.45, -0.08 + float(i % 2) * 0.10, bridge_z[i])
 		add_child(stone)
 
 		var cap: MeshInstance3D = MeshInstance3D.new()
@@ -446,7 +474,7 @@ func _build_inter_island_bridge(rock_mat: Material, rim_mat: Material) -> void:
 		cm.radial_segments = 7
 		cap.mesh = cm
 		cap.material_override = rim_mat
-		cap.position = Vector3(0.0, 0.36, 0.0)
+		cap.position = Vector3(0.0, 0.34, 0.0)
 		stone.add_child(cap)
 
 
@@ -456,41 +484,31 @@ func apply_state(island_unlocked: bool, unlocked_parcel_list: Array, obstacles_d
 	var cfg: Dictionary = ISLAND_CONFIGS.get(island_id, ISLAND_CONFIGS[1])
 	var active_color: Color = cfg["color"]
 
-	if _island_title_label:
+	if meadow_mesh_node:
 		if is_island_unlocked:
-			_island_title_label.text = str(cfg["nombre"])
-			_island_title_label.modulate = Color(1.0, 0.98, 0.92, 1.0)
+			meadow_mesh_node.material_override = VisualShaders.make_toon(active_color, Color(0.22, 0.30, 0.42), 0.05, 0.94)
 		else:
-			_island_title_label.text = "🔒 %s (%d Oro · Nv.%d)" % [str(cfg["nombre"]), int(cfg["costo_oro"]), int(cfg["nivel_req"])]
-			_island_title_label.modulate = Color(0.76, 0.84, 0.96, 0.88)
+			var dark_mat: StandardMaterial3D = StandardMaterial3D.new()
+			dark_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			dark_mat.albedo_color = Color(0.18, 0.22, 0.32, 0.72)
+			dark_mat.roughness = 0.96
+			meadow_mesh_node.material_override = dark_mat
 
 	for p_idx: int in range(4):
 		var parcel_open: bool = is_island_unlocked and unlocked_parcels.has(p_idx)
+		var veil: MeshInstance3D = parcel_veil_meshes[p_idx]
 		if parcel_open:
-			parcel_meshes[p_idx].material_override = VisualShaders.make_toon(
-				active_color,
-				Color(0.20, 0.28, 0.40),
-				0.34,
-				0.82
-			)
+			veil.visible = false
 		elif is_island_unlocked:
+			veil.visible = true
 			var mat: StandardMaterial3D = StandardMaterial3D.new()
 			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-			mat.albedo_color = active_color.darkened(0.55)
-			mat.albedo_color.a = 0.72
-			mat.roughness = 0.92
-			parcel_meshes[p_idx].material_override = mat
+			mat.albedo_color = Color(0.09, 0.12, 0.18, 0.44)
+			mat.roughness = 0.96
+			veil.material_override = mat
 		else:
-			var locked_mat: StandardMaterial3D = StandardMaterial3D.new()
-			locked_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-			locked_mat.albedo_color = Color(0.20, 0.22, 0.32, 0.56)
-			locked_mat.roughness = 0.95
-			parcel_meshes[p_idx].material_override = locked_mat
+			veil.visible = false
 
-		if p_idx < parcel_lock_labels.size():
-			parcel_lock_labels[p_idx].visible = is_island_unlocked and not parcel_open
-
-		# Solo capturar clic en el área de parcela cuando está bloqueada (o isla bloqueada)
 		parcel_areas[p_idx].input_ray_pickable = not parcel_open
 
 	_sync_obstacles(obstacles_data)
@@ -525,7 +543,7 @@ func _sync_obstacles(obstacles_data: Array) -> void:
 			var p_offset: Vector3 = PARCEL_OFFSETS[p_idx]
 			var ox: float = float(obs.get("x", 0.0))
 			var oz: float = float(obs.get("z", 0.0))
-			node.position = p_offset + Vector3(ox, 0.56, oz)
+			node.position = p_offset + Vector3(ox, 0.58, oz)
 			add_child(node)
 			node.call("configure", obs)
 			node.connect("obstacle_clicked", func(onode: Node3D) -> void:
@@ -541,6 +559,8 @@ func _sync_obstacles(obstacles_data: Array) -> void:
 
 
 func set_slots_placement_mode(active: bool, built_habitats: Dictionary) -> void:
+	if _grid_overlay_root:
+		_grid_overlay_root.visible = active and is_island_unlocked
 	for sn: Node3D in slot_nodes:
 		var g_idx: int = int(sn.get("slot_index"))
 		var p_idx: int = int(sn.get_meta("parcel_index", 0))
@@ -554,13 +574,18 @@ func add_decorative_tile(tile_color: Color, count_idx: int) -> void:
 		return
 	var mi: MeshInstance3D = MeshInstance3D.new()
 	var box: BoxMesh = BoxMesh.new()
-	box.size = Vector3(1.08, 0.06, 1.08)
+	box.size = Vector3(1.08, 0.05, 1.08)
 	mi.mesh = box
-	mi.material_override = VisualShaders.make_toon(tile_color, Color(0.24, 0.28, 0.42), 0.25, 0.62)
+	mi.material_override = VisualShaders.make_toon(tile_color, Color(0.24, 0.28, 0.42), 0.05, 0.85)
 	var col: int = count_idx % 5
 	var row: int = count_idx / 5
-	mi.position = Vector3(-5.0 + col * 1.25, 0.6, -5.2 + row * 1.25)
+	mi.position = Vector3(-5.0 + col * 1.25, 0.60, -5.2 + row * 1.25)
 	floor_tile_root.add_child(mi)
+
+
+func get_parcel_world_center(parcel_idx: int) -> Vector3:
+	var p_off: Vector3 = PARCEL_OFFSETS[clampi(parcel_idx, 0, 3)]
+	return global_position + p_off + Vector3(0.0, 0.6, 0.0)
 
 
 func _on_parcel_area_clicked(parcel_idx: int) -> void:
@@ -572,7 +597,8 @@ func _on_parcel_area_clicked(parcel_idx: int) -> void:
 			"costo_oro": cfg["costo_oro"],
 			"nivel_req": cfg["nivel_req"],
 			"slots": 8,
-			"elementos": cfg["elementos"]
+			"elementos": cfg["elementos"],
+			"world_pos": global_position
 		})
 		return
 
@@ -583,5 +609,6 @@ func _on_parcel_area_clicked(parcel_idx: int) -> void:
 		"parcel_index": parcel_idx,
 		"nombre": "%s — Parcela %d" % [str(cfg["nombre"]), parcel_idx + 1],
 		"costo_oro": parcel_cost,
-		"nivel_req": parcel_lvl
+		"nivel_req": parcel_lvl,
+		"world_pos": get_parcel_world_center(parcel_idx)
 	})

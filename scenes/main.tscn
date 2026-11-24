@@ -33,17 +33,14 @@ sky_material = SubResource("ShaderMaterial_Sky")
 background_mode = 2
 sky = SubResource("Sky_1")
 ambient_light_source = 3
-ambient_light_energy = 0.82
-tonemap_mode = 3
-tonemap_exposure = 1.05
-glow_enabled = true
-glow_intensity = 0.45
-glow_bloom = 0.12
-glow_hdr_threshold = 1.05
+ambient_light_energy = 0.68
+tonemap_mode = 2
+tonemap_exposure = 0.94
+glow_enabled = false
 fog_enabled = true
-fog_light_color = Color(0.72, 0.86, 0.98, 1)
-fog_density = 0.0022
-fog_sky_affect = 0.35
+fog_light_color = Color(0.74, 0.86, 0.97, 1)
+fog_density = 0.0018
+fog_sky_affect = 0.3
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -53,10 +50,11 @@ environment = SubResource("Environment_1")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 16, 0)
-light_color = Color(1, 0.96, 0.88, 1)
-light_energy = 1.15
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 0.88
+light_specular = 0.15
 shadow_enabled = true
-shadow_blur = 1.4
+shadow_blur = 1.6
 
 [node name="Archipielago" type="Node3D" parent="."]
 

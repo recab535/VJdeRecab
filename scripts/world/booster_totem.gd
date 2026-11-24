@@ -95,6 +95,7 @@ func _build_totem() -> void:
 	var lbl: Label3D = Label3D.new()
 	lbl.text = "Tótem %s\n(×2 / ×3)" % str(spec["nombre"])
 	lbl.position = Vector3(0.0, 2.42, 0.0)
+	lbl.visible = false
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.font_size = 20
 	lbl.outline_size = 5
