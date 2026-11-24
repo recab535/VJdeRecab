@@ -253,18 +253,79 @@ func _resolve_egg_texture(sp_id: int, prefijo: String) -> Texture2D:
 	if ResourceLoader.exists(tex_path):
 		return load(tex_path) as Texture2D
 
-	var img: Image = Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	var core: Node = get_node_or_null("/root/GameCore")
+	var prim_id: int = 1
+	var sec_id: int = 0
+	var is_leg: bool = false
+	if core and core.has_method("get_species"):
+		var sp: Dictionary = core.get_species(sp_id)
+		prim_id = int(sp.get("elemento_primario_id", 1))
+		if sp.get("elemento_secundario_id", null) != null:
+			sec_id = int(sp.get("elemento_secundario_id", 0))
+		is_leg = str(sp.get("rareza", "")) == "LEGENDARIO" or prim_id == 9
+
+	var elem_palette: Dictionary = {
+		1: Color(0.76, 0.48, 0.26),
+		2: Color(0.95, 0.32, 0.16),
+		3: Color(0.20, 0.64, 0.96),
+		4: Color(0.26, 0.80, 0.36),
+		5: Color(0.98, 0.84, 0.18),
+		6: Color(0.56, 0.88, 0.99),
+		7: Color(0.66, 0.72, 0.78),
+		8: Color(0.46, 0.24, 0.64),
+		9: Color(0.92, 0.48, 0.98)
+	}
+	var base_col: Color = elem_palette.get(prim_id, Color(0.84, 0.42, 0.22))
+	var accent_col: Color = elem_palette.get(sec_id, base_col.lightened(0.32)) if sec_id > 0 else base_col.lightened(0.34)
+	var hi_col: Color = base_col.lightened(0.28)
+	var sh_col: Color = base_col.darkened(0.34)
+	var outline: Color = Color(0.08, 0.06, 0.12, 1.0)
+
+	var img: Image = Image.create(48, 48, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
-	var shell_color: Color = Color(0.84, 0.42, 0.22, 1.0) if sp_id == 1 else Color.from_hsv(fmod(sp_id * 0.13, 1.0), 0.65, 0.88, 1.0)
-	var spot_color: Color = shell_color.lightened(0.35)
-	for y: int in range(3, 14):
-		for x: int in range(4, 12):
-			if (y == 3 or y == 13) and (x < 6 or x > 9):
+
+	# Silueta ovoide 48x48 centrada
+	for y: int in range(6, 43):
+		var yn: float = (float(y) - 25.0) / 18.0
+		var taper: float = 0.76 if yn < 0.0 else 1.04
+		var rx: float = 13.5 * sqrt(maxf(0.0, 1.0 - yn * yn)) * lerpf(taper, 1.0, 0.45)
+		if rx < 1.0:
+			continue
+		for x: int in range(24 - int(ceil(rx)), 24 + int(ceil(rx)) + 1):
+			var dx: float = float(x) - 24.0
+			if absf(dx) > rx:
 				continue
-			if y == 4 and (x == 4 or x == 11):
+			var c: Color = base_col
+			if dx < -rx * 0.28 and yn < 0.25:
+				c = hi_col
+			elif dx > rx * 0.28 or yn > 0.42:
+				c = sh_col
+			# Manchas/runas elementales deterministas
+			var pattern_val: float = sin(float(x) * 0.45 + float(sp_id)) * cos(float(y) * 0.42 - float(prim_id))
+			if pattern_val > 0.52:
+				c = accent_col
+			elif is_leg and absf(yn) < 0.14:
+				c = Color(1.0, 0.88, 0.34)
+			img.set_pixel(x, y, c)
+
+	# Contorno automático 1px
+	var copy_img: Image = img.duplicate() as Image
+	for y: int in range(1, 47):
+		for x: int in range(1, 47):
+			if copy_img.get_pixel(x, y).a > 0.1:
 				continue
-			img.set_pixel(x, y, shell_color)
-	img.set_pixel(6, 6, spot_color)
-	img.set_pixel(9, 8, spot_color)
-	img.set_pixel(7, 10, spot_color)
+			if (
+				copy_img.get_pixel(x - 1, y).a > 0.1
+				or copy_img.get_pixel(x + 1, y).a > 0.1
+				or copy_img.get_pixel(x, y - 1).a > 0.1
+				or copy_img.get_pixel(x, y + 1).a > 0.1
+			):
+				img.set_pixel(x, y, outline)
+
+	# Brillo especular superior izquierdo
+	for sy: int in range(14, 19):
+		for sx: int in range(17, 21):
+			if img.get_pixel(sx, sy).a > 0.5:
+				img.set_pixel(sx, sy, Color(1.0, 1.0, 1.0, 0.85))
+
 	return ImageTexture.create_from_image(img)

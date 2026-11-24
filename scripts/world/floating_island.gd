@@ -9,8 +9,10 @@ signal parcel_locked_clicked(island_id: int, parcel_index: int, info: Dictionary
 signal slot_clicked_on_island(island_id: int, global_slot_index: int, slot_node: Node3D)
 signal obstacle_clicked_on_island(obstacle_node: Node3D)
 
-const OBSTACLE_SCENE: PackedScene = preload("res://scenes/world/obstaculo_isla.tscn")
+const OBSTACLE_SCENE_PATH: String = "res://scenes/world/obstaculo_isla.tscn"
 const BUILD_SLOT_SCRIPT: Script = preload("res://scripts/world/build_slot.gd")
+
+var _obstacle_scene_cache: PackedScene = null
 
 const ISLAND_CONFIGS: Dictionary = {
 	1: {
@@ -515,7 +517,11 @@ func _sync_obstacles(obstacles_data: Array) -> void:
 			obstacle_nodes[oid].call("sync_state", obs)
 		else:
 			var p_idx: int = clampi(int(obs.get("parcela", 0)), 0, 3)
-			var node: Node3D = OBSTACLE_SCENE.instantiate() as Node3D
+			if _obstacle_scene_cache == null:
+				_obstacle_scene_cache = load(OBSTACLE_SCENE_PATH) as PackedScene
+			if _obstacle_scene_cache == null:
+				continue
+			var node: Node3D = _obstacle_scene_cache.instantiate() as Node3D
 			var p_offset: Vector3 = PARCEL_OFFSETS[p_idx]
 			var ox: float = float(obs.get("x", 0.0))
 			var oz: float = float(obs.get("z", 0.0))

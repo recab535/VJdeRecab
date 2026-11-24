@@ -65,6 +65,8 @@ func _setup_sfx_pool() -> void:
 
 
 func _setup_ambient_music() -> void:
+	if AudioServer.get_driver_name() == "Dummy":
+		return
 	var gen: AudioStreamGenerator = AudioStreamGenerator.new()
 	gen.mix_rate = MIX_RATE
 	gen.buffer_length = 0.25
