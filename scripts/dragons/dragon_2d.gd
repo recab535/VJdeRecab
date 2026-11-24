@@ -22,23 +22,31 @@ static var _tex_cache: Dictionary = {}
 static func clear_cache() -> void:
 	_tex_cache.clear()
 
+enum AnimState { IDLE, WALK, SPECIAL_ANIM }
+
 var _anim_time: float = 0.0
 var _base_y: float = 0.54
 var _base_scale: Vector3 = Vector3.ONE
 var patrol_enabled: bool = false
+var patrol_bounds: Vector2 = Vector2(0.46, 0.28)
+var _state: AnimState = AnimState.IDLE
+var _state_timer: float = 1.8
 var _patrol_target: Vector3 = Vector3.ZERO
-var _patrol_timer: float = 1.5
-var _emote_timer: float = 4.5
+var _special_phase: float = 0.0
 var _hop_phase: float = 0.0
+var _blink_timer: float = 3.2
 var _shadow_disc: MeshInstance3D = null
 
 
 func _ready() -> void:
 	_anim_time = randf() * TAU
-	_emote_timer = randf_range(4.0, 9.0)
+	_state_timer = randf_range(1.2, 2.8)
+	_blink_timer = randf_range(2.2, 4.8)
 	_ensure_ground_shadow()
 	if sprite:
 		_base_y = sprite.position.y
+	if label_nombre:
+		label_nombre.visible = false
 	setup_visual(especie_id, dragon_nombre, sprite_prefijo, etapa, dragon_uid, nivel)
 
 
@@ -62,35 +70,79 @@ func _ensure_ground_shadow() -> void:
 
 
 func _process(delta: float) -> void:
-	_anim_time += delta * 3.2
+	_anim_time += delta * 3.0
 	var moving: bool = false
+	var special_hop: float = 0.0
+	var special_tilt: float = 0.0
 
 	if patrol_enabled:
-		_patrol_timer -= delta
-		if _patrol_timer <= 0.0:
-			_patrol_timer = randf_range(1.6, 3.8)
-			_patrol_target = Vector3(randf_range(-0.46, 0.46), 0.0, randf_range(-0.28, 0.28))
-		var diff: Vector3 = _patrol_target - position
-		if diff.length() > 0.03:
-			moving = true
-			var step: Vector3 = diff.normalized() * minf(diff.length(), delta * 0.52)
-			if sprite and absf(step.x) > 0.001:
-				sprite.flip_h = step.x < 0.0
-			position += step
-			_hop_phase += delta * 9.5
-
-		_emote_timer -= delta
-		if _emote_timer <= 0.0:
-			_emote_timer = randf_range(7.0, 14.0)
-			var emotes: Array[String] = ["♪", "♥", "✦", "zZz"]
-			play_reaction(emotes[randi() % emotes.size()], false)
+		_state_timer -= delta
+		match _state:
+			AnimState.IDLE:
+				if _state_timer <= 0.0:
+					if randf() < 0.72:
+						_enter_walk_state()
+					else:
+						_enter_special_state()
+			AnimState.WALK:
+				var diff: Vector3 = _patrol_target - position
+				diff.y = 0.0
+				if diff.length() > 0.035 and _state_timer > 0.0:
+					moving = true
+					var step: Vector3 = diff.normalized() * minf(diff.length(), delta * 0.52)
+					if sprite and absf(step.x) > 0.001:
+						sprite.flip_h = step.x < 0.0
+					position.x = clampf(position.x + step.x, -patrol_bounds.x, patrol_bounds.x)
+					position.z = clampf(position.z + step.z, -patrol_bounds.y, patrol_bounds.y)
+					_hop_phase += delta * 9.5
+				else:
+					_enter_idle_state()
+			AnimState.SPECIAL_ANIM:
+				_special_phase += delta * 6.5
+				special_hop = absf(sin(_special_phase)) * 0.24
+				special_tilt = sin(_special_phase * 2.0) * 0.14
+				if _state_timer <= 0.0:
+					_enter_idle_state()
 
 	if sprite:
-		var idle_bob: float = sin(_anim_time) * 0.038
-		var walk_hop: float = absf(sin(_hop_phase)) * 0.075 if moving else 0.0
-		sprite.position.y = _base_y + idle_bob + walk_hop
-		var breathe: float = 1.0 + sin(_anim_time * 1.15) * 0.03
-		sprite.scale = Vector3(_base_scale.x * (2.0 - breathe), _base_scale.y * breathe, _base_scale.z)
+		var idle_bob: float = sin(_anim_time) * 0.032
+		var walk_hop: float = absf(sin(_hop_phase)) * 0.072 if moving else 0.0
+		sprite.position.y = _base_y + idle_bob + walk_hop + special_hop
+		sprite.rotation.z = lerpf(sprite.rotation.z, special_tilt, clampf(delta * 10.0, 0.0, 1.0))
+
+		# Respiración y parpadeo sutil en Idle
+		_blink_timer -= delta
+		var blink_squash: float = 1.0
+		if _blink_timer <= 0.0:
+			if _blink_timer > -0.10:
+				blink_squash = 0.94
+			else:
+				_blink_timer = randf_range(2.6, 5.4)
+		var breathe: float = 1.0 + sin(_anim_time * 1.1) * 0.028
+		sprite.scale = Vector3(_base_scale.x * (2.0 - breathe), _base_scale.y * breathe * blink_squash, _base_scale.z)
+
+
+func _enter_idle_state() -> void:
+	_state = AnimState.IDLE
+	_state_timer = randf_range(1.6, 3.4)
+
+
+func _enter_walk_state() -> void:
+	_state = AnimState.WALK
+	_state_timer = randf_range(2.2, 4.2)
+	_patrol_target = Vector3(
+		randf_range(-patrol_bounds.x, patrol_bounds.x),
+		0.0,
+		randf_range(-patrol_bounds.y, patrol_bounds.y)
+	)
+
+
+func _enter_special_state() -> void:
+	_state = AnimState.SPECIAL_ANIM
+	_state_timer = 0.85
+	_special_phase = 0.0
+	if sprite and randf() < 0.5:
+		sprite.flip_h = not sprite.flip_h
 
 
 func play_reaction(emote: String = "♥", jump: bool = true) -> void:
@@ -145,8 +197,16 @@ func setup_visual(id: int, nombre: String, prefijo: String, stage: String = "cri
 
 
 func update_progression(new_nivel: int, new_etapa: String) -> void:
+	var evolved: bool = new_etapa != etapa
 	setup_visual(especie_id, dragon_nombre, sprite_prefijo, new_etapa, dragon_uid, new_nivel)
-	play_reaction("⬆ Nv.%d!" % new_nivel, true)
+	if evolved and sprite:
+		var tw: Tween = create_tween()
+		tw.tween_property(sprite, "modulate", Color(1.5, 1.35, 0.65, 1.0), 0.18)
+		tw.parallel().tween_property(self, "rotation:y", rotation.y + TAU, 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(sprite, "modulate", Color.WHITE, 0.25)
+		play_reaction("✦ %s!" % new_etapa.capitalize(), true)
+	else:
+		play_reaction("⬆ Nv.%d!" % new_nivel, true)
 
 
 ## Fábrica pública cacheada de texturas pixel art 48x48 (reutilizable en Bestiario, Combate y Tienda)

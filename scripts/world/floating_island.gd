@@ -11,8 +11,10 @@ signal obstacle_clicked_on_island(obstacle_node: Node3D)
 
 const OBSTACLE_SCENE_PATH: String = "res://scenes/world/obstaculo_isla.tscn"
 const BUILD_SLOT_SCRIPT: Script = preload("res://scripts/world/build_slot.gd")
+const ISLAND_GRID_SCRIPT: Script = preload("res://scripts/world/island_grid.gd")
 
 var _obstacle_scene_cache: PackedScene = null
+var grid: RefCounted = null
 
 const ISLAND_CONFIGS: Dictionary = {
 	1: {
@@ -109,6 +111,7 @@ var _bob_time: float = 0.0
 func _ready() -> void:
 	_base_y = position.y
 	_bob_time = float(island_id) * 1.15
+	grid = ISLAND_GRID_SCRIPT.new()
 	_build_island_geometry()
 
 
@@ -511,6 +514,9 @@ func apply_state(island_unlocked: bool, unlocked_parcel_list: Array, obstacles_d
 
 		parcel_areas[p_idx].input_ray_pickable = not parcel_open
 
+	if grid:
+		grid.call("sync_unlocked_parcels", unlocked_parcels if is_island_unlocked else [])
+
 	_sync_obstacles(obstacles_data)
 
 
@@ -561,11 +567,25 @@ func _sync_obstacles(obstacles_data: Array) -> void:
 func set_slots_placement_mode(active: bool, built_habitats: Dictionary) -> void:
 	if _grid_overlay_root:
 		_grid_overlay_root.visible = active and is_island_unlocked
+	if grid:
+		grid.call("clear_occupants")
+		for sn: Node3D in slot_nodes:
+			var g_idx: int = int(sn.get("slot_index"))
+			if built_habitats.has(g_idx):
+				var local_p: Vector3 = sn.get_parent().position + sn.position
+				var fp: Vector2i = Vector2i(3, 3)
+				var cell_o: Vector2i = grid.call("local_to_cell", local_p, fp)
+				grid.call("occupy", cell_o, fp, "hab_%d" % g_idx)
 	for sn: Node3D in slot_nodes:
 		var g_idx: int = int(sn.get("slot_index"))
 		var p_idx: int = int(sn.get_meta("parcel_index", 0))
 		var parcel_open: bool = is_island_unlocked and unlocked_parcels.has(p_idx)
 		var is_free: bool = parcel_open and not built_habitats.has(g_idx)
+		if grid and is_free:
+			var local_p: Vector3 = sn.get_parent().position + sn.position
+			var fp: Vector2i = Vector2i(3, 3)
+			var cell_o: Vector2i = grid.call("local_to_cell", local_p, fp)
+			is_free = bool(grid.call("can_place", cell_o, fp))
 		sn.call("set_placement_highlight", active and parcel_open, is_free)
 
 

@@ -443,6 +443,27 @@ func build_habitat(slot_index: int, elemento_id: int = 1, cost_oro: int = HABITA
 	return {"ok": true, "estructura": nueva, "msg": "Hábitat construido en espacio %d (-%d Oro)." % [slot_index + 1, cost_oro]}
 
 
+func move_habitat_slot(old_slot_index: int, new_slot_index: int) -> Dictionary:
+	if old_slot_index == new_slot_index:
+		return {"ok": false, "msg": "El hábitat ya está en ese espacio."}
+	var estructuras: Array = player_state.get("estructuras", [])
+	var found_idx: int = -1
+	for i: int in range(estructuras.size()):
+		var est: Variant = estructuras[i]
+		if est is Dictionary:
+			var s_idx: int = int(est.get("slot_index", -1))
+			if s_idx == new_slot_index:
+				return {"ok": false, "msg": "El espacio destino ya está ocupado."}
+			if s_idx == old_slot_index:
+				found_idx = i
+	if found_idx == -1:
+		return {"ok": false, "msg": "Hábitat origen no encontrado."}
+	estructuras[found_idx]["slot_index"] = new_slot_index
+	player_state["estructuras"] = estructuras
+	save_game()
+	return {"ok": true, "msg": "Hábitat movido al espacio %d." % (new_slot_index + 1)}
+
+
 func buy_egg(especie_id: int, cost_oro: int) -> Dictionary:
 	var res: Dictionary = get_resources()
 	var oro_actual: int = int(res.get("oro", 0))

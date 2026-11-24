@@ -29,6 +29,7 @@ var _placed_tiles_count: int = 0
 var _active_combat_arena: Node3D = null
 var _active_feed_filter_uids: Array[int] = []
 var _pending_habitat_purchase: Dictionary = {}
+var _moving_habitat_slot_idx: int = -1
 var _selected_habitat: HabitatBase = null
 var _focused_island_id: int = 1
 
@@ -46,6 +47,7 @@ func _ready() -> void:
 	hud.feed_dragon_requested.connect(_on_feed_dragon_requested)
 	hud.collect_habitat_oro_requested.connect(_on_collect_habitat_oro_requested)
 	hud.open_habitat_feed_requested.connect(_on_open_habitat_feed_requested)
+	hud.move_habitat_requested.connect(_on_move_habitat_requested)
 	hud.context_panel_closed.connect(camera_rig.clear_entity_focus)
 	camera_rig.focused_island_changed.connect(_on_focused_island_changed)
 
@@ -148,7 +150,8 @@ func _sync_all_islands() -> void:
 		if isl.has_method("apply_state"):
 			isl.call("apply_state", core.is_island_unlocked(iid), core.get_unlocked_parcels(iid), obs)
 		if isl.has_method("set_slots_placement_mode"):
-			isl.call("set_slots_placement_mode", not _pending_habitat_purchase.is_empty(), _built_habitats)
+			var show_grid: bool = (not _pending_habitat_purchase.is_empty()) or (_moving_habitat_slot_idx >= 0)
+			isl.call("set_slots_placement_mode", show_grid, _built_habitats)
 
 
 func _connect_special_structures(root: Node) -> void:
@@ -625,11 +628,49 @@ func _on_shop_farm_requested(cost_oro: int) -> void:
 		hud.show_status_message(str(res.get("msg", "")))
 
 
-func _on_island_slot_clicked(_island_id: int, global_slot_idx: int, _slot_node: Node3D) -> void:
-	if _pending_habitat_purchase.is_empty():
+func _on_move_habitat_requested() -> void:
+	if _selected_habitat == null:
 		return
+	var found_slot: int = -1
+	for k: int in _built_habitats.keys():
+		if _built_habitats[k] == _selected_habitat:
+			found_slot = k
+			break
+	if found_slot < 0:
+		return
+	_moving_habitat_slot_idx = found_slot
+	_pending_habitat_purchase.clear()
+	hud.hide_habitat_menu()
+	camera_rig.clear_entity_focus()
+	_sync_all_islands()
+	hud.show_status_message("Modo movimiento: selecciona una celda libre iluminada en verde (Esc cancelar).")
+
+
+func _on_island_slot_clicked(_island_id: int, global_slot_idx: int, slot_node: Node3D) -> void:
 	var core: Node = get_node_or_null("/root/GameCore")
 	if core == null:
+		return
+
+	if _moving_habitat_slot_idx >= 0:
+		if _built_habitats.has(global_slot_idx):
+			hud.show_status_message("Ese espacio ya está ocupado.")
+			return
+		var res_mv: Dictionary = core.move_habitat_slot(_moving_habitat_slot_idx, global_slot_idx)
+		if res_mv.get("ok", false):
+			var hab: HabitatBase = _built_habitats[_moving_habitat_slot_idx]
+			_built_habitats.erase(_moving_habitat_slot_idx)
+			if hab.get_parent():
+				hab.get_parent().remove_child(hab)
+			slot_node.add_child(hab)
+			hab.position = Vector3.ZERO
+			_built_habitats[global_slot_idx] = hab
+			_play_sfx("click")
+		_moving_habitat_slot_idx = -1
+		_sync_all_islands()
+		hud.show_status_message(str(res_mv.get("msg", "")))
+		return
+
+	if _pending_habitat_purchase.is_empty():
 		return
 	if _built_habitats.has(global_slot_idx):
 		hud.show_status_message("Ese espacio ya está ocupado.")
@@ -669,13 +710,15 @@ func _play_sfx(kind: String) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
-			if not _pending_habitat_purchase.is_empty():
+			if not _pending_habitat_purchase.is_empty() or _moving_habitat_slot_idx >= 0:
 				_pending_habitat_purchase.clear()
+				_moving_habitat_slot_idx = -1
 				_sync_all_islands()
 				_play_sfx("click")
-				hud.show_status_message("Modo colocación cancelado.")
+				hud.show_status_message("Modo colocación/movimiento cancelado.")
 			elif _has_open_overlay_panel():
 				_close_overlay_panels()
+				camera_rig.clear_entity_focus()
 				_play_sfx("click")
 		elif event.keycode == KEY_M:
 			var am: Node = get_node_or_null("/root/AudioManager")

@@ -10,6 +10,7 @@
     "A2"
   ],
   "ultimo_ciclo": {
-    "Fase_1_Iluminacion_Islas_Camara": "Shader toon_stylized.gdshader sin ruido cuadriculado ni fogonazo especular al rotar 360°, 5 islas orgánicas esculpidas con SurfaceTool, etiquetas flotantes ocultas en reposo y enfoque suave de cámara (Tween) al clicar entidades."
+    "Fase_1_Iluminacion_Islas_Camara": "Shader toon_stylized.gdshader sin ruido cuadriculado ni fogonazo especular al rotar 360°, 5 islas orgánicas esculpidas con SurfaceTool, etiquetas flotantes ocultas en reposo y enfoque suave de cámara (Tween) al clicar entidades.",
+    "Fase_2_Grid_y_Dragones": "Matriz lógica 14x14 IslandGrid (isUnlocked/isOccupied, tamaños 1x1 a 5x5, modo Mover hábitat con rejilla sutil solo al colocar/mover) y máquina de estados en Dragon2D (Idle/Walk/SpecialAnim + giro de evolución)."
   }
 }
