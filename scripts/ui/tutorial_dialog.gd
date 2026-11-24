@@ -16,35 +16,41 @@ signal tutorial_finished
 const STEPS: Array[Dictionary] = [
 	{
 		"mode": "button",
-		"text": "¡Bienvenido, Domador! Soy el Maestro Kael, Guardián del Santuario. Las islas vecinas han quedado selladas... Cría dragones y devuélveles la luz.",
+		"text": "¡Bienvenido, Domador! Soy el Maestro Kael. Ante ti se extienden 5 Islas Flotantes consecutivas, cada una con 4 parcelas ampliables y obstáculos que podrás despejar con Oro o Gemas.",
 		"arrow_pos": Vector2(460, 120),
 		"arrow_text": "✨"
 	},
 	{
+		"mode": "button",
+		"text": "Tu isla ya cuenta con un Hábitat inicial, el Adoratorio de Cría, la Torre Nido y estructuras especiales. Sube tu Nivel ganando EXP para desbloquear parcelas, islas y capítulos.",
+		"arrow_pos": Vector2(220, 96),
+		"arrow_text": "⬆"
+	},
+	{
 		"mode": "action",
 		"action": "oro_o_alimentar",
-		"text": "Paso 1/4: Clica tu Hábitat de Tierra para recoger oro o usa el botón Alimentar para subir de nivel a un dragón.",
+		"text": "Paso 1/4: Clica tu Hábitat de Tierra para recoger oro o usa Alimentar para fortalecer a tu Dragón Terracota.",
 		"arrow_pos": Vector2(930, 910),
 		"arrow_text": "⬇"
 	},
 	{
 		"mode": "action",
 		"action": "cruce",
-		"text": "Paso 2/4: ¡Bien hecho! Ahora clica el Adoratorio de cristales en la isla (o el botón Cruce) para cruzar a Terracota y Ascua.",
+		"text": "Paso 2/4: ¡Bien hecho! Clica el Adoratorio de cristales (o el botón Cruce) para cruzar a Terracota y Ascua.",
 		"arrow_pos": Vector2(650, 910),
 		"arrow_text": "⬇"
 	},
 	{
 		"mode": "action",
 		"action": "eclosion",
-		"text": "Paso 3/4: ¡Hay un huevo incubando! Clica la Torre Nido en la isla (o el botón Nido) y eclosiónalo.",
+		"text": "Paso 3/4: Un nuevo huevo descansa en la Torre Nido. ¡Clícala (o pulsa Nido) para incubarlo y eclosionarlo!",
 		"arrow_pos": Vector2(790, 910),
 		"arrow_text": "⬇"
 	},
 	{
 		"mode": "action",
 		"action": "combate",
-		"text": "Paso 4/4: ¡Tu equipo está listo! Pulsa Combate para enfrentar tu primera batalla 1v1 en el Sendero Terracota.",
+		"text": "Paso 4/4: ¡Listo para la historia! Pulsa Combate o el Portal de Historia para entrar al carrusel de 50 capítulos.",
 		"arrow_pos": Vector2(1210, 910),
 		"arrow_text": "⬇"
 	}

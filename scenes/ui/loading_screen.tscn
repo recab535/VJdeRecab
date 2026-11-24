@@ -1,0 +1,90 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/loading_screen.gd" id="1_load"]
+[ext_resource type="Theme" path="res://assets/ui/game_theme.tres" id="2_theme"]
+
+[node name="LoadingScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_load")
+
+[node name="BgColor" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.11, 0.22, 1)
+
+[node name="CenterBox" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelLogo" type="PanelContainer" parent="CenterBox"]
+custom_minimum_size = Vector2(760, 340)
+layout_mode = 2
+
+[node name="LogoBox" type="VBoxContainer" parent="CenterBox/PanelLogo"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="LblEmblema" type="Label" parent="CenterBox/PanelLogo/LogoBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.34, 1)
+theme_override_font_sizes/font_size = 44
+text = "✦ SANTUARIO DE DRAGONES ✦"
+horizontal_alignment = 1
+
+[node name="LblSubtitulo" type="Label" parent="CenterBox/PanelLogo/LogoBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.86, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "VJdeRecab — Demo itch.io • 5 Islas • 68 Especies • 50 Capítulos"
+horizontal_alignment = 1
+
+[node name="PbCarga" type="ProgressBar" parent="CenterBox/PanelLogo/LogoBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(620, 28)
+layout_mode = 2
+size_flags_horizontal = 4
+max_value = 100.0
+show_percentage = false
+
+[node name="HBoxInfo" type="HBoxContainer" parent="CenterBox/PanelLogo/LogoBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="LblTip" type="Label" parent="CenterBox/PanelLogo/LogoBox/HBoxInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cargando el catálogo de 68 dragones..."
+
+[node name="LblPorcentaje" type="Label" parent="CenterBox/PanelLogo/LogoBox/HBoxInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.88, 0.36, 1)
+text = "0%"
+
+[node name="FadeOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.03, 0.05, 0.1, 0)
