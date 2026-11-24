@@ -1,78 +1,122 @@
 extends Node3D
 
-## Escena principal 2.5D: conecta HUD, CameraRig, hábitats, dragones 2D y GameCore.
+## Escena principal 2.5D: gestiona el archipiélago de 5 islas consecutivas,
+## parcelas, obstáculos, estructuras fijas, hábitats, dragones 2D, HUD y GameCore.
 
 const HABITAT_SCENE: PackedScene = preload("res://scenes/world/habitat_base.tscn")
 const DRAGON_SCENE: PackedScene = preload("res://scenes/dragons/dragon_2d.tscn")
 const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_arena.tscn")
-const BUILD_SLOT_SCRIPT: Script = preload("res://scripts/world/build_slot.gd")
 
+@onready var archipielago: Node3D = $Archipielago
+@onready var adoratorio_cria: Node3D = $Archipielago/Isla1/AdoratorioCria
+@onready var torre_nido: Node3D = $Archipielago/Isla1/TorreNido
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var hud: HudBasic = $HUD
-@onready var isla_inicial: Node3D = $IslaInicial
-@onready var adoratorio_cria: Node3D = $IslaInicial/AdoratorioCria
-@onready var torre_nido: Node3D = $IslaInicial/TorreNido
-@onready var isla_bloqueada: LockedIsland = $IslaBloqueadaPreview
-@onready var slots_container: Node3D = $IslaInicial/SlotsConstruibles
 @onready var bestiario_panel: Control = $HUD/RootControl/BestiarioPanel
 @onready var breeding_panel: Control = $HUD/RootControl/BreedingPanel
 @onready var nest_panel: Control = $HUD/RootControl/NestPanel
 @onready var shop_panel: PanelContainer = $HUD/RootControl/ShopPanel
 @onready var tutorial_dialog: Control = $HUD/RootControl/TutorialDialog
 
+var _islands: Dictionary = {}
 var _built_habitats: Dictionary = {}
-var _active_combat_arena: CombatArena = null
+var _active_combat_arena: Node3D = null
 var _active_feed_filter_uids: Array[int] = []
 var _pending_habitat_purchase: Dictionary = {}
 var _selected_habitat: HabitatBase = null
+var _focused_island_id: int = 1
 
 
 func _ready() -> void:
 	hud.rotate_left_requested.connect(camera_rig.rotate_left)
 	hud.rotate_right_requested.connect(camera_rig.rotate_right)
+	hud.prev_island_requested.connect(camera_rig.focus_prev_island)
+	hud.next_island_requested.connect(camera_rig.focus_next_island)
 	hud.panel_requested.connect(_on_panel_requested)
 	hud.unlock_island_requested.connect(_on_unlock_island_requested)
+	hud.unlock_parcel_requested.connect(_on_unlock_parcel_requested)
+	hud.clear_obstacle_requested.connect(_on_clear_obstacle_requested)
+	hud.speedup_obstacle_requested.connect(_on_speedup_obstacle_requested)
 	hud.feed_dragon_requested.connect(_on_feed_dragon_requested)
 	hud.collect_habitat_oro_requested.connect(_on_collect_habitat_oro_requested)
 	hud.open_habitat_feed_requested.connect(_on_open_habitat_feed_requested)
+	camera_rig.focused_island_changed.connect(_on_focused_island_changed)
 
-	if isla_bloqueada:
-		isla_bloqueada.preview_requested.connect(_on_island_preview_requested)
 	if adoratorio_cria and adoratorio_cria.has_signal("adoratorio_clicked"):
 		adoratorio_cria.connect("adoratorio_clicked", func() -> void: _on_panel_requested("Cruce"))
 	if torre_nido and torre_nido.has_signal("torre_nido_clicked"):
 		torre_nido.connect("torre_nido_clicked", func() -> void: _on_panel_requested("Nido"))
 
-	if breeding_panel:
-		breeding_panel.breeding_completed.connect(_on_breeding_completed)
-	if nest_panel:
-		nest_panel.egg_hatched.connect(_on_egg_hatched)
+	if breeding_panel and breeding_panel.has_signal("breeding_completed"):
+		breeding_panel.connect("breeding_completed", _on_breeding_completed)
+	if nest_panel and nest_panel.has_signal("egg_hatched"):
+		nest_panel.connect("egg_hatched", _on_egg_hatched)
 	if shop_panel:
-		shop_panel.habitat_purchase_requested.connect(_on_shop_habitat_requested)
-		shop_panel.egg_purchase_requested.connect(_on_shop_egg_requested)
-		shop_panel.farm_purchase_requested.connect(_on_shop_farm_requested)
+		if shop_panel.has_signal("habitat_purchase_requested"):
+			shop_panel.connect("habitat_purchase_requested", _on_shop_habitat_requested)
+		if shop_panel.has_signal("egg_purchase_requested"):
+			shop_panel.connect("egg_purchase_requested", _on_shop_egg_requested)
+		if shop_panel.has_signal("farm_purchase_requested"):
+			shop_panel.connect("farm_purchase_requested", _on_shop_farm_requested)
 
-	_setup_build_slots()
+	_register_islands()
 	_close_overlay_panels()
 
 	if has_node("/root/GameCore"):
 		var core: Node = get_node("/root/GameCore")
 		core.resources_changed.connect(hud.set_resources)
 		core.dragon_leveled_up.connect(_on_dragon_leveled_up)
+		core.player_level_changed.connect(_on_player_level_changed)
+		core.world_state_changed.connect(_sync_all_islands)
+		core.obstacles_updated.connect(_sync_all_islands)
+
 		var res: Dictionary = core.get_resources()
 		hud.set_resources(int(res.get("oro", 0)), int(res.get("comida", 0)), int(res.get("gemas", 0)))
+		var lvl: int = core.get_player_level()
+		var exp_cur: int = int(core.player_state.get("exp_jugador", 0))
+		hud.set_player_level(lvl, float(exp_cur) / float(core.get_player_exp_needed(lvl)))
+
+		_sync_all_islands()
 		_restore_world_from_save(core)
 		if tutorial_dialog and core.has_method("is_tutorial_completed") and not core.is_tutorial_completed():
 			tutorial_dialog.tutorial_finished.connect(core.complete_tutorial)
 			tutorial_dialog.start_tutorial()
 	else:
-		hud.set_resources(1000, 500, 25)
+		hud.set_resources(1500, 500, 35)
+
+
+func _register_islands() -> void:
+	_islands.clear()
+	if archipielago == null:
+		return
+	for child: Node in archipielago.get_children():
+		if child is Node3D and "island_id" in child:
+			var iid: int = int(child.get("island_id"))
+			_islands[iid] = child
+			if child.has_signal("island_locked_clicked"):
+				child.connect("island_locked_clicked", _on_island_preview_requested)
+			if child.has_signal("parcel_locked_clicked"):
+				child.connect("parcel_locked_clicked", _on_parcel_preview_requested)
+			if child.has_signal("slot_clicked_on_island"):
+				child.connect("slot_clicked_on_island", _on_island_slot_clicked)
+			if child.has_signal("obstacle_clicked_on_island"):
+				child.connect("obstacle_clicked_on_island", _on_obstacle_clicked)
+
+
+func _sync_all_islands() -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null:
+		return
+	var obs: Array = core.player_state.get("obstaculos", [])
+	for iid: int in _islands.keys():
+		var isl: Node3D = _islands[iid]
+		if isl.has_method("apply_state"):
+			isl.call("apply_state", core.is_island_unlocked(iid), core.get_unlocked_parcels(iid), obs)
+		if isl.has_method("set_slots_placement_mode"):
+			isl.call("set_slots_placement_mode", not _pending_habitat_purchase.is_empty(), _built_habitats)
 
 
 func _restore_world_from_save(core: Node) -> void:
-	if isla_bloqueada and core.is_island_unlocked(isla_bloqueada.island_id):
-		isla_bloqueada.set_unlocked(true)
-
 	for est: Variant in core.player_state.get("estructuras", []):
 		if est is Dictionary:
 			_spawn_habitat_at_slot(int(est.get("slot_index", 0)), int(est.get("elemento_id", 1)))
@@ -81,25 +125,23 @@ func _restore_world_from_save(core: Node) -> void:
 		if d is Dictionary:
 			_spawn_dragon_into_free_habitat(core, d)
 
+	_sync_all_islands()
 
-func _get_all_slot_nodes() -> Array[Node3D]:
-	var all_slots: Array[Node3D] = []
-	if slots_container:
-		for child: Node in slots_container.get_children():
-			if child is Node3D:
-				all_slots.append(child)
-	if isla_bloqueada and isla_bloqueada.is_unlocked and isla_bloqueada.slots_container:
-		for child: Node in isla_bloqueada.slots_container.get_children():
-			if child is Node3D:
-				all_slots.append(child)
-	return all_slots
+
+func _find_slot_node_by_global_index(global_slot_idx: int) -> Node3D:
+	for iid: int in _islands.keys():
+		var isl: Node3D = _islands[iid]
+		var slots: Array = isl.get("slot_nodes") if "slot_nodes" in isl else []
+		for sn: Variant in slots:
+			if sn is Node3D and int(sn.get("slot_index")) == global_slot_idx:
+				return sn as Node3D
+	return null
 
 
 func _spawn_habitat_at_slot(slot_index: int, elemento_id: int = 1) -> HabitatBase:
 	if _built_habitats.has(slot_index):
 		return _built_habitats[slot_index]
-	var all_slots: Array[Node3D] = _get_all_slot_nodes()
-	var slot_node: Node3D = all_slots[slot_index] if slot_index >= 0 and slot_index < all_slots.size() else null
+	var slot_node: Node3D = _find_slot_node_by_global_index(slot_index)
 	if slot_node == null:
 		return null
 	var hab: HabitatBase = HABITAT_SCENE.instantiate() as HabitatBase
@@ -136,80 +178,133 @@ func _spawn_dragon_into_free_habitat(core: Node, dragon_data: Dictionary) -> boo
 	return false
 
 
+func _on_focused_island_changed(island_id: int) -> void:
+	_focused_island_id = island_id
+	hud.set_focused_island(island_id)
+
+
+func _on_player_level_changed(level: int, exp_cur: int, exp_needed: int) -> void:
+	hud.set_player_level(level, float(exp_cur) / float(maxi(1, exp_needed)))
+
+
 func _on_island_preview_requested(info: Dictionary) -> void:
-	var oro_actual: int = 1000
-	if has_node("/root/GameCore"):
-		var res: Dictionary = get_node("/root/GameCore").get_resources()
-		oro_actual = int(res.get("oro", 0))
-	hud.show_island_preview(info, oro_actual)
+	var core: Node = get_node_or_null("/root/GameCore")
+	var oro_actual: int = int(core.get_resources().get("oro", 0)) if core else 0
+	var lvl: int = core.get_player_level() if core else 1
+	hud.show_island_preview(info, oro_actual, lvl)
 
 
-func _on_unlock_island_requested(island_id: int, cost_oro: int) -> void:
-	if not has_node("/root/GameCore"):
-		hud.show_status_message("GameCore no disponible para desbloquear la isla %d." % island_id)
+func _on_parcel_preview_requested(_island_id: int, _parcel_idx: int, info: Dictionary) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	var oro_actual: int = int(core.get_resources().get("oro", 0)) if core else 0
+	var lvl: int = core.get_player_level() if core else 1
+	hud.show_parcel_preview(info, oro_actual, lvl)
+
+
+func _on_unlock_island_requested(island_id: int, cost_oro: int, level_req: int) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null:
 		return
-
-	var core: Node = get_node("/root/GameCore")
-	var res: Dictionary = core.unlock_island(island_id, cost_oro)
+	var res: Dictionary = core.unlock_island_with_level(island_id, cost_oro, level_req)
 	if res.get("ok", false):
-		if isla_bloqueada and isla_bloqueada.island_id == island_id:
-			isla_bloqueada.set_unlocked(true)
 		hud.hide_island_preview()
 	hud.show_status_message(str(res.get("msg", "")))
 
 
+func _on_unlock_parcel_requested(island_id: int, parcel_idx: int, cost_oro: int, level_req: int) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null:
+		return
+	var res: Dictionary = core.unlock_parcel(island_id, parcel_idx, cost_oro, level_req)
+	if res.get("ok", false):
+		hud.hide_island_preview()
+	hud.show_status_message(str(res.get("msg", "")))
+
+
+func _on_obstacle_clicked(obs_node: Node3D) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null or obs_node == null:
+		return
+	var oid: String = str(obs_node.get("obstacle_id"))
+	var obs: Dictionary = core.get_obstacle_by_id(oid)
+	if obs.is_empty():
+		return
+	var spec: Dictionary = core.OBSTACLE_SPECS.get(str(obs.get("tipo", "arbusto")), core.OBSTACLE_SPECS["arbusto"])
+	var res: Dictionary = core.get_resources()
+	hud.show_obstacle_panel(obs, spec, int(res.get("oro", 0)), int(res.get("gemas", 0)))
+
+
+func _on_clear_obstacle_requested(obs_id: String) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null:
+		return
+	var res: Dictionary = core.start_clear_obstacle(obs_id)
+	hud.show_status_message(str(res.get("msg", "")))
+	if res.get("ok", false):
+		hud.hide_obstacle_panel()
+
+
+func _on_speedup_obstacle_requested(obs_id: String) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null:
+		return
+	var res: Dictionary = core.speedup_obstacle_with_gems(obs_id)
+	hud.show_status_message(str(res.get("msg", "")))
+	if res.get("ok", false):
+		hud.hide_obstacle_panel()
+
+
 func _on_panel_requested(panel_name: String) -> void:
-	if not has_node("/root/GameCore"):
-		hud.show_status_message("Panel seleccionado: %s" % panel_name)
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null:
 		return
 
-	var core: Node = get_node("/root/GameCore")
 	match panel_name:
 		"Tienda":
 			_close_overlay_panels()
-			if shop_panel:
-				var oro_actual: int = int(core.get_resources().get("oro", 0))
-				shop_panel.open_shop(oro_actual)
-				hud.show_status_message("Tienda abierta: elige una categoría.")
+			if shop_panel and shop_panel.has_method("open_shop"):
+				shop_panel.call("open_shop", int(core.get_resources().get("oro", 0)))
+				hud.show_status_message("Tienda abierta.")
 		"Cruce":
 			_close_overlay_panels()
-			if breeding_panel:
-				breeding_panel.open_breeding()
-				hud.show_status_message("Selector de Cruce abierto.")
+			if breeding_panel and breeding_panel.has_method("open_breeding"):
+				breeding_panel.call("open_breeding")
+				hud.show_status_message("Adoratorio de Cría abierto.")
 		"Nido":
 			_close_overlay_panels()
-			if nest_panel:
-				nest_panel.open_nest()
-				hud.show_status_message("Nido de incubación abierto.")
+			if nest_panel and nest_panel.has_method("open_nest"):
+				nest_panel.call("open_nest")
+				hud.show_status_message("Torre Nido abierta.")
 		"Alimentar":
 			_close_overlay_panels()
 			_active_feed_filter_uids.clear()
 			_open_feed_panel(core, _active_feed_filter_uids, 0)
 		"Bestiario":
 			_close_overlay_panels()
-			if bestiario_panel:
-				bestiario_panel.open_bestiario()
+			if bestiario_panel and bestiario_panel.has_method("open_bestiario"):
+				bestiario_panel.call("open_bestiario")
 				hud.show_status_message("Bestiario abierto.")
 		"Combate":
 			_close_overlay_panels()
-			_open_combat_arena()
+			_open_combat_arena(1)
 		_:
-			hud.show_status_message("Panel %s disponible en próxima iteración." % panel_name)
+			hud.show_status_message("Panel %s seleccionado." % panel_name)
 
 
 func _close_overlay_panels() -> void:
-	if bestiario_panel and bestiario_panel.visible:
+	if bestiario_panel:
 		bestiario_panel.visible = false
-	if breeding_panel and breeding_panel.visible:
+	if breeding_panel:
 		breeding_panel.visible = false
-	if nest_panel and nest_panel.visible:
+	if nest_panel:
 		nest_panel.visible = false
-	if shop_panel and shop_panel.visible:
+	if shop_panel:
 		shop_panel.visible = false
 	if hud:
 		hud.hide_dragon_feed_panel()
 		hud.hide_island_preview()
 		hud.hide_habitat_menu()
+		hud.hide_obstacle_panel()
 
 
 func _on_breeding_completed(res: Dictionary) -> void:
@@ -219,12 +314,12 @@ func _on_breeding_completed(res: Dictionary) -> void:
 
 
 func _on_egg_hatched(res: Dictionary) -> void:
-	if not has_node("/root/GameCore"):
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null:
 		return
-	var core: Node = get_node("/root/GameCore")
 	if res.get("ok", false):
 		var placed: bool = _spawn_dragon_into_free_habitat(core, res.get("dragon", {}))
-		var extra: String = "" if placed else " (Construye otro hábitat en Tienda para alojarlo)"
+		var extra: String = "" if placed else " (Sin espacio libre: puedes guardarlo en la Guardería o construir un Hábitat)"
 		hud.show_status_message(str(res.get("msg", "")) + extra)
 		if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
 			tutorial_dialog.call("notify_action", "eclosion")
@@ -232,29 +327,29 @@ func _on_egg_hatched(res: Dictionary) -> void:
 		hud.show_status_message(str(res.get("msg", "")))
 
 
-func _open_combat_arena() -> void:
+func _open_combat_arena(chapter_id: int = 1) -> void:
 	if is_instance_valid(_active_combat_arena):
 		return
 	if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
 		tutorial_dialog.call("notify_action", "combate")
 
-	_active_combat_arena = COMBAT_ARENA_SCENE.instantiate() as CombatArena
+	_active_combat_arena = COMBAT_ARENA_SCENE.instantiate() as Node3D
 	add_child(_active_combat_arena)
 
-	if isla_inicial:
-		isla_inicial.visible = false
-	if isla_bloqueada:
-		isla_bloqueada.visible = false
+	if archipielago:
+		archipielago.visible = false
 	hud.visible = false
 	if camera_rig and camera_rig.camera:
 		camera_rig.camera.current = false
-	if _active_combat_arena.arena_camera:
-		_active_combat_arena.arena_camera.current = true
+	if _active_combat_arena.get("arena_camera"):
+		_active_combat_arena.get("arena_camera").current = true
 
-	if _active_combat_arena.combat_manager:
-		_active_combat_arena.combat_manager.combat_finished.connect(_on_combat_finished)
-	else:
-		_active_combat_arena.retreat_requested.connect(func() -> void: _on_combat_finished(false, {}))
+	var mgr: Node = _active_combat_arena.get("combat_manager")
+	if mgr:
+		if not mgr.is_connected("combat_finished", _on_combat_finished):
+			mgr.connect("combat_finished", _on_combat_finished)
+		if chapter_id > 1 and mgr.has_method("start_chapter"):
+			mgr.call("start_chapter", chapter_id, _active_combat_arena)
 
 
 func _on_combat_finished(victory: bool, rewards: Dictionary) -> void:
@@ -262,38 +357,29 @@ func _on_combat_finished(victory: bool, rewards: Dictionary) -> void:
 		_active_combat_arena.queue_free()
 		_active_combat_arena = null
 
-	if isla_inicial:
-		isla_inicial.visible = true
-	if isla_bloqueada:
-		isla_bloqueada.visible = true
+	if archipielago:
+		archipielago.visible = true
 	hud.visible = true
 	if camera_rig and camera_rig.camera:
 		camera_rig.camera.current = true
 
 	if victory:
-		hud.show_status_message("¡Capítulo 1 superado! +%d Oro, +%d Comida, +%d Gemas." % [
+		hud.show_status_message("¡Capítulo superado! +%d Oro, +%d Comida, +%d Gemas, +%d EXP." % [
 			int(rewards.get("oro", 0)),
 			int(rewards.get("comida", 0)),
-			int(rewards.get("gemas", 0))
+			int(rewards.get("gemas", 0)),
+			int(rewards.get("exp", 0))
 		])
 	else:
-		hud.show_status_message("Combate finalizado. Regresaste a la isla.")
-
-
-func _find_next_free_slot() -> int:
-	var all_slots: Array[Node3D] = _get_all_slot_nodes()
-	for i: int in range(all_slots.size()):
-		if not _built_habitats.has(i):
-			return i
-	return -1
+		hud.show_status_message("Combate finalizado. Regresaste al Santuario.")
 
 
 func _on_habitat_clicked(hab: HabitatBase) -> void:
-	if not has_node("/root/GameCore") or hab == null:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null or hab == null:
 		return
 	_close_overlay_panels()
 	_selected_habitat = hab
-	var core: Node = get_node("/root/GameCore")
 	var elem_info: Dictionary = core.get_element(hab.elemento_id)
 	var elem_name: String = str(elem_info.get("nombre", "Tierra"))
 	var oro_acum: int = int(floor(hab.accumulated_oro))
@@ -305,11 +391,12 @@ func _on_habitat_clicked(hab: HabitatBase) -> void:
 
 
 func _on_collect_habitat_oro_requested() -> void:
-	if _selected_habitat == null or not has_node("/root/GameCore"):
+	var core: Node = get_node_or_null("/root/GameCore")
+	if _selected_habitat == null or core == null:
 		return
 	var collected: int = _selected_habitat.collect_oro()
 	if collected > 0:
-		get_node("/root/GameCore").add_oro(collected)
+		core.add_oro(collected)
 		hud.show_status_message("¡Recogiste +%d Oro del hábitat!" % collected)
 		if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
 			tutorial_dialog.call("notify_action", "oro_o_alimentar")
@@ -317,21 +404,21 @@ func _on_collect_habitat_oro_requested() -> void:
 
 
 func _on_open_habitat_feed_requested() -> void:
-	if _selected_habitat == null or not has_node("/root/GameCore"):
+	var core: Node = get_node_or_null("/root/GameCore")
+	if _selected_habitat == null or core == null:
 		return
 	if _selected_habitat.hosted_dragon_uids.is_empty():
 		hud.show_status_message("Este hábitat está vacío.")
 		return
-	var core: Node = get_node("/root/GameCore")
 	_active_feed_filter_uids = _selected_habitat.hosted_dragon_uids.duplicate()
 	hud.hide_habitat_menu()
 	_open_feed_panel(core, _active_feed_filter_uids, 0)
 
 
 func _on_feed_dragon_requested(dragon_uid: int) -> void:
-	if not has_node("/root/GameCore"):
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null:
 		return
-	var core: Node = get_node("/root/GameCore")
 	var res: Dictionary = core.feed_dragon(dragon_uid)
 	hud.show_status_message(str(res.get("msg", "")))
 	if res.get("ok", false) and tutorial_dialog and tutorial_dialog.has_method("notify_action"):
@@ -343,8 +430,7 @@ func _on_feed_dragon_requested(dragon_uid: int) -> void:
 func _on_dragon_leveled_up(dragon_uid: int, new_nivel: int, new_etapa: String) -> void:
 	for hab_var: Variant in _built_habitats.values():
 		if hab_var is HabitatBase:
-			var hab: HabitatBase = hab_var
-			if hab.refresh_dragon_visual(dragon_uid, new_nivel, new_etapa):
+			if (hab_var as HabitatBase).refresh_dragon_visual(dragon_uid, new_nivel, new_etapa):
 				break
 
 
@@ -384,78 +470,48 @@ func _build_feed_info_list(core: Node, filter_uids: Array[int]) -> Array[Diction
 	return result
 
 
-func _setup_build_slots() -> void:
-	var all_slots: Array[Node3D] = []
-	if slots_container:
-		for c: Node in slots_container.get_children():
-			if c is Node3D:
-				all_slots.append(c)
-	if isla_bloqueada and isla_bloqueada.slots_container:
-		for c: Node in isla_bloqueada.slots_container.get_children():
-			if c is Node3D:
-				all_slots.append(c)
-
-	for i: int in range(all_slots.size()):
-		var slot: Node3D = all_slots[i]
-		if slot.get_script() == null:
-			slot.set_script(BUILD_SLOT_SCRIPT)
-			slot._ready()
-		slot.set("slot_index", i)
-		if slot.has_signal("slot_clicked") and not slot.is_connected("slot_clicked", _on_build_slot_clicked):
-			slot.connect("slot_clicked", _on_build_slot_clicked)
-		if slot.has_method("set_placement_highlight"):
-			slot.call("set_placement_highlight", false, not _built_habitats.has(i))
-
-
 func _on_shop_habitat_requested(elemento_id: int, cost_oro: int, nombre: String) -> void:
-	if _find_next_free_slot() == -1:
-		hud.show_status_message("No quedan espacios libres en las islas desbloqueadas.")
-		return
 	_pending_habitat_purchase = {"elemento_id": elemento_id, "cost_oro": cost_oro, "nombre": nombre}
-	_set_placement_mode(true)
-	hud.show_status_message("Modo colocación: clica un espacio verde para construir %s (Esc para cancelar)." % nombre)
+	_sync_all_islands()
+	hud.show_status_message("Modo colocación: clica un espacio verde iluminado para construir %s (Esc cancelar)." % nombre)
 
 
 func _on_shop_egg_requested(especie_id: int, cost_oro: int) -> void:
-	if has_node("/root/GameCore"):
-		var res: Dictionary = get_node("/root/GameCore").buy_egg(especie_id, cost_oro)
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core:
+		var res: Dictionary = core.buy_egg(especie_id, cost_oro)
 		hud.show_status_message(str(res.get("msg", "")))
 
 
 func _on_shop_farm_requested(cost_oro: int) -> void:
-	if has_node("/root/GameCore"):
-		var res: Dictionary = get_node("/root/GameCore").buy_food_farm(cost_oro)
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core:
+		var res: Dictionary = core.start_food_production(cost_oro, 180, 120)
 		hud.show_status_message(str(res.get("msg", "")))
 
 
-func _set_placement_mode(active: bool) -> void:
-	var all_slots: Array[Node3D] = _get_all_slot_nodes()
-	for i: int in range(all_slots.size()):
-		var slot: Node3D = all_slots[i]
-		if slot.has_method("set_placement_highlight"):
-			slot.call("set_placement_highlight", active, not _built_habitats.has(i))
-
-
-func _on_build_slot_clicked(slot_node: Node3D) -> void:
-	if _pending_habitat_purchase.is_empty() or not has_node("/root/GameCore"):
+func _on_island_slot_clicked(_island_id: int, global_slot_idx: int, _slot_node: Node3D) -> void:
+	if _pending_habitat_purchase.is_empty():
 		return
-	var slot_idx: int = int(slot_node.get("slot_index"))
-	if _built_habitats.has(slot_idx):
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null:
+		return
+	if _built_habitats.has(global_slot_idx):
 		hud.show_status_message("Ese espacio ya está ocupado.")
 		return
-	var core: Node = get_node("/root/GameCore")
 	var elem_id: int = int(_pending_habitat_purchase.get("elemento_id", 1))
 	var cost: int = int(_pending_habitat_purchase.get("cost_oro", 250))
-	var res: Dictionary = core.build_habitat(slot_idx, elem_id, cost)
+	var res: Dictionary = core.build_habitat(global_slot_idx, elem_id, cost)
 	if res.get("ok", false):
-		_spawn_habitat_at_slot(slot_idx, elem_id)
+		_spawn_habitat_at_slot(global_slot_idx, elem_id)
+		core.add_player_exp(30)
 	_pending_habitat_purchase.clear()
-	_set_placement_mode(false)
+	_sync_all_islands()
 	hud.show_status_message(str(res.get("msg", "")))
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _pending_habitat_purchase.is_empty() and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		_pending_habitat_purchase.clear()
-		_set_placement_mode(false)
+		_sync_all_islands()
 		hud.show_status_message("Modo colocación cancelado.")

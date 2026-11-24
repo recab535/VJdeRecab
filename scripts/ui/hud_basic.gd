@@ -5,8 +5,13 @@ class_name HudBasic
 
 signal rotate_left_requested
 signal rotate_right_requested
+signal prev_island_requested
+signal next_island_requested
 signal panel_requested(panel_name: String)
-signal unlock_island_requested(island_id: int, cost_oro: int)
+signal unlock_island_requested(island_id: int, cost_oro: int, level_req: int)
+signal unlock_parcel_requested(island_id: int, parcel_index: int, cost_oro: int, level_req: int)
+signal clear_obstacle_requested(obs_id: String)
+signal speedup_obstacle_requested(obs_id: String)
 signal feed_dragon_requested(dragon_uid: int)
 signal collect_habitat_oro_requested
 signal open_habitat_feed_requested
@@ -18,6 +23,16 @@ signal open_habitat_feed_requested
 @onready var lbl_gemas: Label = %LblGemas
 @onready var btn_rotar_izq: Button = %BtnRotarIzq
 @onready var btn_rotar_der: Button = %BtnRotarDer
+@onready var btn_isla_ant: Button = %BtnIslaAnt
+@onready var lbl_isla_actual: Label = %LblIslaActual
+@onready var btn_isla_sig: Button = %BtnIslaSig
+@onready var panel_obstaculo: PanelContainer = %PanelObstaculo
+@onready var lbl_obs_titulo: Label = %LblObsTitulo
+@onready var lbl_obs_detalle: Label = %LblObsDetalle
+@onready var pb_obs_tiempo: ProgressBar = %PbObsTiempo
+@onready var btn_limpiar_obs: Button = %BtnLimpiarObs
+@onready var btn_acelerar_obs: Button = %BtnAcelerarObs
+@onready var btn_cerrar_obs: Button = %BtnCerrarObs
 @onready var panel_isla_preview: PanelContainer = %PanelIslaPreview
 @onready var lbl_isla_titulo: Label = %LblIslaTitulo
 @onready var lbl_isla_detalle: Label = %LblIslaDetalle
@@ -39,7 +54,10 @@ signal open_habitat_feed_requested
 @onready var btn_cerrar_alimentar: Button = %BtnCerrarAlimentar
 
 var _preview_island_id: int = -1
+var _preview_parcel_idx: int = -1
 var _preview_cost_oro: int = 0
+var _preview_level_req: int = 1
+var _selected_obs_id: String = ""
 var _feed_dragons_list: Array[Dictionary] = []
 var _feed_selected_idx: int = 0
 var _current_comida: int = 0
@@ -48,11 +66,29 @@ var _current_comida: int = 0
 func _ready() -> void:
 	btn_rotar_izq.pressed.connect(func() -> void: rotate_left_requested.emit())
 	btn_rotar_der.pressed.connect(func() -> void: rotate_right_requested.emit())
+	if btn_isla_ant:
+		btn_isla_ant.pressed.connect(func() -> void: prev_island_requested.emit())
+	if btn_isla_sig:
+		btn_isla_sig.pressed.connect(func() -> void: next_island_requested.emit())
 	btn_cerrar_preview.pressed.connect(hide_island_preview)
 	btn_desbloquear_isla.pressed.connect(func() -> void:
-		if _preview_island_id > 0:
-			unlock_island_requested.emit(_preview_island_id, _preview_cost_oro)
+		if _preview_parcel_idx >= 0:
+			unlock_parcel_requested.emit(_preview_island_id, _preview_parcel_idx, _preview_cost_oro, _preview_level_req)
+		elif _preview_island_id > 0:
+			unlock_island_requested.emit(_preview_island_id, _preview_cost_oro, _preview_level_req)
 	)
+	if btn_cerrar_obs:
+		btn_cerrar_obs.pressed.connect(hide_obstacle_panel)
+	if btn_limpiar_obs:
+		btn_limpiar_obs.pressed.connect(func() -> void:
+			if not _selected_obs_id.is_empty():
+				clear_obstacle_requested.emit(_selected_obs_id)
+		)
+	if btn_acelerar_obs:
+		btn_acelerar_obs.pressed.connect(func() -> void:
+			if not _selected_obs_id.is_empty():
+				speedup_obstacle_requested.emit(_selected_obs_id)
+		)
 
 	if btn_cerrar_alimentar:
 		btn_cerrar_alimentar.pressed.connect(hide_dragon_feed_panel)
@@ -135,22 +171,72 @@ func show_status_message(msg: String) -> void:
 		lbl_estado_accion.text = msg
 
 
-func show_island_preview(info: Dictionary, current_oro: int) -> void:
+func set_focused_island(island_id: int) -> void:
+	if lbl_isla_actual:
+		lbl_isla_actual.text = "Isla %d / 5" % island_id
+
+
+func show_island_preview(info: Dictionary, current_oro: int, player_level: int = 1) -> void:
 	_preview_island_id = int(info.get("id", -1))
+	_preview_parcel_idx = -1
 	_preview_cost_oro = int(info.get("costo_oro", 2500))
+	_preview_level_req = int(info.get("nivel_req", 1))
 	lbl_isla_titulo.text = str(info.get("nombre", "Isla Bloqueada"))
-	lbl_isla_detalle.text = "Espacios construibles: %d\nElementos: %s\nCosto: %d Oro" % [
-		int(info.get("slots", 4)),
+	lbl_isla_detalle.text = "Cuadrícula: 14×14 (4 parcelas)\nElementos: %s\nNivel requerido: %d | Costo: %d Oro" % [
 		str(info.get("elementos", "Varios")),
+		_preview_level_req,
 		_preview_cost_oro
 	]
 	btn_desbloquear_isla.text = "Desbloquear (%d Oro)" % _preview_cost_oro
-	btn_desbloquear_isla.disabled = current_oro < _preview_cost_oro
+	btn_desbloquear_isla.disabled = current_oro < _preview_cost_oro or player_level < _preview_level_req
+	panel_isla_preview.visible = true
+
+
+func show_parcel_preview(info: Dictionary, current_oro: int, player_level: int = 1) -> void:
+	_preview_island_id = int(info.get("island_id", 1))
+	_preview_parcel_idx = int(info.get("parcela", 1))
+	_preview_cost_oro = int(info.get("costo_oro", 750))
+	_preview_level_req = int(info.get("nivel_req", 1))
+	lbl_isla_titulo.text = "Parcela %d — Isla %d" % [_preview_parcel_idx + 1, _preview_island_id]
+	lbl_isla_detalle.text = "Desbloquea espacio construible adicional (cuadrante 7×7).\nNivel requerido: %d | Costo: %d Oro" % [
+		_preview_level_req,
+		_preview_cost_oro
+	]
+	btn_desbloquear_isla.text = "Comprar Parcela (%d Oro)" % _preview_cost_oro
+	btn_desbloquear_isla.disabled = current_oro < _preview_cost_oro or player_level < _preview_level_req
 	panel_isla_preview.visible = true
 
 
 func hide_island_preview() -> void:
 	panel_isla_preview.visible = false
+
+
+func show_obstacle_panel(obs: Dictionary, spec: Dictionary, current_oro: int, current_gems: int) -> void:
+	if panel_obstaculo == null:
+		return
+	_selected_obs_id = str(obs.get("id", ""))
+	var nombre: String = str(spec.get("nombre", "Obstáculo"))
+	var dur: float = maxf(1.0, float(spec.get("duracion_seg", 600)))
+	var rem: float = maxf(0.0, float(obs.get("restante_seg", dur)))
+	var limpiando: bool = bool(obs.get("limpiando", false))
+	var cost_oro: int = int(spec.get("costo_oro", 150))
+	var cost_gems: int = int(spec.get("gemas_acelerar", 2))
+	var exp_rew: int = int(spec.get("exp", 20))
+
+	lbl_obs_titulo.text = "%s (+%d EXP)" % [nombre, exp_rew]
+	var mins: int = int(ceil(rem / 60.0))
+	lbl_obs_detalle.text = ("Limpiando... Faltan %d min" % mins) if limpiando else ("Tiempo de limpieza: %d min | Costo: %d Oro" % [int(dur / 60.0), cost_oro])
+	pb_obs_tiempo.value = clampf(((dur - rem) / dur) * 100.0, 0.0, 100.0) if limpiando else 0.0
+	btn_limpiar_obs.text = "En progreso..." if limpiando else ("Limpiar (%d Oro)" % cost_oro)
+	btn_limpiar_obs.disabled = limpiando or current_oro < cost_oro
+	btn_acelerar_obs.text = "Acelerar (%d Gemas)" % cost_gems
+	btn_acelerar_obs.disabled = current_gems < cost_gems
+	panel_obstaculo.visible = true
+
+
+func hide_obstacle_panel() -> void:
+	if panel_obstaculo:
+		panel_obstaculo.visible = false
 
 
 func show_dragon_feed_panel(dragons_info: Array[Dictionary], current_comida: int, selected_index: int = 0) -> void:

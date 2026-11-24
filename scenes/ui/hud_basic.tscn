@@ -296,6 +296,98 @@ text = "Combate"
 
 [node name="TutorialDialog" parent="RootControl" instance=ExtResource("7_tutorial")]
 
+[node name="IslaNavBar" type="HBoxContainer" parent="RootControl"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -92.0
+offset_right = 330.0
+offset_bottom = -24.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="BtnIslaAnt" type="Button" parent="RootControl/IslaNavBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(82, 50)
+layout_mode = 2
+text = "◀ Isla"
+
+[node name="LblIslaActual" type="Label" parent="RootControl/IslaNavBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+text = "Isla 1 / 5"
+horizontal_alignment = 1
+
+[node name="BtnIslaSig" type="Button" parent="RootControl/IslaNavBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(82, 50)
+layout_mode = 2
+text = "Isla ▶"
+
+[node name="PanelObstaculo" type="PanelContainer" parent="RootControl"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -135.0
+offset_right = 240.0
+offset_bottom = 135.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxObs" type="VBoxContainer" parent="RootControl/PanelObstaculo"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LblObsTitulo" type="Label" parent="RootControl/PanelObstaculo/VBoxObs"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Arbusto"
+
+[node name="LblObsDetalle" type="Label" parent="RootControl/PanelObstaculo/VBoxObs"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Tiempo: 10 min | Costo: 150 Oro"
+
+[node name="PbObsTiempo" type="ProgressBar" parent="RootControl/PanelObstaculo/VBoxObs"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+max_value = 100.0
+show_percentage = false
+
+[node name="HBoxObsBtns" type="HBoxContainer" parent="RootControl/PanelObstaculo/VBoxObs"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BtnLimpiarObs" type="Button" parent="RootControl/PanelObstaculo/VBoxObs/HBoxObsBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 44)
+layout_mode = 2
+text = "Limpiar (150 Oro)"
+
+[node name="BtnAcelerarObs" type="Button" parent="RootControl/PanelObstaculo/VBoxObs/HBoxObsBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 44)
+layout_mode = 2
+text = "Acelerar (2 Gemas)"
+
+[node name="BtnCerrarObs" type="Button" parent="RootControl/PanelObstaculo/VBoxObs/HBoxObsBtns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 44)
+layout_mode = 2
+text = "Cerrar"
+
 [node name="PanelHabitatMenu" type="PanelContainer" parent="RootControl"]
 unique_name_in_owner = true
 visible = false
