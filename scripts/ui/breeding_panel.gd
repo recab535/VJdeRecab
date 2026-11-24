@@ -167,10 +167,10 @@ func _update_preview(core: Node) -> void:
 
 	if _selected_a.is_empty() or _selected_b.is_empty():
 		lbl_resultado_titulo.text = "Selecciona 2 dragones"
-		lbl_resultado_detalle.text = "Elige un Padre 1 y un Padre 2 para previsualizar el huevo resultante."
+		lbl_resultado_detalle.text = "Elige dos padres compatibles para descubrir qué huevo misterioso aparecerá."
 		btn_iniciar_cruce.disabled = true
-		btn_iniciar_cruce.text = "Iniciar Cruce"
-		icon_resultado.texture = null
+		btn_iniciar_cruce.text = "Cruzar"
+		icon_resultado.texture = _build_mystery_egg_texture()
 		return
 
 	var sp_a_id: int = int(_selected_a.get("especie_id", 1))
@@ -178,41 +178,35 @@ func _update_preview(core: Node) -> void:
 	var preview: Dictionary = core.get_breeding_preview(sp_a_id, sp_b_id)
 	var candidates: Array = preview.get("candidates", [])
 	var leg_id: int = int(preview.get("legendary_id", 0))
-	var leg_prob: float = float(preview.get("legendary_prob", 0.0))
 	var blocked_reason: String = str(preview.get("blocked_reason", ""))
 
 	if candidates.is_empty():
 		lbl_resultado_titulo.text = "Cruce no compatible"
-		lbl_resultado_detalle.text = blocked_reason if not blocked_reason.is_empty() else "No se encontró combinación válida."
+		lbl_resultado_detalle.text = blocked_reason if not blocked_reason.is_empty() else "Elementos incompatibles directamente."
 		btn_iniciar_cruce.disabled = true
 		btn_iniciar_cruce.text = "No compatible"
 		icon_resultado.texture = null
 		return
 
-	var preview_icon_id: int = leg_id if leg_id > 0 else int(candidates[0])
-	icon_resultado.texture = _resolve_species_texture(preview_icon_id, "cria")
+	# Factor misterio clásico 2012: NO revelar la especie exacta antes de cruzar
+	icon_resultado.texture = _build_mystery_egg_texture()
+	var elems_a: String = _format_elements(core, _selected_a.get("elementos", []))
+	var elems_b: String = _format_elements(core, _selected_b.get("elementos", []))
+	var lvl_a: int = int(_selected_a.get("nivel", 1))
+	var lvl_b: int = int(_selected_b.get("nivel", 1))
+	var bonus_hint: String = "\n★ Bono por padres de nivel alto activo" if (lvl_a + lvl_b) >= 8 else ""
+	var aura_hint: String = "\n✦ Resonancia ancestral detectada..." if leg_id > 0 else ""
 
-	var names: PackedStringArray = []
-	if leg_id > 0:
-		var sp_leg: Dictionary = core.get_species(leg_id)
-		names.append("★ %s (Legendario %.0f%%)" % [str(sp_leg.get("nombre", "?")), leg_prob * 100.0])
-	for cid: Variant in candidates:
-		var sp: Dictionary = core.get_species(int(cid))
-		names.append("%s (%s)" % [str(sp.get("nombre", "?")), _format_elements(core, sp.get("elementos", []))])
-
-	var min_t: int = int(preview.get("min_time_seg", 300))
-	var max_t: int = int(preview.get("max_time_seg", 300))
-	var time_str: String = _format_time(min_t) if min_t == max_t else "%s - %s" % [_format_time(min_t), _format_time(max_t)]
-
-	var total_possible: int = candidates.size() + (1 if leg_id > 0 else 0)
-	lbl_resultado_titulo.text = "Posible resultado (%d)" % total_possible
-	lbl_resultado_detalle.text = "%s\n\nIncubación: %s" % ["\n• ".join([""] + Array(names)).strip_edges(), time_str]
+	lbl_resultado_titulo.text = "Huevo Misterioso (?)"
+	lbl_resultado_detalle.text = "Compatibilidad: ✓ Válida\n%s + %s%s%s\n\nEl huevo y su tiempo se revelarán al pulsar Cruzar." % [
+		elems_a, elems_b, bonus_hint, aura_hint
+	]
 
 	var max_slots: int = core.get_nest_max_slots() if core.has_method("get_nest_max_slots") else 1
 	var cur_eggs: int = core.get_nest_eggs().size()
 	var nido_lleno: bool = cur_eggs >= max_slots
 	btn_iniciar_cruce.disabled = nido_lleno
-	btn_iniciar_cruce.text = "Nido Lleno (%d/%d)" % [cur_eggs, max_slots] if nido_lleno else "Iniciar Cruce"
+	btn_iniciar_cruce.text = "Nido Lleno (%d/%d)" % [cur_eggs, max_slots] if nido_lleno else "Cruzar"
 
 
 func _on_iniciar_cruce_pressed() -> void:
@@ -222,10 +216,40 @@ func _on_iniciar_cruce_pressed() -> void:
 
 	var sp_a_id: int = int(_selected_a.get("especie_id", 1))
 	var sp_b_id: int = int(_selected_b.get("especie_id", 1))
-	var res: Dictionary = core.start_breeding(sp_a_id, sp_b_id)
+	var lvl_a: int = int(_selected_a.get("nivel", 1))
+	var lvl_b: int = int(_selected_b.get("nivel", 1))
+	var res: Dictionary = core.start_breeding(sp_a_id, sp_b_id, lvl_a, lvl_b)
 	lbl_feedback.text = str(res.get("msg", ""))
 	breeding_completed.emit(res)
 	refresh()
+
+
+func _build_mystery_egg_texture() -> ImageTexture:
+	var img: Image = Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var shell: Color = Color(0.26, 0.34, 0.56, 1.0)
+	var hi: Color = Color(0.42, 0.54, 0.82, 1.0)
+	var border: Color = Color(0.10, 0.14, 0.24, 1.0)
+	var gold: Color = Color(1.0, 0.88, 0.34, 1.0)
+	for y: int in range(4, 29):
+		var t: float = float(y - 4) / 24.0
+		var half_w: int = int(round(sin(t * PI) * (8.5 + t * 2.4)))
+		for x: int in range(16 - half_w, 16 + half_w + 1):
+			if x == 16 - half_w or x == 16 + half_w or y == 4 or y == 28:
+				img.set_pixel(x, y, border)
+			elif x < 14 and y < 17:
+				img.set_pixel(x, y, hi)
+			else:
+				img.set_pixel(x, y, shell)
+	# Signo de interrogación dorado en el centro
+	var q_pts: Array[Vector2i] = [
+		Vector2i(14, 11), Vector2i(15, 10), Vector2i(16, 10), Vector2i(17, 10), Vector2i(18, 11),
+		Vector2i(18, 12), Vector2i(17, 13), Vector2i(16, 14), Vector2i(16, 15), Vector2i(16, 16),
+		Vector2i(16, 19), Vector2i(16, 20)
+	]
+	for p: Vector2i in q_pts:
+		img.set_pixel(p.x, p.y, gold)
+	return ImageTexture.create_from_image(img)
 
 
 func _format_elements(core: Node, elem_ids: Array) -> String:

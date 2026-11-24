@@ -138,10 +138,17 @@ func _refresh_egg_visual() -> void:
 			var egg: Dictionary = huevos[i]
 			var sp: Dictionary = core.get_species(int(egg.get("especie_id", 1)))
 			var elem_id: int = int(sp.get("elemento_primario_id", 1))
+			var sec_var: Variant = sp.get("elemento_secundario_id", null)
+			var sec_id: int = int(sec_var) if sec_var != null else 0
 			var col: Color = ELEM_COLORS.get(elem_id, Color(0.98, 0.88, 0.52))
 			var is_ready: bool = bool(egg.get("listo", false))
 			if is_ready:
 				any_ready = true
+
+			var egg_root: Node3D = Node3D.new()
+			egg_root.position = cradle_pos
+			egg_root.set_meta("base_y", cradle_pos.y)
+			egg_root.set_meta("ready", is_ready)
 
 			var egg_mi: MeshInstance3D = MeshInstance3D.new()
 			var sm: SphereMesh = SphereMesh.new()
@@ -153,25 +160,36 @@ func _refresh_egg_visual() -> void:
 			egg_mi.material_override = VisualShaders.make_toon(
 				col,
 				Color(0.24, 0.22, 0.36),
-				0.55,
-				0.28,
-				0.08,
+				0.12,
+				0.72,
+				0.04,
 				Color(1.0, 0.88, 0.35) if is_ready else col,
-				0.95 if is_ready else 0.35
+				0.55 if is_ready else 0.14
 			)
-			egg_mi.position = cradle_pos
-			egg_mi.set_meta("base_y", cradle_pos.y)
-			egg_mi.set_meta("ready", is_ready)
-			add_child(egg_mi)
-			_egg_nodes.append(egg_mi)
+			egg_root.add_child(egg_mi)
+
+			# Banda o corona distintiva según elemento secundario / legendario
+			if sec_id > 0 or elem_id == 9:
+				var band: MeshInstance3D = MeshInstance3D.new()
+				var tm: TorusMesh = TorusMesh.new()
+				tm.inner_radius = sm.radius * 0.88
+				tm.outer_radius = sm.radius * 1.08
+				tm.rings = 12
+				tm.ring_segments = 6
+				band.mesh = tm
+				var sec_col: Color = ELEM_COLORS.get(sec_id, Color(1.0, 0.84, 0.28))
+				band.material_override = VisualShaders.make_toon(sec_col, Color(0.22, 0.20, 0.32), 0.14, 0.65, 0.08, sec_col, 0.35)
+				band.rotation_degrees = Vector3(16.0, 0.0, 12.0)
+				egg_root.add_child(band)
+
+			add_child(egg_root)
+			_egg_nodes.append(egg_root)
 
 	if label_3d:
+		label_3d.visible = any_ready
 		if any_ready:
-			label_3d.text = "✨ Torre Nido (%d/%d)\n¡Huevo listo!" % [huevos.size(), slots_max]
+			label_3d.text = "🥚!"
 			label_3d.modulate = Color(1.0, 0.90, 0.34, 1.0)
-		else:
-			label_3d.text = "Torre Nido (%d/%d)" % [huevos.size(), slots_max]
-			label_3d.modulate = Color(0.96, 0.98, 1.0, 1.0)
 
 
 func _on_area_input_event(_camera: Node, event: InputEvent, _pos: Vector3, _normal: Vector3, _shape_idx: int) -> void:

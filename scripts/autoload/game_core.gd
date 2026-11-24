@@ -602,7 +602,7 @@ func get_breeding_preview(parent_a_id: int, parent_b_id: int) -> Dictionary:
 	}
 
 
-func start_breeding(parent_a_id: int, parent_b_id: int) -> Dictionary:
+func start_breeding(parent_a_id: int, parent_b_id: int, parent_a_level: int = 1, parent_b_level: int = 1) -> Dictionary:
 	var huevos: Array = player_state.get("nido_huevos", [])
 	var max_slots: int = get_nest_max_slots()
 	if huevos.size() >= max_slots:
@@ -614,7 +614,7 @@ func start_breeding(parent_a_id: int, parent_b_id: int) -> Dictionary:
 	if _is_pure_opposite_pair(get_species(parent_a_id), get_species(parent_b_id)):
 		return {"ok": false, "msg": "Elementos opuestos puros no se cruzan directamente; usa dragones híbridos."}
 
-	var result_id: int = _resolve_breeding_species(parent_a_id, parent_b_id)
+	var result_id: int = _resolve_breeding_species(parent_a_id, parent_b_id, parent_a_level, parent_b_level)
 	var sp: Dictionary = get_species(result_id)
 	var total_sec: int = maxi(5, int(sp.get("tiempo_incubacion_seg", 300)))
 	var egg: Dictionary = {
@@ -631,7 +631,7 @@ func start_breeding(parent_a_id: int, parent_b_id: int) -> Dictionary:
 	save_game()
 	breeding_started.emit(egg)
 	nest_updated.emit()
-	return {"ok": true, "egg": egg, "msg": "Cruce iniciado: huevo de %s enviado al Nido." % egg["nombre"]}
+	return {"ok": true, "egg": egg, "msg": "¡Cruce iniciado! Huevo misterioso enviado a la Torre Nido (%d min)." % maxi(1, int(round(float(total_sec) / 60.0)))}
 
 
 func accelerate_egg(egg_index: int, cost_gemas: int = 1) -> Dictionary:
@@ -786,18 +786,45 @@ func _get_breeding_candidates(parent_a_id: int, parent_b_id: int) -> Array[int]:
 	return candidates
 
 
-func _resolve_breeding_species(parent_a_id: int, parent_b_id: int) -> int:
+func _resolve_breeding_species(parent_a_id: int, parent_b_id: int, parent_a_level: int = 1, parent_b_level: int = 1) -> int:
+	var avg_level: float = float(maxi(1, parent_a_level) + maxi(1, parent_b_level)) * 0.5
+	var high_level_bonus: float = 0.015 if (parent_a_level >= 7 and parent_b_level >= 7) else (0.008 if avg_level >= 4.0 else 0.0)
+
 	var leg_recipe: Dictionary = _get_legendary_recipe(parent_a_id, parent_b_id)
 	if not leg_recipe.is_empty():
 		var leg_id: int = int(leg_recipe.get("legendario_id", 0))
-		var prob: float = float(leg_recipe.get("probabilidad", reglas_cruce.get("probabilidad_legendario_defecto", 0.04)))
-		if leg_id > 0 and especies_by_id.has(leg_id) and randf() < prob:
+		var base_prob: float = float(leg_recipe.get("probabilidad", reglas_cruce.get("probabilidad_legendario_defecto", 0.04)))
+		var final_prob: float = clampf(base_prob + high_level_bonus, 0.01, 0.08)
+		if leg_id > 0 and especies_by_id.has(leg_id) and randf() < final_prob:
 			return leg_id
 
 	var candidates: Array[int] = _get_breeding_candidates(parent_a_id, parent_b_id)
 	if candidates.is_empty():
 		return parent_a_id
-	return candidates[randi() % candidates.size()]
+
+	# Selección ponderada (Weighted RNG) preservando paridad 50%/50% en cada par A/B y B/A
+	var total_weight: float = 0.0
+	var weights: Array[float] = []
+	for cid: int in candidates:
+		var sp: Dictionary = get_species(cid)
+		var rareza: String = str(sp.get("rareza", "PURO")).to_upper()
+		var w: float = 1.0
+		if rareza == "OPUESTO":
+			w = 0.75 + (0.30 if avg_level >= 5.0 else 0.0)
+		elif rareza == "HIBRIDO":
+			w = 1.0 + (0.25 if avg_level >= 5.0 else 0.0)
+		else:
+			w = 1.0
+		weights.append(w)
+		total_weight += w
+
+	var roll: float = randf() * total_weight
+	var accum: float = 0.0
+	for i: int in range(candidates.size()):
+		accum += weights[i]
+		if roll <= accum:
+			return candidates[i]
+	return candidates[candidates.size() - 1]
 
 
 func get_species(species_id: int) -> Dictionary:

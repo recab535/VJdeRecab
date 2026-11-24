@@ -11,6 +11,7 @@
   ],
   "ultimo_ciclo": {
     "Fase_1_Iluminacion_Islas_Camara": "Shader toon_stylized.gdshader sin ruido cuadriculado ni fogonazo especular al rotar 360°, 5 islas orgánicas esculpidas con SurfaceTool, etiquetas flotantes ocultas en reposo y enfoque suave de cámara (Tween) al clicar entidades.",
-    "Fase_2_Grid_y_Dragones": "Matriz lógica 14x14 IslandGrid (isUnlocked/isOccupied, tamaños 1x1 a 5x5, modo Mover hábitat con rejilla sutil solo al colocar/mover) y máquina de estados en Dragon2D (Idle/Walk/SpecialAnim + giro de evolución)."
+    "Fase_2_Grid_y_Dragones": "Matriz lógica 14x14 IslandGrid (isUnlocked/isOccupied, tamaños 1x1 a 5x5, modo Mover hábitat con rejilla sutil solo al colocar/mover) y máquina de estados en Dragon2D (Idle/Walk/SpecialAnim + giro de evolución).",
+    "Fase_3_Cruces_Misterio_Huevos": "Weighted RNG con bono por nivel de padres, filtro de puros opuestos y recetas cerradas 4% en GameCore; Factor Misterio (?) en BreedingPanel sin revelar especie previa; huevos 3D con banda elemental secundaria en TorreNido."
   }
 }
