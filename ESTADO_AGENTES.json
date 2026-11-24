@@ -2,7 +2,7 @@
   "estado": "COMPLETADO",
   "fase_actual": 10,
   "total_fases": 10,
-  "turno_actual": "G1",
+  "turno_actual": "G2",
   "orden_agentes": [
     "G1",
     "G2",
@@ -20,6 +20,6 @@
     "Fase_7": "COMPLETADA - Tienda de 5 pestañas, Almacén (5 espacios ampliables + suelos infinitos) y Potenciadores Elementales x2/x3 (excluyendo Legendarios, desactivables en Almacén y validación is_booster_in_warehouse contra compra duplicada).",
     "Fase_8": "COMPLETADA - Carrusel horizontal de 50 capítulos con especie obligatoria, auto-scroll y retratos/siluetas 48x48 + Bestiario completo de las 68 especies con siluetas, stats base y rarezas.",
     "Fase_9": "COMPLETADA - Combate 1v1 con relevos directo (sin pantalla previa de rival), proyectiles elementales VFX, flash de daño, pedestales estilizados con VisualShaders, orientación frente a frente, fix de título de arco, XP de jugador y persistencia.",
-    "Fase_10": "COMPLETADA - AudioManager autoload procedural (música ambiental pentatónica + 7 SFX WAV + botón de silencio en HUD) y auditoría final completa (0 referencias res:// rotas, TEST_CLEAN_START_MODE = true verificado)."
+    "Fase_10": "COMPLETADA - AudioManager autoload procedural (música ambiental pentatónica + 7 SFX WAV conectados en combate/hábitats/nido/level-up/mina + botón de silencio en HUD + limpieza _exit_tree), fix de carga diferida de shaders en VisualShaders para load_threaded_request desde loading_screen.tscn y auditoría headless real en Godot 4.7.2 (0/29 errores de sintaxis, 0 errores en transición loading_screen -> main, TEST_CLEAN_START_MODE = true verificado)."
   }
 }

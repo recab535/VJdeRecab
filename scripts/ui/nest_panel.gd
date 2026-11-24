@@ -191,6 +191,10 @@ func _create_egg_card(core: Node, idx: int, egg: Dictionary, gemas: int) -> Pane
 		btn_action.pressed.connect(func() -> void:
 			var res: Dictionary = core.hatch_egg_at(idx)
 			lbl_feedback.text = str(res.get("msg", ""))
+			if res.get("ok", false):
+				var am: Node = get_node_or_null("/root/AudioManager")
+				if am and am.has_method("play_sfx"):
+					am.call("play_sfx", "hatch")
 			egg_hatched.emit(res)
 			refresh()
 		)
@@ -200,6 +204,10 @@ func _create_egg_card(core: Node, idx: int, egg: Dictionary, gemas: int) -> Pane
 		btn_action.pressed.connect(func() -> void:
 			var res: Dictionary = core.accelerate_egg(idx, 1)
 			lbl_feedback.text = str(res.get("msg", ""))
+			if res.get("ok", false):
+				var am: Node = get_node_or_null("/root/AudioManager")
+				if am and am.has_method("play_sfx"):
+					am.call("play_sfx", "click")
 			refresh()
 		)
 	hbox.add_child(btn_action)

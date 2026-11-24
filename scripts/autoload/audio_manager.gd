@@ -32,6 +32,18 @@ func _ready() -> void:
 	_setup_ambient_music()
 
 
+func _exit_tree() -> void:
+	_music_playback = null
+	if _music_player != null:
+		_music_player.stop()
+		_music_player.stream = null
+	for p: AudioStreamPlayer in _sfx_players:
+		if p != null:
+			p.stop()
+			p.stream = null
+	_sfx_cache.clear()
+
+
 func _setup_sfx_pool() -> void:
 	for _i: int in range(4):
 		var p: AudioStreamPlayer = AudioStreamPlayer.new()

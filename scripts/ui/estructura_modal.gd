@@ -79,6 +79,10 @@ func _render_gem_mine(core: Node) -> void:
 		_add_action_button("Construir Mina de Gemas (10 💎)", func() -> void:
 			var r: Dictionary = core.build_gem_mine_on_island(_current_island_id)
 			status_message.emit(str(r.get("msg", "")))
+			if r.get("ok", false):
+				var am: Node = get_node_or_null("/root/AudioManager")
+				if am and am.has_method("play_sfx"):
+					am.call("play_sfx", "coin")
 			_refresh()
 		)
 	else:
@@ -89,6 +93,10 @@ func _render_gem_mine(core: Node) -> void:
 		var btn: Button = _add_action_button("Recoger +1 Gema 💎", func() -> void:
 			var r: Dictionary = core.collect_gem_mine(_current_island_id)
 			status_message.emit(str(r.get("msg", "")))
+			if r.get("ok", false):
+				var am: Node = get_node_or_null("/root/AudioManager")
+				if am and am.has_method("play_sfx"):
+					am.call("play_sfx", "coin")
 			_refresh()
 		)
 		btn.disabled = not ready_flag

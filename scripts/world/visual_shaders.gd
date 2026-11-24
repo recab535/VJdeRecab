@@ -3,8 +3,23 @@ extends RefCounted
 
 ## Fábrica centralizada de materiales 2.5D estilizados (toon + agua/lava/energía).
 
-const TOON_SHADER: Shader = preload("res://assets/shaders/toon_stylized.gdshader")
-const FLOW_SHADER: Shader = preload("res://assets/shaders/water_lava_flow.gdshader")
+const TOON_SHADER_PATH: String = "res://assets/shaders/toon_stylized.gdshader"
+const FLOW_SHADER_PATH: String = "res://assets/shaders/water_lava_flow.gdshader"
+
+static var _toon_shader: Shader = null
+static var _flow_shader: Shader = null
+
+
+static func _get_toon_shader() -> Shader:
+	if _toon_shader == null:
+		_toon_shader = load(TOON_SHADER_PATH) as Shader
+	return _toon_shader
+
+
+static func _get_flow_shader() -> Shader:
+	if _flow_shader == null:
+		_flow_shader = load(FLOW_SHADER_PATH) as Shader
+	return _flow_shader
 
 
 static func make_toon(
@@ -18,7 +33,7 @@ static func make_toon(
 	toon_steps: float = 3.0
 ) -> ShaderMaterial:
 	var mat: ShaderMaterial = ShaderMaterial.new()
-	mat.shader = TOON_SHADER
+	mat.shader = _get_toon_shader()
 	mat.set_shader_parameter("albedo_color", albedo)
 	mat.set_shader_parameter("shadow_tint", shadow_tint)
 	mat.set_shader_parameter("rim_strength", rim_strength)
@@ -38,7 +53,7 @@ static func make_water(
 	amp: float = 0.04
 ) -> ShaderMaterial:
 	var mat: ShaderMaterial = ShaderMaterial.new()
-	mat.shader = FLOW_SHADER
+	mat.shader = _get_flow_shader()
 	mat.set_shader_parameter("base_color", base_col)
 	mat.set_shader_parameter("deep_color", deep_col)
 	mat.set_shader_parameter("foam_color", foam_col)
@@ -56,7 +71,7 @@ static func make_lava(
 	speed: float = 0.42
 ) -> ShaderMaterial:
 	var mat: ShaderMaterial = ShaderMaterial.new()
-	mat.shader = FLOW_SHADER
+	mat.shader = _get_flow_shader()
 	mat.set_shader_parameter("base_color", base_col)
 	mat.set_shader_parameter("deep_color", deep_col)
 	mat.set_shader_parameter("foam_color", foam_col)
@@ -70,7 +85,7 @@ static func make_lava(
 
 static func make_astral_flow() -> ShaderMaterial:
 	var mat: ShaderMaterial = ShaderMaterial.new()
-	mat.shader = FLOW_SHADER
+	mat.shader = _get_flow_shader()
 	mat.set_shader_parameter("base_color", Color(0.48, 0.28, 0.94, 0.92))
 	mat.set_shader_parameter("deep_color", Color(0.16, 0.08, 0.38, 0.96))
 	mat.set_shader_parameter("foam_color", Color(0.92, 0.78, 1.0, 1.0))

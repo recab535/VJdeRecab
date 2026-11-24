@@ -483,6 +483,9 @@ func _on_feed_dragon_requested(dragon_uid: int) -> void:
 
 
 func _on_dragon_leveled_up(dragon_uid: int, new_nivel: int, new_etapa: String) -> void:
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am and am.has_method("play_sfx"):
+		am.call("play_sfx", "level_up")
 	for hab_var: Variant in _built_habitats.values():
 		if hab_var is HabitatBase:
 			if (hab_var as HabitatBase).refresh_dragon_visual(dragon_uid, new_nivel, new_etapa):
