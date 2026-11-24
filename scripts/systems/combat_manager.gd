@@ -202,6 +202,9 @@ func _on_attack_selected(attack_idx: int) -> void:
 	var dmg: int = maxi(10, roundi((float(ally["atk"]) * (float(mv["potencia"]) / 35.0)) * mult))
 
 	_arena.play_lunge_animation(true)
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am and am.has_method("play_sfx"):
+		am.call("play_sfx", "crit" if mult >= 1.9 else "attack")
 	if _arena.has_method("play_attack_vfx"):
 		_arena.play_attack_vfx(true, elem_id, mult)
 	enemy["hp"] = maxi(0, int(enemy["hp"]) - dmg)
@@ -303,6 +306,9 @@ func _finish_battle(victory: bool) -> void:
 	_arena.set_controls_enabled(false)
 	var rewards: Dictionary = {}
 	if victory:
+		var am_win: Node = get_node_or_null("/root/AudioManager")
+		if am_win and am_win.has_method("play_sfx"):
+			am_win.call("play_sfx", "victory")
 		var oro_r: int = int(_chapter_data.get("oro", 800))
 		var comida_r: int = int(_chapter_data.get("comida", 400))
 		var gemas_r: int = int(_chapter_data.get("gemas", 5))

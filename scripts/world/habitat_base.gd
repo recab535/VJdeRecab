@@ -74,6 +74,9 @@ func collect_oro() -> int:
 	if amount <= 0:
 		return 0
 	accumulated_oro -= float(amount)
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am and am.has_method("play_sfx"):
+		am.call("play_sfx", "coin")
 	spawn_floating_gold_text(amount)
 	for d_node: Dragon2D in hosted_dragons:
 		if is_instance_valid(d_node):

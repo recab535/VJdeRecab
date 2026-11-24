@@ -121,7 +121,30 @@ func _ready() -> void:
 	panel_isla_preview.visible = false
 	if panel_alimentar:
 		panel_alimentar.visible = false
+	_create_mute_button()
 	call_deferred("_attach_button_tweens", self)
+
+
+func _create_mute_button() -> void:
+	var root_ctrl: Control = get_node_or_null("RootControl") as Control
+	if root_ctrl == null:
+		return
+	var btn_mute: Button = Button.new()
+	btn_mute.name = "BtnAudioMute"
+	btn_mute.text = "🔊 Audio"
+	btn_mute.custom_minimum_size = Vector2(126, 44)
+	btn_mute.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	btn_mute.offset_left = -150.0
+	btn_mute.offset_top = 18.0
+	btn_mute.offset_right = -24.0
+	btn_mute.offset_bottom = 62.0
+	btn_mute.pressed.connect(func() -> void:
+		var am: Node = get_node_or_null("/root/AudioManager")
+		if am and am.has_method("toggle_mute"):
+			var muted: bool = bool(am.call("toggle_mute"))
+			btn_mute.text = "🔇 Silencio" if muted else "🔊 Audio"
+	)
+	root_ctrl.add_child(btn_mute)
 
 
 func set_player_level(level: int, xp_ratio: float = 0.25) -> void:
@@ -148,6 +171,9 @@ func _attach_button_tweens(root: Node) -> void:
 					tw.tween_property(btn, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 				)
 				btn.button_down.connect(func() -> void:
+					var am: Node = get_node_or_null("/root/AudioManager")
+					if am and am.has_method("play_sfx"):
+						am.call("play_sfx", "click")
 					btn.pivot_offset = btn.size * 0.5
 					var tw: Tween = btn.create_tween()
 					tw.tween_property(btn, "scale", Vector2(0.94, 0.94), 0.06)
