@@ -117,4 +117,39 @@ Estructura de carpetas respetando la base existente (`assets/`, `data/`, `docs/`
 - **Tienda por pestañas y modo colocación:** Catálogo modal con pestañas (**Hábitats** por elemento con colores propios, **Huevos** y **Granja de Comida**). Al comprar un hábitat se activa el **modo colocación**, iluminando en verde los slots libres de la isla para elegir dónde construir.
 - **Vida en la isla y menú contextual de Hábitat:** Decoración low-poly (árboles, rocas, nubes y levitación suave de islas), patrulla autónoma de los dragones dentro de su hábitat con volteo horizontal (`flip_h`) y panel inferior al clicar un hábitat para **Recoger Oro** (con texto flotante) y **Alimentar** dragones con barra de XP y subida de nivel.
 
+## 11. Especificación Definitiva del Producto (5 Islas, Economía, Estructuras y Campaña de 50 Capítulos)
+- **Lanzamiento y monetización:**
+  - Demo gratuita para **itch.io** como paso previo al lanzamiento en **Steam**.
+  - Tienda in-game con pestañas de estructuras/decoración y paquetes preparados/simulados de **Gemas, Oro y Comida**.
+- **Flujo de inicio:**
+  - Pantalla de carga (`scenes/ui/loading_screen.tscn`) → Tutorial narrativo interactivo con el **Maestro Kael** → Juego principal (`scenes/main.tscn`).
+- **Mundo de 5 Islas Consecutivas (eje Z / profundidad isométrica):**
+  - Las **5 islas flotantes** se ubican una detrás de otra en profundidad y se desbloquean en orden progresivo mediante **Oro** y **Nivel de jugador**.
+  - Cada isla cuenta con una cuadrícula amplia de **14×14 celdas**, dividida en **4 parcelas/porciones** que se adquieren progresivamente con Oro según el nivel de jugador (las bloqueadas aparecen oscurecidas/desvanecidas con vista previa de costo y nivel requerido).
+- **Obstáculos temporizados (limpieza con Oro, acelerables con Gemas):**
+  | Obstáculo | Tiempo de limpieza | Segundos |
+  | :--- | :--- | :---: |
+  | Arbusto | 10 min | `600` |
+  | Árbol pequeño | 45 min | `2700` |
+  | Piedrita | 1 h | `3600` |
+  | Árbol grande | 3 h | `10800` |
+  | Piedra mediana | 4 h | `14400` |
+  | Roca enorme | 8 h | `28800` |
+- **Estructuras obligatorias y economía:**
+  - **Torre Nido:** Inicia con `1` ranura de huevo; desbloqueo de ranuras adicionales por `10 Gemas` (2.ª), `15 Gemas` (3.ª) y `20 Gemas` (4.ª).
+  - **Adoratorio de Cría:** `1` inicial + `1` Adoratorio Extra desbloqueable por `20 Gemas`.
+  - **Granjas de Comida:** Producción de comida por tiempo con opción de acelerar con Gemas.
+  - **Mina de Gemas:** Máximo `1` por isla (`5` en total). Construirla cuesta `10 Gemas` y genera `1 Gema` cada `24 h` (`86400 s`), permitiendo hasta `5 Gemas/día`.
+  - **Coliseo / Portal de Historia:** Estructura en la isla que abre directamente el carrusel horizontal de 50 capítulos.
+  - **Campo de Entrenamiento:** Entrena un dragón por tiempo y Oro (acelerable con Gemas) para incrementar permanentemente su rango/estadísticas base de combate.
+  - **Guardería / Almacén de Crías:** Reserva de hasta `4` dragoncitos pequeños cuando no hay espacio en hábitats.
+  - **Almacén de Estructuras (UI dedicada):** Guarda hasta `5` tipos distintos de estructuras (ampliable con Gemas) y almacenamiento infinito para **diseños de suelo / baldosas decorativas** comprables con Oro.
+  - **8 Tótems / Potenciadores Elementales (1 por elemento base, IDs 1..8):** Visibles en Tienda desde nivel 1 a precio de Oro muy elevado. Al colocarse en una isla, duplican (`×2`) permanentemente las estadísticas de dragones de ese elemento; si un híbrido coincide con ambos potenciadores activos, sus estadísticas se triplican (`×3`). Si se guarda en el Almacén, el bono se desactiva. Los 4 Legendarios no reciben potenciador.
+- **Nivel de jugador y EXP:**
+  - Construir edificios, comprar parcelas, limpiar obstáculos y completar capítulos otorga **EXP de jugador**, subiendo el nivel para desbloquear nuevas parcelas, islas y estructuras.
+- **Campaña horizontal de 50 capítulos:**
+  - Sin pantalla previa de presentación de rival: al pulsar **Combate** o el **Portal de Historia** se abre un carrusel horizontal (`ScrollContainer`) con los **50 capítulos** (5 por cada uno de los 8 elementos + 10 finales de Legendarios).
+  - Cada capítulo exige **1 especie de dragón específica** en el equipo aliado para habilitar el botón *Pelear*, incentivando el uso de todo el catálogo.
+
+
 

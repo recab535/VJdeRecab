@@ -71,4 +71,28 @@ En `data/especies_68.json`, la clave `"multiplicadores_elementales"` se indexa p
   - `granjas`: `{ "id": int, "island_id": int, "slot_index": int, "nivel": int }`.
   - `dragones`: cada dragón guarda `uid`, `especie_id`, `nivel`, `etapa`, `xp`, `habitat_id`.
 
+## 7. Esquema Definitivo de Persistencia (`user://savegame.json`) y Reglas de Cálculo
+Claves raíz persistidas por `GameCore`:
+- `nivel_jugador` (`int`), `exp_jugador` (`int`), `tutorial_completado` (`bool`).
+- `recursos`: `{ "oro": int, "comida": int, "gemas": int }`.
+- `islas_desbloqueadas`: `Array[int]` (`[1]` inicial hasta `[1, 2, 3, 4, 5]`).
+- `parcelas_desbloqueadas`: `Dictionary` por `island_id` (`"1": [0]`, parcelas `0..3` sobre cuadrícula `14×14`).
+- `obstaculos`: `Array[Dictionary]` `{ "id": String, "island_id": int, "parcela": int, "tipo": String, "duracion_seg": int, "limpiando": bool, "restante_seg": float, "limpiado": bool }`.
+- `torre_nido_ranuras`: `int` (`1..4`; mejoras `10 / 15 / 20` gemas).
+- `segundo_adoratorio`: `bool` (`20` gemas).
+- `minas_gemas`: `Dictionary` por `island_id` `{ "construida": bool, "restante_seg": float, "lista": bool }` (ciclo `86400 s`).
+- `granjas_comida`: `Array[Dictionary]` `{ "id": int, "produciendo": bool, "restante_seg": float, "cantidad": int }`.
+- `entrenamiento`: `{ "activo": bool, "dragon_uid": int, "restante_seg": float, "duracion_seg": int }`.
+- `guarderia`: `Array[Dictionary]` (hasta `4` crías almacenadas).
+- `almacen`: `{ "capacidad_estructuras": int (5 inicial), "estructuras": Array[Dictionary], "baldosas": Dictionary (infinitas por tipo) }`.
+- `potenciadores_colocados`: `Array[int]` (IDs de elementos `1..8` activos en isla).
+- `campana`: `{ "capitulo_desbloqueado": int (1..50), "completados": Array[int] }`.
+
+### Fórmulas de Potenciadores y Entrenamiento
+- **Bono de Potenciadores Elementales:** Para una especie con `elemento_primario_id` y `elemento_secundario_id` (excluyendo `rareza == "LEGENDARIO"`):
+  - `coincidencias = (1 si prim en potenciadores_colocados) + (1 si sec != null y sec != prim y sec en potenciadores_colocados)`
+  - Multiplicador final de stats (`hp`, `atk`, `spd`): `1.0` si `0` coincidencias, **`2.0`** si `1` coincidencia, **`3.0`** si `2` coincidencias.
+- **Bono de Campo de Entrenamiento:** Cada rango `entrenamiento_nivel` (`int >= 0`) en el dragón suma `+10 %` adicional a `hp`, `atk` y `spd`.
+
+
 
