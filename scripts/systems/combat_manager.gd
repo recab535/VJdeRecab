@@ -227,6 +227,8 @@ func _on_attack_selected(attack_idx: int) -> void:
 		_arena.set_combat_log("¡%s derrotado! Entra %s." % [str(enemy["nombre"]), str(_enemy_team[_active_enemy_idx]["nombre"])])
 		_refresh_arena_state()
 		await get_tree().create_timer(0.45).timeout
+		if _ended or not is_instance_valid(_arena):
+			return
 		_busy = false
 		_arena.set_controls_enabled(true)
 		return
@@ -326,6 +328,9 @@ func _finish_battle(victory: bool) -> void:
 			rewards = {"oro": oro_r, "comida": comida_r, "gemas": gemas_r, "exp": exp_r}
 		_arena.set_combat_log("¡VICTORIA Cap. %d! +%d Oro, +%d Comida, +%d Gemas, +%d EXP." % [_chapter_id, oro_r, comida_r, gemas_r, exp_r])
 	else:
+		var am_lose: Node = get_node_or_null("/root/AudioManager")
+		if am_lose and am_lose.has_method("play_sfx"):
+			am_lose.call("play_sfx", "defeat")
 		_arena.set_combat_log("Derrota... Alimenta o entrena tus dragones e inténtalo de nuevo.")
 
 	await get_tree().create_timer(1.2).timeout

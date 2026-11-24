@@ -59,6 +59,7 @@ func _setup_sfx_pool() -> void:
 	_sfx_cache["crit"] = _make_tone_wav([523.25, 783.99, 1046.50], 0.22, 0.36)
 	_sfx_cache["level_up"] = _make_tone_wav([392.0, 493.88, 587.33, 783.99], 0.34, 0.34)
 	_sfx_cache["victory"] = _make_tone_wav([523.25, 659.25, 783.99, 1046.50], 0.48, 0.36)
+	_sfx_cache["defeat"] = _make_tone_wav([392.0, 349.23, 311.13, 261.63], 0.42, 0.30)
 	_sfx_cache["hatch"] = _make_tone_wav([587.33, 739.99, 880.0, 1174.66], 0.36, 0.32)
 
 

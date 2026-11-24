@@ -395,6 +395,8 @@ func _open_combat_arena(chapter_data: Variant = {}) -> void:
 		tutorial_dialog.call("notify_action", "combate")
 
 	_active_combat_arena = COMBAT_ARENA_SCENE.instantiate() as Node3D
+	if chapter_data is Dictionary and not chapter_data.is_empty():
+		_active_combat_arena.set("auto_start_default_chapter", false)
 	add_child(_active_combat_arena)
 
 	if archipielago:
@@ -521,6 +523,7 @@ func _build_feed_info_list(core: Node, filter_uids: Array[int]) -> Array[Diction
 		var stats: Dictionary = core.get_dragon_stats(d)
 		result.append({
 			"uid": uid,
+			"especie_id": int(d.get("especie_id", 1)),
 			"nombre": str(sp.get("nombre", "Dragón")),
 			"nivel": nivel,
 			"max_nivel": core.MAX_DRAGON_LEVEL,
@@ -529,7 +532,9 @@ func _build_feed_info_list(core: Node, filter_uids: Array[int]) -> Array[Diction
 			"hp": int(stats.get("hp", 100)),
 			"atk": int(stats.get("atk", 20)),
 			"spd": int(stats.get("spd", 15)),
-			"oro_por_min": int(stats.get("oro_por_min", 12))
+			"oro_por_min": int(stats.get("oro_por_min", 12)),
+			"booster_mult": float(stats.get("booster_mult", 1.0)),
+			"entrenamiento_nivel": int(stats.get("entrenamiento_nivel", 0))
 		})
 	return result
 
@@ -596,15 +601,21 @@ func _play_sfx(kind: String) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		if not _pending_habitat_purchase.is_empty():
-			_pending_habitat_purchase.clear()
-			_sync_all_islands()
-			_play_sfx("click")
-			hud.show_status_message("Modo colocación cancelado.")
-		elif _has_open_overlay_panel():
-			_close_overlay_panels()
-			_play_sfx("click")
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_ESCAPE:
+			if not _pending_habitat_purchase.is_empty():
+				_pending_habitat_purchase.clear()
+				_sync_all_islands()
+				_play_sfx("click")
+				hud.show_status_message("Modo colocación cancelado.")
+			elif _has_open_overlay_panel():
+				_close_overlay_panels()
+				_play_sfx("click")
+		elif event.keycode == KEY_M:
+			var am: Node = get_node_or_null("/root/AudioManager")
+			if am and am.has_method("toggle_mute"):
+				var muted: bool = bool(am.call("toggle_mute"))
+				hud.show_status_message("Audio silenciado." if muted else "Audio activado.")
 
 
 func _sync_booster_totems() -> void:

@@ -46,9 +46,12 @@ const ELEMENT_VFX_COLORS: Dictionary = {
 	9: Color(1.0, 0.84, 0.32)
 }
 
+var auto_start_default_chapter: bool = true
+
 var _active_ally_node: Dragon2D = null
 var _active_enemy_node: Dragon2D = null
 var _bench_team_indices: Array[int] = [-1, -1]
+var _bench_alive: Array[bool] = [false, false]
 var _attack_buttons: Array[Button] = []
 var _cam_base_pos: Vector3 = Vector3.ZERO
 
@@ -75,7 +78,7 @@ func _ready() -> void:
 			var idx: int = i
 			btn.pressed.connect(func() -> void: attack_selected.emit(idx))
 
-	if has_node("/root/GameCore") and combat_manager:
+	if auto_start_default_chapter and has_node("/root/GameCore") and combat_manager:
 		combat_manager.start_chapter(1, self)
 
 
@@ -210,6 +213,7 @@ func update_bench_buttons(ally_team: Array[Dictionary], active_idx: int) -> void
 	var btns: Array[Button] = [btn_relevo_0, btn_relevo_1]
 	var slot: int = 0
 	_bench_team_indices = [-1, -1]
+	_bench_alive = [false, false]
 
 	for i: int in range(ally_team.size()):
 		if i == active_idx or slot >= 2:
@@ -222,6 +226,7 @@ func update_bench_buttons(ally_team: Array[Dictionary], active_idx: int) -> void
 		btn.text = "Relevo: %s\nHP %d/%d" % [str(unit.get("nombre", "Dragón")), maxi(0, hp), max_hp]
 		btn.disabled = hp <= 0
 		_bench_team_indices[slot] = i
+		_bench_alive[slot] = hp > 0
 		slot += 1
 
 	while slot < 2:
@@ -234,10 +239,7 @@ func set_controls_enabled(enabled: bool) -> void:
 		btn.disabled = not enabled
 	for i: int in range(2):
 		var btn: Button = btn_relevo_0 if i == 0 else btn_relevo_1
-		if _bench_team_indices[i] < 0:
-			btn.disabled = true
-		elif not enabled:
-			btn.disabled = true
+		btn.disabled = (not enabled) or (_bench_team_indices[i] < 0) or (not _bench_alive[i])
 
 
 func play_lunge_animation(is_ally: bool) -> void:

@@ -64,6 +64,8 @@ var _current_comida: int = 0
 var _last_oro: int = -1
 var _last_comida: int = -1
 var _last_gemas: int = -1
+var _feed_portrait: TextureRect = null
+var _btn_mute: Button = null
 
 
 func _ready() -> void:
@@ -131,7 +133,10 @@ func _create_mute_button() -> void:
 		return
 	var btn_mute: Button = Button.new()
 	btn_mute.name = "BtnAudioMute"
-	btn_mute.text = "🔊 Audio"
+	var am_init: Node = get_node_or_null("/root/AudioManager")
+	var init_muted: bool = bool(am_init.get("is_muted")) if am_init else false
+	btn_mute.text = "🔇 Silencio" if init_muted else "🔊 Audio"
+	btn_mute.tooltip_text = "Silenciar o activar música y efectos (Tecla M)"
 	btn_mute.custom_minimum_size = Vector2(126, 44)
 	btn_mute.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	btn_mute.offset_left = -150.0
@@ -141,9 +146,14 @@ func _create_mute_button() -> void:
 	btn_mute.pressed.connect(func() -> void:
 		var am: Node = get_node_or_null("/root/AudioManager")
 		if am and am.has_method("toggle_mute"):
-			var muted: bool = bool(am.call("toggle_mute"))
-			btn_mute.text = "🔇 Silencio" if muted else "🔊 Audio"
+			am.call("toggle_mute")
 	)
+	if am_init and am_init.has_signal("mute_changed"):
+		am_init.connect("mute_changed", func(muted: bool) -> void:
+			if is_instance_valid(btn_mute):
+				btn_mute.text = "🔇 Silencio" if muted else "🔊 Audio"
+		)
+	_btn_mute = btn_mute
 	root_ctrl.add_child(btn_mute)
 
 
@@ -343,23 +353,57 @@ func _cycle_feed_dragon(delta_idx: int) -> void:
 	_refresh_feed_panel_ui()
 
 
+func _ensure_feed_portrait() -> void:
+	if _feed_portrait != null and is_instance_valid(_feed_portrait):
+		return
+	if panel_alimentar == null:
+		return
+	var vbox: VBoxContainer = panel_alimentar.get_node_or_null("VBoxAlimentar") as VBoxContainer
+	if vbox == null:
+		return
+	_feed_portrait = TextureRect.new()
+	_feed_portrait.name = "ImgDragonFeed"
+	_feed_portrait.custom_minimum_size = Vector2(72, 72)
+	_feed_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_feed_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_feed_portrait.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_feed_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	vbox.add_child(_feed_portrait)
+	vbox.move_child(_feed_portrait, 0)
+
+
 func _refresh_feed_panel_ui() -> void:
 	if _feed_dragons_list.is_empty() or _feed_selected_idx < 0 or _feed_selected_idx >= _feed_dragons_list.size():
 		return
 
 	var info: Dictionary = _feed_dragons_list[_feed_selected_idx]
+	var especie_id: int = int(info.get("especie_id", 1))
 	var nombre: String = str(info.get("nombre", "Dragón"))
 	var nivel: int = int(info.get("nivel", 1))
 	var max_nivel: int = int(info.get("max_nivel", 10))
-	var etapa: String = str(info.get("etapa", "cria")).capitalize()
+	var etapa_raw: String = str(info.get("etapa", "cria"))
+	var etapa: String = etapa_raw.capitalize()
 	var cost: int = int(info.get("cost_comida", 50))
 	var hp: int = int(info.get("hp", 100))
 	var atk: int = int(info.get("atk", 20))
 	var spd: int = int(info.get("spd", 15))
 	var oro_min: int = int(info.get("oro_por_min", 12))
+	var booster_mult: float = float(info.get("booster_mult", 1.0))
+	var entr_lvl: int = int(info.get("entrenamiento_nivel", 0))
+
+	_ensure_feed_portrait()
+	if _feed_portrait:
+		_feed_portrait.texture = Dragon2D.build_dragon_texture(especie_id, etapa_raw)
+
+	var bonus_parts: PackedStringArray = []
+	if booster_mult > 1.0:
+		bonus_parts.append("Tótem ×%.0f" % booster_mult)
+	if entr_lvl > 0:
+		bonus_parts.append("Entr. +%d%%" % (entr_lvl * 10))
+	var bonus_suffix: String = ("  |  " + " · ".join(bonus_parts)) if not bonus_parts.is_empty() else ""
 
 	lbl_dragon_titulo.text = "%s — Nv. %d/%d (%s)" % [nombre, nivel, max_nivel, etapa]
-	lbl_dragon_stats.text = "HP: %d  |  ATK: %d  |  SPD: %d\nProducción: %d Oro/min" % [hp, atk, spd, oro_min]
+	lbl_dragon_stats.text = "HP: %d  |  ATK: %d  |  SPD: %d\nProducción: %d Oro/min%s" % [hp, atk, spd, oro_min, bonus_suffix]
 	if pb_dragon_xp:
 		pb_dragon_xp.value = clampf((float(nivel) / float(max_nivel)) * 100.0, 0.0, 100.0)
 
