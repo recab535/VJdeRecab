@@ -868,21 +868,56 @@ func get_dragon_gold_per_minute(dragon_data: Dictionary) -> float:
 	return base_oro * (1.0 + float(nivel - 1) * 0.25)
 
 
+func get_dragon_rank_info(dragon_data: Dictionary) -> Dictionary:
+	var wins: int = int(dragon_data.get("victorias_combate", 0))
+	if wins >= 10:
+		return {"nombre": "Oro ★★★", "mult": 1.35, "wins": wins}
+	if wins >= 6:
+		return {"nombre": "Plata ★★", "mult": 1.20, "wins": wins}
+	if wins >= 3:
+		return {"nombre": "Bronce ★", "mult": 1.10, "wins": wins}
+	return {"nombre": "", "mult": 1.00, "wins": wins}
+
+
+func record_dragon_combat_wins(dragon_uids: Array) -> void:
+	var dragones: Array = player_state.get("dragones", [])
+	var changed: bool = false
+	for i: int in range(dragones.size()):
+		if dragones[i] is Dictionary:
+			var uid: int = int(dragones[i].get("uid", -1))
+			if dragon_uids.has(uid):
+				dragones[i]["victorias_combate"] = int(dragones[i].get("victorias_combate", 0)) + 1
+				changed = true
+	if changed:
+		player_state["dragones"] = dragones
+		save_game()
+
+
 func get_dragon_stats(dragon_data: Dictionary) -> Dictionary:
 	var sp: Dictionary = get_species(int(dragon_data.get("especie_id", 1)))
-	var nivel: int = maxi(1, int(dragon_data.get("nivel", 1)))
-	var scale: float = 1.0 + float(nivel - 1) * 0.15
+	var lvl: float = float(maxi(1, int(dragon_data.get("nivel", 1))))
+	var d_lvl: float = lvl - 1.0
+	# Escalado polinómico clásico por nivel L
+	var hp_poly: float = 1.0 + 0.12 * d_lvl + 0.015 * d_lvl * d_lvl
+	var atk_poly: float = 1.0 + 0.10 * d_lvl + 0.012 * d_lvl * d_lvl
+	var spd_poly: float = 1.0 + 0.06 * d_lvl
+
 	var train_lvl: int = maxi(0, int(dragon_data.get("entrenamiento_nivel", 0)))
 	var train_mult: float = 1.0 + float(train_lvl) * 0.10
 	var booster_mult: float = get_booster_multiplier_for_species(sp)
-	var total_mult: float = scale * train_mult * booster_mult
+	var rank_info: Dictionary = get_dragon_rank_info(dragon_data)
+	var rank_mult: float = float(rank_info["mult"])
+
+	var common_mult: float = train_mult * booster_mult * rank_mult
 	return {
-		"hp": maxi(10, int(round(float(sp.get("hp_base", 100)) * total_mult))),
-		"atk": maxi(5, int(round(float(sp.get("atk_base", 20)) * total_mult))),
-		"spd": maxi(5, int(round(float(sp.get("spd_base", 15)) * total_mult))),
+		"hp": maxi(10, int(round(float(sp.get("hp_base", 100)) * hp_poly * common_mult))),
+		"atk": maxi(5, int(round(float(sp.get("atk_base", 20)) * atk_poly * common_mult))),
+		"spd": maxi(5, int(round(float(sp.get("spd_base", 15)) * spd_poly * train_mult))),
 		"oro_por_min": int(round(get_dragon_gold_per_minute(dragon_data))),
 		"booster_mult": booster_mult,
-		"entrenamiento_nivel": train_lvl
+		"entrenamiento_nivel": train_lvl,
+		"rango_nombre": str(rank_info["nombre"]),
+		"rango_mult": rank_mult
 	}
 
 

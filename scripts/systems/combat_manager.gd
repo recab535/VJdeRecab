@@ -120,8 +120,9 @@ func _make_unit_from_owned(d: Dictionary) -> Dictionary:
 	var sp_id: int = int(d.get("especie_id", 1))
 	var nivel: int = maxi(1, int(d.get("nivel", 1)))
 	var sp: Dictionary = _core.get_species(sp_id) if _core else {}
-	var stats: Dictionary = _core.get_dragon_stats(d) if _core else {"hp": 420, "atk": 85, "spd": 40, "booster_mult": 1.0, "entrenamiento_nivel": 0}
+	var stats: Dictionary = _core.get_dragon_stats(d) if _core else {"hp": 420, "atk": 85, "spd": 40, "booster_mult": 1.0, "entrenamiento_nivel": 0, "rango_nombre": "", "rango_mult": 1.0}
 	var hp: int = int(stats.get("hp", 420))
+	var train_lvl: int = int(stats.get("entrenamiento_nivel", 0))
 	return {
 		"uid": int(d.get("uid", 1)),
 		"especie_id": sp_id,
@@ -134,19 +135,24 @@ func _make_unit_from_owned(d: Dictionary) -> Dictionary:
 		"atk": int(stats.get("atk", 85)),
 		"spd": int(stats.get("spd", 40)),
 		"booster_mult": float(stats.get("booster_mult", 1.0)),
-		"entrenamiento_nivel": int(stats.get("entrenamiento_nivel", 0)),
+		"entrenamiento_nivel": train_lvl,
+		"rango_nombre": str(stats.get("rango_nombre", "")),
+		"rango_mult": float(stats.get("rango_mult", 1.0)),
 		"species": sp,
-		"moves": _build_moves_for_species(sp)
+		"moves": _build_moves_for_species(sp, train_lvl)
 	}
 
 
 func _make_unit_from_species_id(sp_id: int, nivel: int, uid: int) -> Dictionary:
 	var sp: Dictionary = _core.get_species(sp_id) if _core else {}
-	var hp_base: int = int(sp.get("hp_base", 310))
-	var atk_base: int = int(sp.get("atk_base", 90))
-	var spd_base: int = int(sp.get("spd_base", 55))
-	var scale_f: float = 1.0 + float(nivel - 1) * 0.14
-	var hp: int = roundi(hp_base * scale_f)
+	var hp_base: float = float(sp.get("hp_base", 310))
+	var atk_base: float = float(sp.get("atk_base", 90))
+	var spd_base: float = float(sp.get("spd_base", 55))
+	var d_lvl: float = float(maxi(1, nivel) - 1)
+	var hp_poly: float = 1.0 + 0.12 * d_lvl + 0.015 * d_lvl * d_lvl
+	var atk_poly: float = 1.0 + 0.10 * d_lvl + 0.012 * d_lvl * d_lvl
+	var spd_poly: float = 1.0 + 0.06 * d_lvl
+	var hp: int = roundi(hp_base * hp_poly)
 	var etapa_rival: String = "adulto" if nivel >= 7 else ("joven" if nivel >= 4 else "cria")
 	return {
 		"uid": uid,
@@ -157,25 +163,40 @@ func _make_unit_from_species_id(sp_id: int, nivel: int, uid: int) -> Dictionary:
 		"nivel": nivel,
 		"hp": hp,
 		"max_hp": hp,
-		"atk": roundi(atk_base * scale_f),
-		"spd": roundi(spd_base * scale_f),
+		"atk": roundi(atk_base * atk_poly),
+		"spd": roundi(spd_base * spd_poly),
+		"entrenamiento_nivel": 0,
+		"rango_nombre": "",
+		"rango_mult": 1.0,
 		"species": sp,
-		"moves": _build_moves_for_species(sp)
+		"moves": _build_moves_for_species(sp, 0)
 	}
 
 
-func _build_moves_for_species(sp: Dictionary) -> Array[Dictionary]:
+func _build_moves_for_species(sp: Dictionary, train_lvl: int = 0) -> Array[Dictionary]:
 	var prim: int = int(sp.get("elemento_primario_id", 1))
 	var sec_var: Variant = sp.get("elemento_secundario_id", null)
 	var sec: int = int(sec_var) if sec_var != null else prim
 	var prim_names: Array = ELEMENT_MOVES.get(prim, ELEMENT_MOVES[1])
 	var sec_names: Array = ELEMENT_MOVES.get(sec, ELEMENT_MOVES[1])
+	var train_bonus: int = train_lvl * 6
+	var tag: String = "+" if train_lvl > 0 else ""
 	return [
-		{"nombre": "Embestida", "elemento_id": prim, "potencia": 28},
-		{"nombre": str(prim_names[0]), "elemento_id": prim, "potencia": 38},
-		{"nombre": str(sec_names[1]), "elemento_id": sec, "potencia": 48},
-		{"nombre": str(prim_names[2]), "elemento_id": prim, "potencia": 60}
+		{"nombre": "Embestida", "elemento_id": prim, "potencia": 30},
+		{"nombre": str(prim_names[0]) + tag, "elemento_id": prim, "potencia": 40 + train_bonus},
+		{"nombre": str(sec_names[1]) + tag, "elemento_id": sec, "potencia": 52 + train_bonus},
+		{"nombre": str(prim_names[2]) + tag, "elemento_id": prim, "potencia": 65 + train_bonus}
 	]
+
+
+func _calculate_damage_2012(attacker: Dictionary, move: Dictionary, elemental_mult: float) -> Dictionary:
+	# 5% probabilidad de fallo clásica + varianza RNG(0.90, 1.10)
+	if randf() < 0.05:
+		return {"missed": true, "damage": 0}
+	var move_power: float = float(move.get("potencia", 40))
+	var variance: float = randf_range(0.90, 1.10)
+	var raw_dmg: float = float(attacker.get("atk", 80)) * (move_power / 40.0) * elemental_mult * variance
+	return {"missed": false, "damage": maxi(10, roundi(raw_dmg))}
 
 
 func _refresh_arena_state() -> void:
@@ -200,19 +221,27 @@ func _on_attack_selected(attack_idx: int) -> void:
 
 	var elem_id: int = int(mv.get("elemento_id", 1))
 	var mult: float = _core.get_elemental_multiplier(elem_id, enemy.get("species", {})) if _core else 1.0
-	var dmg: int = maxi(10, roundi((float(ally["atk"]) * (float(mv["potencia"]) / 35.0)) * mult))
+	var calc: Dictionary = _calculate_damage_2012(ally, mv, mult)
 
 	_arena.play_lunge_animation(true)
 	var am: Node = get_node_or_null("/root/AudioManager")
-	if am and am.has_method("play_sfx"):
-		am.call("play_sfx", "crit" if mult >= 1.9 else "attack")
-	if _arena.has_method("play_attack_vfx"):
-		_arena.play_attack_vfx(true, elem_id, mult)
-	enemy["hp"] = maxi(0, int(enemy["hp"]) - dmg)
-	_arena.spawn_damage_number(false, dmg, mult)
-	_arena.shake_camera(0.24 if mult >= 1.9 else 0.16, 0.22)
-	_arena.update_hp_bars(int(ally["hp"]), int(ally["max_hp"]), int(enemy["hp"]), int(enemy["max_hp"]))
-	_arena.set_combat_log("%s usó %s (-%d HP)." % [str(ally["nombre"]), str(mv["nombre"]), dmg])
+	if bool(calc["missed"]):
+		if am and am.has_method("play_sfx"):
+			am.call("play_sfx", "click")
+		if _arena.has_method("spawn_miss_text"):
+			_arena.spawn_miss_text(false)
+		_arena.set_combat_log("¡%s falló %s!" % [str(ally["nombre"]), str(mv["nombre"])])
+	else:
+		var dmg: int = int(calc["damage"])
+		if am and am.has_method("play_sfx"):
+			am.call("play_sfx", "crit" if mult >= 1.9 else "attack")
+		if _arena.has_method("play_attack_vfx"):
+			_arena.play_attack_vfx(true, elem_id, mult)
+		enemy["hp"] = maxi(0, int(enemy["hp"]) - dmg)
+		_arena.spawn_damage_number(false, dmg, mult)
+		_arena.shake_camera(0.24 if mult >= 1.9 else 0.16, 0.22)
+		_arena.update_hp_bars(int(ally["hp"]), int(ally["max_hp"]), int(enemy["hp"]), int(enemy["max_hp"]))
+		_arena.set_combat_log("%s usó %s (-%d HP)." % [str(ally["nombre"]), str(mv["nombre"]), dmg])
 
 	await get_tree().create_timer(0.6).timeout
 	if _ended or not is_instance_valid(_arena):
@@ -267,21 +296,29 @@ func _execute_enemy_turn() -> void:
 
 	var elem_id: int = int(mv.get("elemento_id", 1))
 	var mult: float = _core.get_elemental_multiplier(elem_id, ally.get("species", {})) if _core else 1.0
-	var dmg: int = maxi(8, roundi((float(enemy["atk"]) * (float(mv["potencia"]) / 38.0)) * mult))
+	var calc: Dictionary = _calculate_damage_2012(enemy, mv, mult)
 
 	var arco: String = str(_chapter_data.get("arco", "Tierra"))
 	_arena.set_header_info("Capítulo %d — Arco %s (1v1)" % [_chapter_id, arco], "Turno Enemigo")
 	_arena.play_lunge_animation(false)
 	var am_en: Node = get_node_or_null("/root/AudioManager")
-	if am_en and am_en.has_method("play_sfx"):
-		am_en.call("play_sfx", "crit" if mult >= 1.9 else "attack")
-	if _arena.has_method("play_attack_vfx"):
-		_arena.play_attack_vfx(false, elem_id, mult)
-	ally["hp"] = maxi(0, int(ally["hp"]) - dmg)
-	_arena.spawn_damage_number(true, dmg, mult)
-	_arena.shake_camera(0.18, 0.2)
-	_arena.update_hp_bars(int(ally["hp"]), int(ally["max_hp"]), int(enemy["hp"]), int(enemy["max_hp"]))
-	_arena.set_combat_log("%s respondió con %s (-%d HP)." % [str(enemy["nombre"]), str(mv["nombre"]), dmg])
+	if bool(calc["missed"]):
+		if am_en and am_en.has_method("play_sfx"):
+			am_en.call("play_sfx", "click")
+		if _arena.has_method("spawn_miss_text"):
+			_arena.spawn_miss_text(true)
+		_arena.set_combat_log("¡%s falló %s!" % [str(enemy["nombre"]), str(mv["nombre"])])
+	else:
+		var dmg: int = int(calc["damage"])
+		if am_en and am_en.has_method("play_sfx"):
+			am_en.call("play_sfx", "crit" if mult >= 1.9 else "attack")
+		if _arena.has_method("play_attack_vfx"):
+			_arena.play_attack_vfx(false, elem_id, mult)
+		ally["hp"] = maxi(0, int(ally["hp"]) - dmg)
+		_arena.spawn_damage_number(true, dmg, mult)
+		_arena.shake_camera(0.18, 0.2)
+		_arena.update_hp_bars(int(ally["hp"]), int(ally["max_hp"]), int(enemy["hp"]), int(enemy["max_hp"]))
+		_arena.set_combat_log("%s respondió con %s (-%d HP)." % [str(enemy["nombre"]), str(mv["nombre"]), dmg])
 
 	await get_tree().create_timer(0.6).timeout
 	if _ended or not is_instance_valid(_arena):
@@ -324,6 +361,12 @@ func _finish_battle(victory: bool) -> void:
 		var exp_r: int = int(_chapter_data.get("exp", 85))
 		if _core and _core.has_method("complete_campaign_chapter"):
 			rewards = _core.complete_campaign_chapter(_chapter_id, oro_r, comida_r, gemas_r, exp_r)
+			var ally_uids: Array = []
+			for u: Dictionary in _ally_team:
+				if int(u.get("uid", -1)) > 0:
+					ally_uids.append(int(u["uid"]))
+			if _core.has_method("record_dragon_combat_wins"):
+				_core.record_dragon_combat_wins(ally_uids)
 		else:
 			rewards = {"oro": oro_r, "comida": comida_r, "gemas": gemas_r, "exp": exp_r}
 		_arena.set_combat_log("¡VICTORIA Cap. %d! +%d Oro, +%d Comida, +%d Gemas, +%d EXP." % [_chapter_id, oro_r, comida_r, gemas_r, exp_r])

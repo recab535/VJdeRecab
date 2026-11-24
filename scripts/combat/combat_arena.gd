@@ -95,7 +95,9 @@ func set_active_fighters(ally_unit: Dictionary, enemy_unit: Dictionary) -> void:
 	_spawn_fighter_on_spot(ally_spot, ally_unit, true)
 	_spawn_fighter_on_spot(enemy_spot, enemy_unit, false)
 
-	lbl_ally_name.text = "%s (Nv.%d)" % [str(ally_unit.get("nombre", "Aliado")), int(ally_unit.get("nivel", 1))]
+	var rank_a: String = str(ally_unit.get("rango_nombre", ""))
+	var rank_tag: String = (" [%s]" % rank_a) if not rank_a.is_empty() else ""
+	lbl_ally_name.text = "%s (Nv.%d)%s" % [str(ally_unit.get("nombre", "Aliado")), int(ally_unit.get("nivel", 1)), rank_tag]
 	lbl_enemy_name.text = "%s (Nv.%d)" % [str(enemy_unit.get("nombre", "Rival")), int(enemy_unit.get("nivel", 1))]
 	update_hp_bars(
 		int(ally_unit.get("hp", 100)), int(ally_unit.get("max_hp", 100)),
@@ -270,6 +272,25 @@ func spawn_damage_number(is_ally_target: bool, damage: int, mult: float) -> void
 	tw.set_parallel(true)
 	tw.tween_property(lbl, "position:y", 2.9, 0.85).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(lbl, "modulate:a", 0.0, 0.85)
+	tw.chain().tween_callback(lbl.queue_free)
+
+
+func spawn_miss_text(is_ally_target: bool) -> void:
+	var spot: Marker3D = ally_spot if is_ally_target else enemy_spot
+	if spot == null:
+		return
+	var lbl: Label3D = Label3D.new()
+	lbl.text = "¡FALLO!"
+	lbl.modulate = Color(0.88, 0.92, 1.0, 1.0)
+	lbl.font_size = 36
+	lbl.outline_size = 8
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.position = Vector3(0.0, 1.65, 0.0)
+	spot.add_child(lbl)
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(lbl, "position:y", 2.75, 0.80).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "modulate:a", 0.0, 0.80)
 	tw.chain().tween_callback(lbl.queue_free)
 
 
