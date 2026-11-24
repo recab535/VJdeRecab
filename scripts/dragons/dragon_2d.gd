@@ -18,6 +18,10 @@ class_name Dragon2D
 const CANVAS_SIZE: int = 48
 static var _tex_cache: Dictionary = {}
 
+
+static func clear_cache() -> void:
+	_tex_cache.clear()
+
 var _anim_time: float = 0.0
 var _base_y: float = 0.54
 var _base_scale: Vector3 = Vector3.ONE

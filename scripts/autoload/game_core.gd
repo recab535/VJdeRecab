@@ -53,6 +53,11 @@ func _ready() -> void:
 	load_game()
 
 
+func _exit_tree() -> void:
+	VisualShaders.clear_cache()
+	Dragon2D.clear_cache()
+
+
 func _process(delta: float) -> void:
 	_tick_nest_incubation(delta)
 	_tick_obstacles(delta)

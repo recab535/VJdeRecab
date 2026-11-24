@@ -147,12 +147,13 @@ func _make_unit_from_species_id(sp_id: int, nivel: int, uid: int) -> Dictionary:
 	var spd_base: int = int(sp.get("spd_base", 55))
 	var scale_f: float = 1.0 + float(nivel - 1) * 0.14
 	var hp: int = roundi(hp_base * scale_f)
+	var etapa_rival: String = "adulto" if nivel >= 7 else ("joven" if nivel >= 4 else "cria")
 	return {
 		"uid": uid,
 		"especie_id": sp_id,
 		"nombre": str(sp.get("nombre", "Dragón Rival")),
 		"sprite_prefijo": str(sp.get("sprite_prefijo", "dragon_ascua")),
-		"etapa": "cria",
+		"etapa": etapa_rival,
 		"nivel": nivel,
 		"hp": hp,
 		"max_hp": hp,
@@ -236,13 +237,16 @@ func _on_attack_selected(attack_idx: int) -> void:
 func _on_switch_requested(bench_team_idx: int) -> void:
 	if _busy or _ended:
 		return
-	if bench_team_idx < 0 or bench_team_idx >= _ally_team.size():
+	if bench_team_idx < 0 or bench_team_idx >= _ally_team.size() or bench_team_idx == _active_ally_idx:
 		return
 	if int(_ally_team[bench_team_idx]["hp"]) <= 0:
 		return
 
 	_busy = true
 	_arena.set_controls_enabled(false)
+	var am_sw: Node = get_node_or_null("/root/AudioManager")
+	if am_sw and am_sw.has_method("play_sfx"):
+		am_sw.call("play_sfx", "click")
 	_active_ally_idx = bench_team_idx
 	_refresh_arena_state()
 	_arena.set_combat_log("¡Relevo! %s entra a la arena." % str(_ally_team[_active_ally_idx]["nombre"]))
@@ -266,6 +270,9 @@ func _execute_enemy_turn() -> void:
 	var arco: String = str(_chapter_data.get("arco", "Tierra"))
 	_arena.set_header_info("Capítulo %d — Arco %s (1v1)" % [_chapter_id, arco], "Turno Enemigo")
 	_arena.play_lunge_animation(false)
+	var am_en: Node = get_node_or_null("/root/AudioManager")
+	if am_en and am_en.has_method("play_sfx"):
+		am_en.call("play_sfx", "crit" if mult >= 1.9 else "attack")
 	if _arena.has_method("play_attack_vfx"):
 		_arena.play_attack_vfx(false, elem_id, mult)
 	ally["hp"] = maxi(0, int(ally["hp"]) - dmg)

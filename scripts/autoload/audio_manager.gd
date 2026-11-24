@@ -33,14 +33,16 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	_music_playback = null
+	set_process(false)
 	if _music_player != null:
 		_music_player.stop()
 		_music_player.stream = null
+	_music_playback = null
 	for p: AudioStreamPlayer in _sfx_players:
 		if p != null:
 			p.stop()
 			p.stream = null
+	_sfx_players.clear()
 	_sfx_cache.clear()
 
 

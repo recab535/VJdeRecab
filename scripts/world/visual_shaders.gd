@@ -10,6 +10,11 @@ static var _toon_shader: Shader = null
 static var _flow_shader: Shader = null
 
 
+static func clear_cache() -> void:
+	_toon_shader = null
+	_flow_shader = null
+
+
 static func _get_toon_shader() -> Shader:
 	if _toon_shader == null:
 		_toon_shader = load(TOON_SHADER_PATH) as Shader
