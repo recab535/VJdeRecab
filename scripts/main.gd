@@ -585,28 +585,12 @@ func _sync_booster_totems() -> void:
 		c.queue_free()
 
 	var placed: Array = core.player_state.get("potenciadores_colocados", [])
-	var colors: Dictionary = {
-		1: Color(0.66, 0.44, 0.24), 2: Color(0.92, 0.34, 0.18), 3: Color(0.22, 0.62, 0.94), 4: Color(0.28, 0.78, 0.36),
-		5: Color(0.95, 0.82, 0.22), 6: Color(0.56, 0.88, 0.98), 7: Color(0.64, 0.68, 0.74), 8: Color(0.45, 0.24, 0.62)
-	}
 	for i: int in range(placed.size()):
 		var eid: int = int(placed[i])
-		var totem: MeshInstance3D = MeshInstance3D.new()
-		var cm: CylinderMesh = CylinderMesh.new()
-		cm.top_radius = 0.18
-		cm.bottom_radius = 0.32
-		cm.height = 1.45
-		cm.radial_segments = 6
-		var mat: StandardMaterial3D = StandardMaterial3D.new()
-		var col: Color = colors.get(eid, Color.WHITE)
-		mat.albedo_color = col
-		mat.emission_enabled = true
-		mat.emission = col
-		mat.emission_energy_multiplier = 1.3
-		cm.material = mat
-		totem.mesh = cm
-		totem.position = Vector3(-5.8 + float(i) * 1.55, 1.3, 5.8)
+		var totem: BoosterTotem = BoosterTotem.new()
+		totem.position = Vector3(-5.8 + float(i) * 1.55, 0.56, 5.8)
 		_booster_totems_root.add_child(totem)
+		totem.setup(eid)
 
 
 func _on_place_tile_requested(_tile_id: String, tile_color: Color) -> void:
