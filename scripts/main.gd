@@ -54,8 +54,13 @@ func _ready() -> void:
 		adoratorio_extra.connect("adoratorio_clicked", func() -> void: _on_panel_requested("Cruce"))
 	if torre_nido and torre_nido.has_signal("torre_nido_clicked"):
 		torre_nido.connect("torre_nido_clicked", func() -> void: _on_panel_requested("Nido"))
-	if estructura_modal and estructura_modal.has_signal("status_message"):
-		estructura_modal.connect("status_message", hud.show_status_message)
+	if estructura_modal:
+		if estructura_modal.has_signal("status_message"):
+			estructura_modal.connect("status_message", hud.show_status_message)
+		if estructura_modal.has_signal("nursery_dragon_stored"):
+			estructura_modal.connect("nursery_dragon_stored", _on_nursery_dragon_stored)
+		if estructura_modal.has_signal("nursery_dragon_retrieved"):
+			estructura_modal.connect("nursery_dragon_retrieved", _on_nursery_dragon_retrieved)
 	_connect_special_structures(archipielago)
 
 	if breeding_panel and breeding_panel.has_signal("breeding_completed"):
@@ -199,21 +204,57 @@ func _spawn_dragon_into_free_habitat(core: Node, dragon_data: Dictionary) -> boo
 	var d_uid: int = int(dragon_data.get("uid", -1))
 	var d_nivel: int = maxi(1, int(dragon_data.get("nivel", 1)))
 	var sp: Dictionary = core.get_species(sp_id)
+	var elem_prim: int = int(sp.get("elemento_primario_id", 0))
+	var elem_sec_var: Variant = sp.get("elemento_secundario_id", null)
+	var elem_sec: int = int(elem_sec_var) if elem_sec_var != null else 0
+
+	var chosen_hab: HabitatBase = null
 	for slot_idx: int in _built_habitats.keys():
 		var hab: HabitatBase = _built_habitats[slot_idx]
-		if hab.has_free_slot():
-			var d_node: Dragon2D = DRAGON_SCENE.instantiate() as Dragon2D
-			hab.place_dragon(d_node, d_uid)
-			d_node.setup_visual(
-				sp_id,
-				str(sp.get("nombre", "Dragón Terracota")),
-				str(sp.get("sprite_prefijo", "dragon_terracota")),
-				str(dragon_data.get("etapa", "cria")),
-				d_uid,
-				d_nivel
-			)
-			return true
-	return false
+		if hab.has_free_slot() and (hab.elemento_id == elem_prim or (elem_sec > 0 and hab.elemento_id == elem_sec)):
+			chosen_hab = hab
+			break
+	if chosen_hab == null:
+		for slot_idx: int in _built_habitats.keys():
+			var hab: HabitatBase = _built_habitats[slot_idx]
+			if hab.has_free_slot():
+				chosen_hab = hab
+				break
+
+	if chosen_hab == null:
+		return false
+
+	var d_node: Dragon2D = DRAGON_SCENE.instantiate() as Dragon2D
+	chosen_hab.place_dragon(d_node, d_uid)
+	d_node.setup_visual(
+		sp_id,
+		str(sp.get("nombre", "Dragón Terracota")),
+		str(sp.get("sprite_prefijo", "dragon_terracota")),
+		str(dragon_data.get("etapa", "cria")),
+		d_uid,
+		d_nivel
+	)
+	chosen_hab.recalculate_oro_rate(core)
+	return true
+
+
+func _on_nursery_dragon_stored(dragon_uid: int) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	for hab_var: Variant in _built_habitats.values():
+		if hab_var is HabitatBase:
+			var hab: HabitatBase = hab_var as HabitatBase
+			if hab.remove_dragon_by_uid(dragon_uid):
+				hab.recalculate_oro_rate(core)
+				break
+
+
+func _on_nursery_dragon_retrieved(dragon_data: Dictionary) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null or dragon_data.is_empty():
+		return
+	var placed: bool = _spawn_dragon_into_free_habitat(core, dragon_data)
+	if not placed:
+		hud.show_status_message("Cría retirada, pero no hay espacio libre en hábitats. Construye un Hábitat.")
 
 
 func _on_focused_island_changed(island_id: int) -> void:
@@ -446,8 +487,9 @@ func _on_habitat_clicked(hab: HabitatBase) -> void:
 	var elem_info: Dictionary = core.get_element(hab.elemento_id)
 	var elem_name: String = str(elem_info.get("nombre", "Tierra"))
 	var oro_acum: int = int(floor(hab.accumulated_oro))
+	var oro_rate: int = int(round(hab.recalculate_oro_rate(core)))
 	hud.show_habitat_menu(
-		"Hábitat %s (%d/%d)" % [elem_name, hab.dragons_count, hab.capacidad_maxima],
+		"Hábitat %s (%d/%d • %d Oro/min)" % [elem_name, hab.dragons_count, hab.capacidad_maxima, oro_rate],
 		oro_acum,
 		not hab.hosted_dragon_uids.is_empty()
 	)
@@ -494,9 +536,12 @@ func _on_dragon_leveled_up(dragon_uid: int, new_nivel: int, new_etapa: String) -
 	var am: Node = get_node_or_null("/root/AudioManager")
 	if am and am.has_method("play_sfx"):
 		am.call("play_sfx", "level_up")
+	var core: Node = get_node_or_null("/root/GameCore")
 	for hab_var: Variant in _built_habitats.values():
 		if hab_var is HabitatBase:
-			if (hab_var as HabitatBase).refresh_dragon_visual(dragon_uid, new_nivel, new_etapa):
+			var hab: HabitatBase = hab_var as HabitatBase
+			if hab.refresh_dragon_visual(dragon_uid, new_nivel, new_etapa):
+				hab.recalculate_oro_rate(core)
 				break
 
 

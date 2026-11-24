@@ -4,6 +4,8 @@ extends Control
 ## Mina de Gemas (1/isla, 24h), Campo de Entrenamiento, Guardería de Crías (máx 4) y Granja.
 
 signal status_message(msg: String)
+signal nursery_dragon_stored(dragon_uid: int)
+signal nursery_dragon_retrieved(dragon_data: Dictionary)
 
 @onready var lbl_titulo: Label = %LblEstTitulo
 @onready var lbl_detalle: Label = %LblEstDetalle
@@ -174,6 +176,7 @@ func _render_nursery(core: Node) -> void:
 						status_message.emit(str(r.get("msg", "")))
 						if r.get("ok", false):
 							_play_sfx("hatch")
+							nursery_dragon_retrieved.emit(r.get("dragon", {}))
 						_refresh()
 				)
 
@@ -188,12 +191,14 @@ func _render_nursery(core: Node) -> void:
 				str(last_d.get("etapa", "cria")),
 				"Enviar %s a Guardería" % str(sp_last.get("nombre", "Cría")),
 				func() -> void:
-					var removed: Dictionary = dragones.pop_back()
-					core.player_state["dragones"] = dragones
-					var r: Dictionary = core.store_dragon_in_nursery(removed)
-					status_message.emit(str(r.get("msg", "")))
+					var r: Dictionary = core.store_dragon_in_nursery(last_d)
 					if r.get("ok", false):
+						dragones.pop_back()
+						core.player_state["dragones"] = dragones
+						core.save_game()
 						_play_sfx("click")
+						nursery_dragon_stored.emit(int(last_d.get("uid", -1)))
+					status_message.emit(str(r.get("msg", "")))
 					_refresh()
 			)
 

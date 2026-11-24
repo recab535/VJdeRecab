@@ -190,8 +190,14 @@ func has_free_slot() -> bool:
 func place_dragon(dragon_node: Node3D, dragon_uid: int = -1) -> bool:
 	if not has_free_slot():
 		return false
-	var spot: Node3D = spots[dragons_count]
-	spot.add_child(dragon_node)
+	var target_spot: Node3D = null
+	for sp: Node3D in spots:
+		if sp.get_child_count() == 0:
+			target_spot = sp
+			break
+	if target_spot == null:
+		target_spot = spots[mini(dragons_count, spots.size() - 1)]
+	target_spot.add_child(dragon_node)
 	dragon_node.position = Vector3.ZERO
 	if "patrol_enabled" in dragon_node:
 		dragon_node.set("patrol_enabled", true)
@@ -201,6 +207,36 @@ func place_dragon(dragon_node: Node3D, dragon_uid: int = -1) -> bool:
 	if dragon_node is Dragon2D:
 		hosted_dragons.append(dragon_node as Dragon2D)
 	return true
+
+
+func remove_dragon_by_uid(dragon_uid: int) -> bool:
+	var removed: bool = false
+	for i: int in range(hosted_dragons.size() - 1, -1, -1):
+		var d_node: Dragon2D = hosted_dragons[i]
+		if is_instance_valid(d_node) and d_node.dragon_uid == dragon_uid:
+			hosted_dragons.remove_at(i)
+			d_node.queue_free()
+			removed = true
+			break
+	if hosted_dragon_uids.has(dragon_uid):
+		hosted_dragon_uids.erase(dragon_uid)
+		removed = true
+	if removed:
+		dragons_count = maxi(0, hosted_dragon_uids.size())
+	return removed
+
+
+func recalculate_oro_rate(core: Node) -> float:
+	if core == null or hosted_dragon_uids.is_empty():
+		oro_per_minute_total = 0.0
+		return 0.0
+	var total: float = 0.0
+	for uid: int in hosted_dragon_uids:
+		var d: Dictionary = core.get_dragon_by_uid(uid)
+		if not d.is_empty():
+			total += float(core.get_dragon_gold_per_minute(d))
+	oro_per_minute_total = maxf(1.0, total)
+	return oro_per_minute_total
 
 
 func refresh_dragon_visual(dragon_uid: int, new_nivel: int, new_etapa: String) -> bool:
