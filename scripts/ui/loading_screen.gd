@@ -39,7 +39,6 @@ func _ready() -> void:
 		logo_box.modulate.a = 0.0
 		var tw_logo: Tween = create_tween()
 		tw_logo.tween_property(logo_box, "modulate:a", 1.0, 0.48)
-	ResourceLoader.load_threaded_request(MAIN_SCENE_PATH)
 
 
 func _build_animated_backdrop() -> void:
@@ -146,10 +145,4 @@ func _go_to_main() -> void:
 		var tw: Tween = create_tween()
 		tw.tween_property(fade_overlay, "color:a", 1.0, 0.30)
 		await tw.finished
-	var status: ResourceLoader.ThreadLoadStatus = ResourceLoader.load_threaded_get_status(MAIN_SCENE_PATH)
-	if status == ResourceLoader.THREAD_LOAD_LOADED:
-		var packed: PackedScene = ResourceLoader.load_threaded_get(MAIN_SCENE_PATH) as PackedScene
-		if packed:
-			get_tree().change_scene_to_packed(packed)
-			return
 	get_tree().change_scene_to_file(MAIN_SCENE_PATH)

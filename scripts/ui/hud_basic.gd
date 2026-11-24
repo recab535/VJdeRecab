@@ -40,6 +40,7 @@ signal context_panel_closed
 @onready var lbl_isla_detalle: Label = %LblIslaDetalle
 @onready var btn_desbloquear_isla: Button = %BtnDesbloquearIsla
 @onready var btn_cerrar_preview: Button = %BtnCerrarPreview
+@onready var status_banner: PanelContainer = get_node_or_null("%StatusBanner") as PanelContainer
 @onready var lbl_estado_accion: Label = %LblEstadoAccion
 @onready var panel_alimentar: PanelContainer = %PanelAlimentar
 @onready var lbl_dragon_titulo: Label = %LblDragonTitulo
@@ -68,6 +69,7 @@ var _last_comida: int = -1
 var _last_gemas: int = -1
 var _feed_portrait: TextureRect = null
 var _btn_mute: Button = null
+var _status_tween: Tween = null
 
 
 func _ready() -> void:
@@ -259,6 +261,18 @@ func _pop_open(panel: Control) -> void:
 func show_status_message(msg: String) -> void:
 	if lbl_estado_accion:
 		lbl_estado_accion.text = msg
+	if status_banner:
+		if msg.strip_edges().is_empty():
+			status_banner.visible = false
+			return
+		if _status_tween and _status_tween.is_running():
+			_status_tween.kill()
+		status_banner.visible = true
+		status_banner.modulate.a = 1.0
+		_status_tween = create_tween()
+		_status_tween.tween_interval(3.4)
+		_status_tween.tween_property(status_banner, "modulate:a", 0.0, 0.45)
+		_status_tween.tween_callback(func() -> void: status_banner.visible = false)
 
 
 func set_focused_island(island_id: int) -> void:

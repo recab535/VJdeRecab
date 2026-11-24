@@ -5,4 +5,4 @@
 - [x] **FASE 3:** Motor de cruces clásico adaptado a 68 especies (conjuntos de elementos, filtro de puros opuestos, bono por nivel, Weighted RNG), factor misterio en Adoratorio y huevos visuales distintivos en Torre Nido.
 - [x] **FASE 4:** Ciclo económico clásico (oro con tope `HabitatMaxGold` + moneda flotante, cultivos escalonados de Comida 30s/5m/1h/6h/24h, `feed_steps` 0–3 por nivel) y consolidación de estructuras especiales.
 - [x] **FASE 5:** Combate 1v1 con relevos estilo 2012 (fórmulas polinómicas por nivel, `MovePower`, varianza `0.90–1.10`, rango Bronce/Plata/Oro, 5% fallo) + carrusel horizontal de 50 capítulos con dragón obligatorio.
-- [ ] **FASE 6:** Pulido integral del HUD clásico limpio, audio procedural refinado, verificación completa en Godot headless y documentación final.
+- [x] **FASE 6:** Pulido integral del HUD clásico limpio, audio procedural refinado, verificación completa en Godot headless y documentación final.

@@ -3,9 +3,13 @@ extends Node3D
 ## Escena principal 2.5D: gestiona el archipiélago de 5 islas consecutivas,
 ## parcelas, obstáculos, estructuras fijas, hábitats, dragones 2D, HUD y GameCore.
 
-const HABITAT_SCENE: PackedScene = preload("res://scenes/world/habitat_base.tscn")
-const DRAGON_SCENE: PackedScene = preload("res://scenes/dragons/dragon_2d.tscn")
-const COMBAT_ARENA_SCENE: PackedScene = preload("res://scenes/combat/combat_arena.tscn")
+const HABITAT_SCENE_PATH: String = "res://scenes/world/habitat_base.tscn"
+const DRAGON_SCENE_PATH: String = "res://scenes/dragons/dragon_2d.tscn"
+const COMBAT_ARENA_SCENE_PATH: String = "res://scenes/combat/combat_arena.tscn"
+
+var _habitat_scene_cache: PackedScene = null
+var _dragon_scene_cache: PackedScene = null
+var _combat_arena_scene_cache: PackedScene = null
 
 @onready var archipielago: Node3D = $Archipielago
 @onready var adoratorio_cria: Node3D = $Archipielago/Isla1/AdoratorioCria
@@ -205,7 +209,9 @@ func _spawn_habitat_at_slot(slot_index: int, elemento_id: int = 1) -> HabitatBas
 	var slot_node: Node3D = _find_slot_node_by_global_index(slot_index)
 	if slot_node == null:
 		return null
-	var hab: HabitatBase = HABITAT_SCENE.instantiate() as HabitatBase
+	if _habitat_scene_cache == null:
+		_habitat_scene_cache = load(HABITAT_SCENE_PATH) as PackedScene
+	var hab: HabitatBase = _habitat_scene_cache.instantiate() as HabitatBase
 	hab.elemento_id = elemento_id
 	slot_node.add_child(hab)
 	hab.position = Vector3.ZERO
@@ -242,7 +248,9 @@ func _spawn_dragon_into_free_habitat(core: Node, dragon_data: Dictionary) -> boo
 	if chosen_hab == null:
 		return false
 
-	var d_node: Dragon2D = DRAGON_SCENE.instantiate() as Dragon2D
+	if _dragon_scene_cache == null:
+		_dragon_scene_cache = load(DRAGON_SCENE_PATH) as PackedScene
+	var d_node: Dragon2D = _dragon_scene_cache.instantiate() as Dragon2D
 	chosen_hab.place_dragon(d_node, d_uid)
 	d_node.setup_visual(
 		sp_id,
@@ -458,7 +466,9 @@ func _open_combat_arena(chapter_data: Variant = {}) -> void:
 	if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
 		tutorial_dialog.call("notify_action", "combate")
 
-	_active_combat_arena = COMBAT_ARENA_SCENE.instantiate() as Node3D
+	if _combat_arena_scene_cache == null:
+		_combat_arena_scene_cache = load(COMBAT_ARENA_SCENE_PATH) as PackedScene
+	_active_combat_arena = _combat_arena_scene_cache.instantiate() as Node3D
 	if chapter_data is Dictionary and not chapter_data.is_empty():
 		_active_combat_arena.set("auto_start_default_chapter", false)
 	add_child(_active_combat_arena)

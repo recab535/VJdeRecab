@@ -62,6 +62,8 @@ func _setup_sfx_pool() -> void:
 	_sfx_cache["victory"] = _make_tone_wav([523.25, 659.25, 783.99, 1046.50], 0.48, 0.36)
 	_sfx_cache["defeat"] = _make_tone_wav([392.0, 349.23, 311.13, 261.63], 0.42, 0.30)
 	_sfx_cache["hatch"] = _make_tone_wav([587.33, 739.99, 880.0, 1174.66], 0.36, 0.32)
+	_sfx_cache["feed"] = _make_tone_wav([440.0, 554.37, 659.25], 0.16, 0.28)
+	_sfx_cache["miss"] = _make_sweep_wav(420.0, 220.0, 0.14, 0.22)
 
 
 func _setup_ambient_music() -> void:
@@ -101,10 +103,12 @@ func _process(_delta: float) -> void:
 		_phase_main = fmod(_phase_main + _cur_freq * dt, 1.0)
 		_phase_pad = fmod(_phase_pad + _pad_freq * dt, 1.0)
 
-		var harp: float = (sin(_phase_main * TAU) * 0.72 + sin(_phase_main * TAU * 2.0) * 0.22) * env * 0.28
-		var pad: float = sin(_phase_pad * TAU) * 0.14
-		var sample: float = clampf(harp + pad, -0.8, 0.8)
-		_music_playback.push_frame(Vector2(sample, sample))
+		var harp: float = (sin(_phase_main * TAU) * 0.68 + sin(_phase_main * TAU * 2.0) * 0.20 + sin(_phase_main * TAU * 3.0) * 0.06) * env * 0.25
+		var pad_l: float = sin(_phase_pad * TAU) * 0.12
+		var pad_r: float = sin((_phase_pad + 0.004) * TAU) * 0.12
+		var sample_l: float = clampf(harp + pad_l, -0.75, 0.75)
+		var sample_r: float = clampf(harp + pad_r, -0.75, 0.75)
+		_music_playback.push_frame(Vector2(sample_l, sample_r))
 
 
 func toggle_mute() -> bool:

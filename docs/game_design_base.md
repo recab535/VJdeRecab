@@ -151,5 +151,12 @@ Estructura de carpetas respetando la base existente (`assets/`, `data/`, `docs/`
   - Sin pantalla previa de presentación de rival: al pulsar **Combate** o el **Portal de Historia** se abre un carrusel horizontal (`ScrollContainer`) con los **50 capítulos** (5 por cada uno de los 8 elementos + 10 finales de Legendarios).
   - Cada capítulo exige **1 especie de dragón específica** en el equipo aliado para habilitar el botón *Pelear*, incentivando el uso de todo el catálogo.
 
+## 12. Fusión Definitiva Estilo Clásico 2012 (Implementada)
+- **Iluminación y estética orgánica:** Shader `toon_stylized.gdshader` con ruido orgánico continuo (sin césped cuadriculado) y especular controlado para evitar fogonazos blancos al rotar 360°; 5 islas esculpidas irregularmente mediante `SurfaceTool`, sin etiquetas flotantes permanentes en reposo y con enfoque suave de cámara (`Tween`) al clicar cualquier entidad.
+- **Grid lógico y entidades vivas:** Matriz `IslandGrid` (`14×14`) con validación `isUnlocked`/`isOccupied`, tamaños coherentes por estructura (`1×1` a `5×5`), modo *Mover* hábitat con rejilla visible solo al colocar/mover, y máquina de estados en `Dragon2D` (`Idle`, `Walk`, `SpecialAnim` + giro de evolución al cambiar de etapa).
+- **Cruces con factor misterio:** `Weighted RNG` con bono por nivel de padres, bloqueo de puros opuestos directos, paridad 50%/50% en pares híbridos/opuestos, 4% en recetas legendarias cerradas, sin spoiler previo en el Adoratorio (`Huevo Misterioso ?`) y huevos 3D con banda elemental en la Torre Nido.
+- **Ciclo económico y combate 2012:** Tope de oro `HabitatMaxGold` por elemento con moneda flotante limpia (`🪙`), 5 cultivos escalonados de comida (`30 s`, `5 min`, `1 h`, `6 h`, `24 h`), alimentación por pasos (`feed_steps` 0–3 por nivel), y combate 1v1 con fórmulas polinómicas por nivel, `MovePower` entrenable, varianza `0.90–1.10`, rangos `Bronce / Plata / Oro` y `5 %` de fallo.
+
+
 
 

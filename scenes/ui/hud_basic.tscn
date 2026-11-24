@@ -82,17 +82,19 @@ theme_override_colors/font_color = Color(0.56, 0.88, 1, 1)
 text = "Gemas: 25"
 
 [node name="StatusBanner" type="PanelContainer" parent="RootControl"]
+unique_name_in_owner = true
+visible = false
 layout_mode = 0
 offset_left = 24.0
-offset_top = 106.0
-offset_right = 760.0
-offset_bottom = 154.0
+offset_top = 104.0
+offset_right = 680.0
+offset_bottom = 148.0
 mouse_filter = 2
 
 [node name="LblEstadoAccion" type="Label" parent="RootControl/StatusBanner"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Isla Santuario lista. Clica la isla oscura para previsualizar."
+text = ""
 
 [node name="PanelIslaPreview" type="PanelContainer" parent="RootControl"]
 unique_name_in_owner = true

@@ -1,7 +1,7 @@
 {
-  "estado": "EN_PROGRESO",
-  "turno_actual": "A1",
-  "rondas_completadas": 5,
+  "estado": "COMPLETADO",
+  "turno_actual": "G1",
+  "rondas_completadas": 6,
   "max_rondas_limite": 10,
   "orden_agentes": [
     "G1",
@@ -14,6 +14,7 @@
     "Fase_2_Grid_y_Dragones": "Matriz lógica 14x14 IslandGrid (isUnlocked/isOccupied, tamaños 1x1 a 5x5, modo Mover hábitat con rejilla sutil solo al colocar/mover) y máquina de estados en Dragon2D (Idle/Walk/SpecialAnim + giro de evolución).",
     "Fase_3_Cruces_Misterio_Huevos": "Weighted RNG con bono por nivel de padres, filtro de puros opuestos y recetas cerradas 4% en GameCore; Factor Misterio (?) en BreedingPanel sin revelar especie previa; huevos 3D con banda elemental secundaria en TorreNido.",
     "Fase_4_Ciclo_Economico": "Tope HabitatMaxGold por elemento + moneda flotante limpia en HabitatBase, 5 cultivos escalonados de Comida (30s/5m/1h/6h/24h) en Granja y alimentación clásica en 4 pasos (feed_steps 0..3 por nivel).",
-    "Fase_5_Combate_2012": "Fórmulas polinómicas por nivel L, MovePower entrenable, varianza RNG(0.90-1.10), rangos Bronce/Plata/Oro por victorias y 5% de fallo con texto flotante ¡FALLO! en combate 1v1 con relevos."
+    "Fase_5_Combate_2012": "Fórmulas polinómicas por nivel L, MovePower entrenable, varianza RNG(0.90-1.10), rangos Bronce/Plata/Oro por victorias y 5% de fallo con texto flotante ¡FALLO! en combate 1v1 con relevos.",
+    "Fase_6_Pulido_Final": "HUD clásico con toast auto-desvanecible, audio procedural estéreo refinado + SFX feed/miss, TEST_CLEAN_START_MODE=true verificado y validación completa en Godot headless."
   }
 }
