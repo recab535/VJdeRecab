@@ -51,6 +51,23 @@ func _ready() -> void:
 func open_campaign() -> void:
 	refresh()
 	visible = true
+	scale = Vector2(0.95, 0.95)
+	modulate.a = 0.0
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "modulate:a", 1.0, 0.12)
+	call_deferred("_scroll_to_current_chapter")
+
+
+func _scroll_to_current_chapter() -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core == null or scroll_chapters == null:
+		return
+	var camp: Dictionary = core.player_state.get("campana", {})
+	var unlocked_cap: int = maxi(1, int(camp.get("capitulo_desbloqueado", 1)))
+	var target_x: int = maxi(0, (unlocked_cap - 2) * 284)
+	scroll_chapters.scroll_horizontal = target_x
 
 
 func _scroll_by(delta_px: int) -> void:
@@ -135,6 +152,14 @@ func refresh() -> void:
 		lbl_arc.text = "Arco %s" % str(data["arco"])
 		lbl_arc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(lbl_arc)
+
+		var portrait: TextureRect = TextureRect.new()
+		portrait.texture = Dragon2D.build_dragon_texture(req_id, "joven")
+		portrait.custom_minimum_size = Vector2(76, 76)
+		portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait.modulate = Color.WHITE if owns_req else Color(0.14, 0.16, 0.24, 0.92)
+		vbox.add_child(portrait)
 
 		var lbl_req: Label = Label.new()
 		lbl_req.text = "Dragón obligatorio:\n%s (ID %d)\n%s" % [

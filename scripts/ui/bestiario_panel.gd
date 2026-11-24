@@ -75,10 +75,14 @@ func refresh() -> void:
 
 func _get_discovered_species_ids(core: Node) -> Dictionary:
 	var discovered: Dictionary = {}
-	var dragones: Array = core.player_state.get("dragones", [])
-	for d: Variant in dragones:
+	for d: Variant in core.player_state.get("dragones", []):
 		if d is Dictionary:
 			var sp_id: int = int(d.get("especie_id", 0))
+			if sp_id > 0:
+				discovered[sp_id] = true
+	for g: Variant in core.player_state.get("guarderia", []):
+		if g is Dictionary:
+			var sp_id: int = int(g.get("especie_id", 0))
 			if sp_id > 0:
 				discovered[sp_id] = true
 	return discovered
@@ -121,10 +125,11 @@ func _create_species_card(core: Node, sp_id: int, sp: Dictionary, is_discovered:
 	vbox.add_child(top_row)
 
 	var icon: TextureRect = TextureRect.new()
-	icon.custom_minimum_size = Vector2(44, 44)
+	icon.custom_minimum_size = Vector2(56, 56)
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	icon.texture = _resolve_species_texture(sp_id, prefijo, is_discovered)
+	icon.modulate = Color.WHITE if is_discovered else Color(0.10, 0.12, 0.18, 0.95)
 	top_row.add_child(icon)
 
 	var title_box: VBoxContainer = VBoxContainer.new()
@@ -138,7 +143,8 @@ func _create_species_card(core: Node, sp_id: int, sp: Dictionary, is_discovered:
 
 	var lbl_rareza: Label = Label.new()
 	lbl_rareza.text = "Rareza: %s" % rareza
-	lbl_rareza.modulate = Color(0.85, 0.88, 0.96, 0.9)
+	var rar_col: Color = Color(1.0, 0.84, 0.28) if rareza == "LEGENDARIO" else (Color(0.86, 0.54, 1.0) if rareza == "OPUESTO" else Color(0.85, 0.88, 0.96, 0.92))
+	lbl_rareza.modulate = rar_col
 	title_box.add_child(lbl_rareza)
 
 	var lbl_elementos: Label = Label.new()
@@ -147,8 +153,18 @@ func _create_species_card(core: Node, sp_id: int, sp: Dictionary, is_discovered:
 	vbox.add_child(lbl_elementos)
 
 	var lbl_estado: Label = Label.new()
-	lbl_estado.text = "Estado: Descubierto" if is_discovered else "Estado: Bloqueado"
-	lbl_estado.modulate = Color(0.52, 0.95, 0.58, 1.0) if is_discovered else Color(0.72, 0.72, 0.78, 1.0)
+	if is_discovered:
+		lbl_estado.text = "HP:%d  ATK:%d  SPD:%d  •  %d Oro/m" % [
+			int(sp.get("hp_base", 100)),
+			int(sp.get("atk_base", 20)),
+			int(sp.get("spd_base", 15)),
+			int(sp.get("oro_por_minuto", 12))
+		]
+		lbl_estado.modulate = Color(0.54, 0.96, 0.62, 1.0)
+	else:
+		lbl_estado.text = "Estado: Bloqueado (Descúbrelo cruzando)"
+		lbl_estado.modulate = Color(0.72, 0.72, 0.78, 1.0)
+	lbl_estado.add_theme_font_size_override("font_size", 14)
 	vbox.add_child(lbl_estado)
 
 	return card
@@ -164,35 +180,8 @@ func _format_elements(core: Node, elem_ids: Array) -> String:
 	return " / ".join(names)
 
 
-func _resolve_species_texture(sp_id: int, prefijo: String, is_discovered: bool) -> Texture2D:
-	var tex_path: String = "res://assets/sprites/dragons/%s_cria.png" % prefijo
+func _resolve_species_texture(sp_id: int, prefijo: String, _is_discovered: bool) -> Texture2D:
+	var tex_path: String = "res://assets/sprites/dragons/%s_adulto.png" % prefijo
 	if ResourceLoader.exists(tex_path):
 		return load(tex_path) as Texture2D
-
-	var img: Image = Image.create(16, 16, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var body_color: Color = Color(0.18, 0.20, 0.26, 1.0)
-	if is_discovered:
-		body_color = Color(0.84, 0.42, 0.22, 1.0) if sp_id == 1 else Color.from_hsv(fmod(sp_id * 0.13, 1.0), 0.72, 0.85, 1.0)
-	var outline: Color = Color(0.10, 0.10, 0.14, 1.0)
-
-	for y: int in range(4, 13):
-		for x: int in range(4, 12):
-			if (x == 4 or x == 11) and (y == 4 or y == 12):
-				continue
-			img.set_pixel(x, y, body_color)
-
-	for y: int in range(6, 10):
-		img.set_pixel(2, y, body_color.darkened(0.15))
-		img.set_pixel(3, y, body_color)
-		img.set_pixel(12, y, body_color)
-		img.set_pixel(13, y, body_color.darkened(0.15))
-
-	img.set_pixel(5, 3, outline)
-	img.set_pixel(10, 3, outline)
-	if is_discovered:
-		img.set_pixel(6, 6, Color(1, 1, 1, 1))
-		img.set_pixel(9, 6, Color(1, 1, 1, 1))
-
-	return ImageTexture.create_from_image(img)
+	return Dragon2D.build_dragon_texture(sp_id, "adulto")

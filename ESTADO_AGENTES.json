@@ -1,8 +1,8 @@
 {
   "estado": "EN_PROGRESO",
-  "fase_actual": 7,
+  "fase_actual": 8,
   "total_fases": 10,
-  "turno_actual": "A1",
+  "turno_actual": "A2",
   "orden_agentes": [
     "G1",
     "G2",
@@ -18,7 +18,7 @@
     "Fase_5": "COMPLETADA - Pantalla de carga animada con degradado, partículas mágicas, showcase de dragones 48x48 y carga asíncrona + tutorial narrativo del Maestro Kael con retrato 48x48, progreso por paso y flecha guía pulsante.",
     "Fase_6": "COMPLETADA - Tema UI global ampliado (TabContainer/LineEdit/PanelContainer/ProgressBar), HUD 1920x1080 con animaciones de recursos, fix parcel_index y modales contextuales de estructuras con conteo en vivo y retratos 48x48.",
     "Fase_7": "COMPLETADA - Tienda de 5 pestañas, Almacén (5 espacios ampliables + suelos infinitos) y Potenciadores Elementales x2/x3 (excluyendo Legendarios, desactivables en Almacén y validación is_booster_in_warehouse contra compra duplicada).",
-    "Fase_8": "PENDIENTE",
+    "Fase_8": "COMPLETADA - Carrusel horizontal de 50 capítulos con especie obligatoria, auto-scroll y retratos/siluetas 48x48 + Bestiario completo de las 68 especies con siluetas, stats base y rarezas.",
     "Fase_9": "PENDIENTE",
     "Fase_10": "PENDIENTE"
   }
