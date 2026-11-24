@@ -1,6 +1,6 @@
 {
   "estado": "EN_PROGRESO",
-  "fase_actual": 3,
+  "fase_actual": 4,
   "total_fases": 10,
   "turno_actual": "A1",
   "orden_agentes": [
@@ -14,7 +14,7 @@
     "Fase_1": "COMPLETADA - TEST_CLEAN_START_MODE = true en GameCore (sin romper save/load real al cambiar a false) + shaders toon_stylized.gdshader, water_lava_flow.gdshader, sky_gradient.gdshader, VisualShaders y WorldEnvironment pulido en scenes/main.tscn.",
     "Fase_2": "COMPLETADA - 5 islas flotantes estratificadas/orgánicas con biomas propios, flujos animados (agua/lava/tormenta/astral), cuadrícula 14x14 legible con 4 parcelas comprables, puentes entre islas y 6 obstáculos estilizados con anillo de limpieza y aceleración con gemas.",
     "Fase_3": "COMPLETADA - Estructuras 3D detalladas con VisualShaders: Torre Nido (1..4 huevos elementales dinámicos), Adoratorio + Adoratorio Extra (anillo rúnico + motas), Mina de Gemas, Portal de Historia (vórtice astral), Campo de Entrenamiento, Guardería (4 cunas) y 8 Tótems Potenciadores Elementales (BoosterTotem).",
-    "Fase_4": "PENDIENTE",
+    "Fase_4": "COMPLETADA - Generador pixel art 48x48 con contorno, sombreado 3 tonos, variantes híbridas/legendarias y etapas (Cría/Joven/Adulto) en Dragon2D + vida/patrulla/emotes/sombra en hábitats temáticos 2.5D con indicador flotante de oro.",
     "Fase_5": "PENDIENTE",
     "Fase_6": "PENDIENTE",
     "Fase_7": "PENDIENTE",
