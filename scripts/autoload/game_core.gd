@@ -5,6 +5,7 @@ extends Node
 ## construcción de hábitats, cruces y nido.
 
 const CATALOG_PATH: String = "res://data/especies_68.json"
+const CAMPAIGN_PATH: String = "res://data/campana_50.json"
 const SAVE_PATH: String = "user://savegame.json"
 const TEST_CLEAN_START_MODE: bool = true
 const HABITAT_COST_ORO: int = 250
@@ -62,6 +63,7 @@ var especies_by_id: Dictionary = {}
 var multiplicadores: Dictionary = {}
 var reglas_cruce: Dictionary = {}
 var recetas_legendarias: Array = []
+var campana_capitulos: Array = []
 var player_state: Dictionary = {}
 
 var _passive_accum_sec: float = 0.0
@@ -70,6 +72,7 @@ var _gold_fraction: float = 0.0
 
 func _ready() -> void:
 	_load_catalog()
+	_load_campaign_data()
 	load_game()
 
 
@@ -161,6 +164,33 @@ func _load_catalog() -> void:
 			especies_by_id[int(sp.get("id", 0))] = sp
 
 	catalog_loaded.emit(especies_by_id.size())
+
+
+func _load_campaign_data() -> void:
+	campana_capitulos.clear()
+	if not FileAccess.file_exists(CAMPAIGN_PATH):
+		push_warning("[GameCore] No se encontró archivo de campaña: " + CAMPAIGN_PATH)
+		return
+	var file: FileAccess = FileAccess.open(CAMPAIGN_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if typeof(parsed) == TYPE_DICTIONARY and (parsed as Dictionary).has("capitulos"):
+		var raw_caps: Variant = (parsed as Dictionary)["capitulos"]
+		if raw_caps is Array:
+			campana_capitulos = raw_caps
+
+
+func get_campaign_chapters() -> Array:
+	return campana_capitulos
+
+
+func get_campaign_chapter(chapter_num: int) -> Dictionary:
+	for cap_var: Variant in campana_capitulos:
+		if cap_var is Dictionary and int(cap_var.get("capitulo", 0)) == chapter_num:
+			return cap_var
+	return {}
 
 
 func _create_default_state() -> Dictionary:

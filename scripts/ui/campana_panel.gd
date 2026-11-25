@@ -1,34 +1,25 @@
 extends Control
 
-## Carrusel horizontal de 50 capítulos PvE (5 por cada uno de los 8 elementos + 10 Legendarios).
-## Cada capítulo exige 1 especie específica del catálogo (especie_requerida_id) para habilitar Pelear.
+## Carrusel horizontal de 50 capítulos PvE cargados desde data/campana_50.json.
+## Cada capítulo exige 1 especie única del catálogo (especie_requerida_id) para habilitar Pelear.
 
 signal chapter_battle_requested(chapter_data: Dictionary)
 
-const ARC_INFO: Array[Dictionary] = [
-	{"nombre": "Tierra", "color": Color(0.66, 0.44, 0.24), "elem_id": 1},
-	{"nombre": "Fuego", "color": Color(0.92, 0.34, 0.18), "elem_id": 2},
-	{"nombre": "Agua", "color": Color(0.22, 0.62, 0.94), "elem_id": 3},
-	{"nombre": "Planta", "color": Color(0.28, 0.78, 0.36), "elem_id": 4},
-	{"nombre": "Eléctrico", "color": Color(0.95, 0.82, 0.22), "elem_id": 5},
-	{"nombre": "Hielo", "color": Color(0.56, 0.88, 0.98), "elem_id": 6},
-	{"nombre": "Metal", "color": Color(0.64, 0.68, 0.74), "elem_id": 7},
-	{"nombre": "Oscuro", "color": Color(0.42, 0.24, 0.58), "elem_id": 8},
-	{"nombre": "Legendario", "color": Color(0.92, 0.72, 0.24), "elem_id": 9}
-]
+const CAMPAIGN_JSON_PATH: String = "res://data/campana_50.json"
 
-# 50 capítulos -> cada uno exige una especie específica (IDs 1..68 del catálogo oficial)
-const CHAPTER_REQUIRED_SPECIES: Array[int] = [
-	1, 2, 9, 10, 11,
-	2, 21, 22, 23, 24,
-	3, 12, 31, 32, 33,
-	4, 13, 14, 39, 40,
-	5, 25, 26, 34, 45,
-	6, 15, 16, 35, 36,
-	7, 17, 18, 27, 28,
-	8, 19, 20, 29, 30,
-	57, 58, 59, 60, 61, 62, 63, 64, 65, 68
-]
+const ARC_COLORS: Dictionary = {
+	1: Color(0.66, 0.44, 0.24),
+	2: Color(0.92, 0.34, 0.18),
+	3: Color(0.22, 0.62, 0.94),
+	4: Color(0.28, 0.78, 0.36),
+	5: Color(0.95, 0.82, 0.22),
+	6: Color(0.56, 0.88, 0.98),
+	7: Color(0.64, 0.68, 0.74),
+	8: Color(0.42, 0.24, 0.58),
+	9: Color(0.92, 0.72, 0.24)
+}
+
+var _chapters_cache: Array = []
 
 @onready var scroll_chapters: ScrollContainer = %ScrollChapters
 @onready var chapters_row: HBoxContainer = %ChaptersRow
@@ -86,33 +77,44 @@ func _scroll_by(delta_px: int) -> void:
 	tw.tween_property(scroll_chapters, "scroll_horizontal", target, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
+func _ensure_chapters_loaded() -> void:
+	if not _chapters_cache.is_empty():
+		return
+	var core: Node = get_node_or_null("/root/GameCore")
+	if core and core.has_method("get_campaign_chapters"):
+		var from_core: Array = core.call("get_campaign_chapters")
+		if not from_core.is_empty():
+			_chapters_cache = from_core
+			return
+	if FileAccess.file_exists(CAMPAIGN_JSON_PATH):
+		var f: FileAccess = FileAccess.open(CAMPAIGN_JSON_PATH, FileAccess.READ)
+		if f:
+			var parsed: Variant = JSON.parse_string(f.get_as_text())
+			f.close()
+			if typeof(parsed) == TYPE_DICTIONARY and (parsed as Dictionary).has("capitulos"):
+				_chapters_cache = (parsed as Dictionary)["capitulos"]
+
+
 func build_chapter_data(cap_num: int) -> Dictionary:
-	var arc_idx: int = mini(8, (cap_num - 1) / 5) if cap_num <= 40 else 8
-	var arc: Dictionary = ARC_INFO[arc_idx]
-	var req_id: int = CHAPTER_REQUIRED_SPECIES[clampi(cap_num - 1, 0, CHAPTER_REQUIRED_SPECIES.size() - 1)]
-	var oro_rew: int = 350 + cap_num * 180
-	var comida_rew: int = 180 + cap_num * 95
-	var gemas_rew: int = 5 if (cap_num % 5 == 0 or cap_num == 1) else 1
-	var exp_rew: int = 60 + cap_num * 25
-	var enemy_lvl: int = clampi(1 + int(round(float(cap_num - 1) * 28.0 / 49.0)), 1, 29)
-	var elem_id: int = int(arc["elem_id"])
-	var e1: int = elem_id if elem_id <= 8 else 65
-	var e2: int = mini(68, req_id)
-	var e3: int = mini(68, maxi(2, (cap_num + 4) % 64 + 1))
+	_ensure_chapters_loaded()
+	for cap_var: Variant in _chapters_cache:
+		if cap_var is Dictionary and int(cap_var.get("capitulo", 0)) == cap_num:
+			var d: Dictionary = (cap_var as Dictionary).duplicate(true)
+			var eid: int = int(d.get("elemento_id", 1))
+			d["color"] = ARC_COLORS.get(eid, ARC_COLORS[1])
+			return d
 	return {
 		"capitulo": cap_num,
-		"arco": str(arc["nombre"]),
-		"color": arc["color"],
-		"especie_requerida_id": req_id,
-		"oro": oro_rew,
-		"comida": comida_rew,
-		"gemas": gemas_rew,
-		"exp": exp_rew,
-		"enemigos": [
-			{"especie_id": e1, "nivel": enemy_lvl},
-			{"especie_id": e2, "nivel": enemy_lvl},
-			{"especie_id": e3, "nivel": enemy_lvl + 1}
-		]
+		"titulo": "Capítulo %d" % cap_num,
+		"arco": "Tierra",
+		"elemento_id": 1,
+		"color": ARC_COLORS[1],
+		"especie_requerida_id": 1,
+		"oro": 500,
+		"comida": 260,
+		"gemas": 1,
+		"exp": 85,
+		"enemigos": [{"especie_id": 2, "nivel": 1}]
 	}
 
 
@@ -157,7 +159,8 @@ func refresh() -> void:
 		vbox.add_child(lbl_cap)
 
 		var lbl_arc: Label = Label.new()
-		lbl_arc.text = "Arco %s" % str(data["arco"])
+		var titulo: String = str(data.get("titulo", ""))
+		lbl_arc.text = "Arco %s%s" % [str(data["arco"]), ("\n" + titulo) if not titulo.is_empty() else ""]
 		lbl_arc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(lbl_arc)
 

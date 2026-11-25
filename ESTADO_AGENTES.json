@@ -1,7 +1,7 @@
 {
-  "estado": "EN_PROGRESO",
-  "turno_actual": "G2",
-  "rondas_completadas": 9,
+  "estado": "COMPLETADO",
+  "turno_actual": "G1",
+  "rondas_completadas": 10,
   "max_rondas_limite": 12,
   "orden_agentes": [
     "G1",
@@ -12,6 +12,7 @@
   "ultimo_ciclo": {
     "Bloque_1_Nivel30_Templos_Balance_AtomicSave": "Nivel máximo 30 con 4 Templos de Nivel (10->15->20->25->30), etapas Cría(1-7)/Joven(8-15)/Adulto(16-30), curvas polinómicas balanceadas, Tótems (+20%/+35%), Rangos Bronce/Plata/Oro (+8%/+16%/+25%), entrenamiento acotado a máx 5 (+6% c/u), TemploNivel 3D + Tienda/Modal, y guardado atómico (.tmp + respaldo .corrupt.bak) preservando TEST_CLEAN_START_MODE=true.",
     "Bloque_2_Visuales_Nubes_TemaCalido_FlechaDinamica": "Frustum culling seguro (near/far + extra_cull_margin), nubes ambientales 3D + manto denso en islas bloqueadas, bloqueo estricto de avance a siguiente isla hasta comprar las 4 parcelas previas, tema fantasía cálido (madera/oro/pergamino) en game_theme.tres y loading_screen, eliminación de destello huérfano, flecha guía proyectada dinámicamente en 3D/UI y clic fuera para cerrar menú contextual y volver a vista principal.",
-    "Bloque_3_Bugs_Logica_Economia_Offline": "Dragón obligatorio siempre incluido al frente del equipo desde hábitats o Guardería (get_all_owned_dragons), UID único global (_get_next_dragon_uid sobre dragones+guarderia), bloqueo de gemas infinitas al repetir capítulos (0 gemas y 35% recursos en repetición), y reconciliación real de temporizadores offline con end_timestamp/last_gold_timestamp en huevos, granjas, minas, entrenamiento, obstáculos y oro de hábitats."
+    "Bloque_3_Bugs_Logica_Economia_Offline": "Dragón obligatorio siempre incluido al frente del equipo desde hábitats o Guardería (get_all_owned_dragons), UID único global (_get_next_dragon_uid sobre dragones+guarderia), bloqueo de gemas infinitas al repetir capítulos (0 gemas y 35% recursos en repetición), y reconciliación real de temporizadores offline con end_timestamp/last_gold_timestamp en huevos, granjas, minas, entrenamiento, obstáculos y oro de hábitats.",
+    "Bloque_4_Campana50_JSON_y_Documentacion": "Creación de data/campana_50.json con 50 capítulos y 50 especies obligatorias únicas sin duplicados (calibradas Nv.1 a Nv.30), integración en GameCore y CampanaPanel, y unificación total de GEMINI.md, docs/game_design_base.md y docs/contrato_datos_godot.md."
   }
 }
