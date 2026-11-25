@@ -181,9 +181,16 @@ func refresh() -> void:
 		vbox.add_child(lbl_req)
 
 		var lbl_rew: Label = Label.new()
-		lbl_rew.text = "Recompensas:\n+%d Oro • +%d Comida\n+%d Gemas • +%d EXP" % [
-			int(data["oro"]), int(data["comida"]), int(data["gemas"]), int(data["exp"])
-		]
+		if is_done:
+			lbl_rew.text = "Repetición (ya superado):\n+%d Oro • +%d Comida\n0 Gemas • +%d EXP" % [
+				maxi(50, int(round(float(data["oro"]) * 0.35))),
+				maxi(25, int(round(float(data["comida"]) * 0.35))),
+				maxi(15, int(round(float(data["exp"]) * 0.30)))
+			]
+		else:
+			lbl_rew.text = "Recompensas (1ª vez):\n+%d Oro • +%d Comida\n+%d Gemas • +%d EXP" % [
+				int(data["oro"]), int(data["comida"]), int(data["gemas"]), int(data["exp"])
+			]
 		lbl_rew.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl_rew.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		vbox.add_child(lbl_rew)

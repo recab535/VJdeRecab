@@ -190,7 +190,9 @@ func _on_special_structure_clicked(kind: String, island_id: int) -> void:
 func _restore_world_from_save(core: Node) -> void:
 	for est: Variant in core.player_state.get("estructuras", []):
 		if est is Dictionary:
-			_spawn_habitat_at_slot(int(est.get("slot_index", 0)), int(est.get("elemento_id", 1)))
+			var hab: HabitatBase = _spawn_habitat_at_slot(int(est.get("slot_index", 0)), int(est.get("elemento_id", 1)))
+			if hab:
+				hab.accumulated_oro = minf(float(hab.get_max_gold()), float(est.get("oro_acumulado", 0.0)))
 
 	for d: Variant in core.player_state.get("dragones", []):
 		if d is Dictionary:
@@ -467,6 +469,12 @@ func _on_egg_hatched(res: Dictionary) -> void:
 
 
 func _on_chapter_battle_requested(chapter_data: Dictionary) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	var req_id: int = int(chapter_data.get("especie_requerida_id", 1))
+	if core and not core.has_species_in_collection(req_id):
+		var sp_name: String = str(core.get_species(req_id).get("nombre", "Especie #%d" % req_id))
+		hud.show_status_message("Necesitas poseer a %s (hábitat o Guardería) para iniciar este capítulo." % sp_name)
+		return
 	_open_combat_arena(chapter_data)
 
 
@@ -511,11 +519,13 @@ func _on_combat_finished(victory: bool, rewards: Dictionary) -> void:
 		camera_rig.camera.current = true
 
 	if victory:
-		hud.show_status_message("¡Capítulo superado! +%d Oro, +%d Comida, +%d Gemas, +%d EXP." % [
+		var rep_suffix: String = "" if bool(rewards.get("first_clear", true)) else " (Repetición — sin gemas de primera vez)"
+		hud.show_status_message("¡Capítulo superado! +%d Oro, +%d Comida, +%d Gemas, +%d EXP.%s" % [
 			int(rewards.get("oro", 0)),
 			int(rewards.get("comida", 0)),
 			int(rewards.get("gemas", 0)),
-			int(rewards.get("exp", 0))
+			int(rewards.get("exp", 0)),
+			rep_suffix
 		])
 	else:
 		hud.show_status_message("Combate finalizado. Regresaste al Santuario.")
@@ -547,6 +557,10 @@ func _on_collect_habitat_oro_requested() -> void:
 	var collected: int = _selected_habitat.collect_oro()
 	if collected > 0:
 		core.add_oro(collected)
+		for k: int in _built_habitats.keys():
+			if _built_habitats[k] == _selected_habitat and core.has_method("sync_habitat_gold_state"):
+				core.call("sync_habitat_gold_state", k, _selected_habitat.accumulated_oro)
+				break
 		hud.show_status_message("¡Recogiste +%d Oro del hábitat!" % collected)
 		if tutorial_dialog and tutorial_dialog.has_method("notify_action"):
 			tutorial_dialog.call("notify_action", "oro_o_alimentar")

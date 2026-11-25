@@ -212,7 +212,9 @@ func _create_default_state() -> Dictionary:
 			{
 				"id": 1,
 				"slot_index": 0,
-				"elemento_id": 1
+				"elemento_id": 1,
+				"oro_acumulado": 0.0,
+				"last_gold_timestamp": Time.get_unix_time_from_system()
 			}
 		],
 		"nido_huevos": [],
@@ -296,6 +298,7 @@ func load_game() -> void:
 	else:
 		player_state = res.get("state", _create_default_state())
 		_ensure_state_schema()
+		reconcile_offline_timers()
 
 	save_loaded.emit()
 	_emit_resources()
@@ -519,7 +522,9 @@ func build_habitat(slot_index: int, elemento_id: int = 1, cost_oro: int = HABITA
 	var nueva: Dictionary = {
 		"id": new_id,
 		"slot_index": slot_index,
-		"elemento_id": elemento_id
+		"elemento_id": elemento_id,
+		"oro_acumulado": 0.0,
+		"last_gold_timestamp": Time.get_unix_time_from_system()
 	}
 	estructuras.append(nueva)
 	player_state["estructuras"] = estructuras
@@ -564,11 +569,13 @@ func buy_egg(especie_id: int, cost_oro: int) -> Dictionary:
 
 	var sp: Dictionary = get_species(especie_id)
 	var total_sec: int = maxi(5, int(sp.get("tiempo_incubacion_seg", 300)))
+	var now_ts: float = Time.get_unix_time_from_system()
 	var egg: Dictionary = {
 		"especie_id": especie_id,
 		"nombre": str(sp.get("nombre", "Dragón")),
 		"tiempo_incubacion_seg": total_sec,
 		"tiempo_restante_seg": 5.0,
+		"end_timestamp": now_ts + 5.0,
 		"listo": false
 	}
 	huevos.append(egg)
@@ -704,11 +711,13 @@ func start_breeding(parent_a_id: int, parent_b_id: int, parent_a_level: int = 1,
 	var result_id: int = _resolve_breeding_species(parent_a_id, parent_b_id, parent_a_level, parent_b_level)
 	var sp: Dictionary = get_species(result_id)
 	var total_sec: int = maxi(5, int(sp.get("tiempo_incubacion_seg", 300)))
+	var now_ts: float = Time.get_unix_time_from_system()
 	var egg: Dictionary = {
 		"especie_id": result_id,
 		"nombre": str(sp.get("nombre", "Dragón")),
 		"tiempo_incubacion_seg": total_sec,
 		"tiempo_restante_seg": float(total_sec),
+		"end_timestamp": now_ts + float(total_sec),
 		"padre_a_id": parent_a_id,
 		"padre_b_id": parent_b_id,
 		"listo": false
@@ -767,11 +776,7 @@ func hatch_egg_at(egg_index: int) -> Dictionary:
 	player_state["nido_huevos"] = huevos
 
 	var dragones: Array = player_state.get("dragones", [])
-	var max_uid: int = 0
-	for d_var: Variant in dragones:
-		if d_var is Dictionary:
-			max_uid = maxi(max_uid, int(d_var.get("uid", 0)))
-	var next_uid: int = max_uid + 1
+	var next_uid: int = _get_next_dragon_uid()
 
 	var new_dragon: Dictionary = {
 		"uid": next_uid,
@@ -786,6 +791,26 @@ func hatch_egg_at(egg_index: int) -> Dictionary:
 	save_game()
 	nest_updated.emit()
 	return {"ok": true, "dragon": new_dragon, "nombre": str(egg.get("nombre", "Dragón")), "msg": "¡Eclosionó %s!" % str(egg.get("nombre", "Dragón"))}
+
+
+func _get_next_dragon_uid() -> int:
+	var max_uid: int = 0
+	for key: String in ["dragones", "guarderia"]:
+		for d_var: Variant in player_state.get(key, []):
+			if d_var is Dictionary:
+				max_uid = maxi(max_uid, int(d_var.get("uid", 0)))
+	return max_uid + 1
+
+
+func get_all_owned_dragons() -> Array:
+	var combined: Array = []
+	for d_var: Variant in player_state.get("dragones", []):
+		if d_var is Dictionary:
+			combined.append(d_var)
+	for g_var: Variant in player_state.get("guarderia", []):
+		if g_var is Dictionary:
+			combined.append(g_var)
+	return combined
 
 
 func hatch_next_egg() -> Dictionary:
@@ -1083,9 +1108,10 @@ func get_booster_multiplier_for_species(sp: Dictionary) -> float:
 
 
 func get_dragon_by_uid(dragon_uid: int) -> Dictionary:
-	for d: Variant in player_state.get("dragones", []):
-		if d is Dictionary and int(d.get("uid", -1)) == dragon_uid:
-			return d
+	for key: String in ["dragones", "guarderia"]:
+		for d: Variant in player_state.get(key, []):
+			if d is Dictionary and int(d.get("uid", -1)) == dragon_uid:
+				return d
 	return {}
 
 
@@ -1307,6 +1333,7 @@ func start_clear_obstacle(obs_id: String) -> Dictionary:
 			res["oro"] = int(res.get("oro", 0)) - cost
 			player_state["recursos"] = res
 			o["limpiando"] = true
+			o["end_timestamp"] = Time.get_unix_time_from_system() + float(o.get("restante_seg", spec["duracion_seg"]))
 			obs_list[i] = o
 			player_state["obstaculos"] = obs_list
 			save_game()
@@ -1425,7 +1452,12 @@ func build_gem_mine_on_island(island_id: int) -> Dictionary:
 		return {"ok": false, "msg": "Gemas insuficientes (%d/%d)." % [int(res.get("gemas", 0)), GEM_MINE_BUILD_COST]}
 	res["gemas"] = int(res.get("gemas", 0)) - GEM_MINE_BUILD_COST
 	player_state["recursos"] = res
-	mines[key] = {"construida": true, "restante_seg": GEM_MINE_CYCLE_SEC, "lista": false}
+	mines[key] = {
+		"construida": true,
+		"restante_seg": GEM_MINE_CYCLE_SEC,
+		"end_timestamp": Time.get_unix_time_from_system() + GEM_MINE_CYCLE_SEC,
+		"lista": false
+	}
 	player_state["minas_gemas"] = mines
 	save_game()
 	_emit_resources()
@@ -1445,6 +1477,7 @@ func collect_gem_mine(island_id: int) -> Dictionary:
 		return {"ok": false, "msg": "Mina de Isla %d produciendo (faltan %.1f h)." % [island_id, rem_h]}
 	mine["lista"] = false
 	mine["restante_seg"] = GEM_MINE_CYCLE_SEC
+	mine["end_timestamp"] = Time.get_unix_time_from_system() + GEM_MINE_CYCLE_SEC
 	mines[key] = mine
 	player_state["minas_gemas"] = mines
 	var res: Dictionary = get_resources()
@@ -1489,6 +1522,7 @@ func start_food_production(cost_oro: int = 200, cantidad: int = 180, duracion_se
 	g["cantidad"] = cantidad
 	g["duracion_seg"] = duracion_seg
 	g["restante_seg"] = float(duracion_seg)
+	g["end_timestamp"] = Time.get_unix_time_from_system() + float(duracion_seg)
 	granjas[0] = g
 	player_state["granjas_comida"] = granjas
 	save_game()
@@ -1557,7 +1591,8 @@ func start_training(dragon_uid: int, cost_oro: int = 300, duracion_seg: int = 30
 		"activo": true,
 		"dragon_uid": dragon_uid,
 		"restante_seg": float(duracion_seg),
-		"duracion_seg": duracion_seg
+		"duracion_seg": duracion_seg,
+		"end_timestamp": Time.get_unix_time_from_system() + float(duracion_seg)
 	}
 	save_game()
 	_emit_resources()
@@ -1763,14 +1798,157 @@ func has_species_in_collection(species_id: int) -> bool:
 func complete_campaign_chapter(chapter_id: int, oro: int, comida: int, gemas: int, exp_reward: int) -> Dictionary:
 	var camp: Dictionary = player_state.get("campana", {"capitulo_desbloqueado": 1, "completados": []})
 	var comp: Array = camp.get("completados", [])
-	if not comp.has(chapter_id):
+	var is_first_clear: bool = not comp.has(chapter_id)
+	if is_first_clear:
 		comp.append(chapter_id)
 	camp["completados"] = comp
 	camp["capitulo_desbloqueado"] = maxi(int(camp.get("capitulo_desbloqueado", 1)), mini(50, chapter_id + 1))
 	player_state["campana"] = camp
 	player_state["capitulo_pve_actual"] = int(camp["capitulo_desbloqueado"])
-	var rew: Dictionary = grant_combat_rewards(oro, comida, gemas, int(camp["capitulo_desbloqueado"]))
-	var lvl_info: Dictionary = add_player_exp(exp_reward)
-	rew["exp"] = exp_reward
+
+	# Anti-farm infinito de gemas: solo primera victoria otorga gemas y recompensa completa
+	var final_oro: int = oro if is_first_clear else maxi(50, int(round(float(oro) * 0.35)))
+	var final_comida: int = comida if is_first_clear else maxi(25, int(round(float(comida) * 0.35)))
+	var final_gemas: int = gemas if is_first_clear else 0
+	var final_exp: int = exp_reward if is_first_clear else maxi(15, int(round(float(exp_reward) * 0.30)))
+
+	var rew: Dictionary = grant_combat_rewards(final_oro, final_comida, final_gemas, int(camp["capitulo_desbloqueado"]))
+	var lvl_info: Dictionary = add_player_exp(final_exp)
+	rew["exp"] = final_exp
 	rew["level"] = int(lvl_info.get("level", get_player_level()))
+	rew["first_clear"] = is_first_clear
 	return rew
+
+
+func sync_habitat_gold_state(slot_index: int, accumulated: float) -> void:
+	var estructuras: Array = player_state.get("estructuras", [])
+	for i: int in range(estructuras.size()):
+		if estructuras[i] is Dictionary and int(estructuras[i].get("slot_index", -1)) == slot_index:
+			estructuras[i]["oro_acumulado"] = maxf(0.0, accumulated)
+			estructuras[i]["last_gold_timestamp"] = Time.get_unix_time_from_system()
+			player_state["estructuras"] = estructuras
+			save_game()
+			return
+
+
+func reconcile_offline_timers(now_unix: float = -1.0) -> Dictionary:
+	var now_ts: float = now_unix if now_unix > 0.0 else Time.get_unix_time_from_system()
+	var summary: Dictionary = {
+		"eggs_ready": 0,
+		"obstacles_done": 0,
+		"mines_ready": 0,
+		"farms_harvested": 0,
+		"training_done": 0,
+		"offline_habitat_gold": 0
+	}
+	var changed: bool = false
+
+	# 1. Huevos en Torre Nido
+	var huevos: Array = player_state.get("nido_huevos", [])
+	for i: int in range(huevos.size()):
+		if huevos[i] is Dictionary and not bool(huevos[i].get("listo", false)):
+			var end_ts: float = float(huevos[i].get("end_timestamp", 0.0))
+			if end_ts > 0.0:
+				var rem: float = maxf(0.0, end_ts - now_ts)
+				huevos[i]["tiempo_restante_seg"] = rem
+				if rem <= 0.0:
+					huevos[i]["listo"] = true
+					summary["eggs_ready"] = int(summary["eggs_ready"]) + 1
+				changed = true
+	player_state["nido_huevos"] = huevos
+
+	# 2. Obstáculos en limpieza
+	var obs_list: Array = player_state.get("obstaculos", [])
+	for i: int in range(obs_list.size()):
+		if obs_list[i] is Dictionary and bool(obs_list[i].get("limpiando", false)) and not bool(obs_list[i].get("limpiado", false)):
+			var end_ts: float = float(obs_list[i].get("end_timestamp", 0.0))
+			if end_ts > 0.0:
+				var rem: float = maxf(0.0, end_ts - now_ts)
+				obs_list[i]["restante_seg"] = rem
+				if rem <= 0.0:
+					obs_list[i]["limpiando"] = false
+					obs_list[i]["limpiado"] = true
+					var spec: Dictionary = OBSTACLE_SPECS.get(str(obs_list[i].get("tipo", "arbusto")), OBSTACLE_SPECS["arbusto"])
+					add_player_exp(int(spec["exp"]))
+					summary["obstacles_done"] = int(summary["obstacles_done"]) + 1
+				changed = true
+	player_state["obstaculos"] = obs_list
+
+	# 3. Minas de Gemas
+	var mines: Dictionary = player_state.get("minas_gemas", {})
+	for key: Variant in mines.keys():
+		if mines[key] is Dictionary and bool(mines[key].get("construida", false)) and not bool(mines[key].get("lista", false)):
+			var end_ts: float = float(mines[key].get("end_timestamp", 0.0))
+			if end_ts > 0.0:
+				var rem: float = maxf(0.0, end_ts - now_ts)
+				mines[key]["restante_seg"] = rem
+				if rem <= 0.0:
+					mines[key]["lista"] = true
+					summary["mines_ready"] = int(summary["mines_ready"]) + 1
+				changed = true
+	player_state["minas_gemas"] = mines
+
+	# 4. Granjas de Comida
+	var granjas: Array = player_state.get("granjas_comida", [])
+	for i: int in range(granjas.size()):
+		if granjas[i] is Dictionary and bool(granjas[i].get("produciendo", false)):
+			var end_ts: float = float(granjas[i].get("end_timestamp", 0.0))
+			if end_ts > 0.0:
+				var rem: float = maxf(0.0, end_ts - now_ts)
+				granjas[i]["restante_seg"] = rem
+				if rem <= 0.0:
+					granjas[i]["produciendo"] = false
+					var res: Dictionary = get_resources()
+					res["comida"] = int(res.get("comida", 0)) + int(granjas[i].get("cantidad", 150))
+					player_state["recursos"] = res
+					add_player_exp(20)
+					summary["farms_harvested"] = int(summary["farms_harvested"]) + 1
+				changed = true
+	player_state["granjas_comida"] = granjas
+
+	# 5. Campo de Entrenamiento
+	var tr: Dictionary = player_state.get("entrenamiento", {})
+	if bool(tr.get("activo", false)):
+		var end_ts: float = float(tr.get("end_timestamp", 0.0))
+		if end_ts > 0.0:
+			var rem: float = maxf(0.0, end_ts - now_ts)
+			tr["restante_seg"] = rem
+			if rem <= 0.0:
+				tr["activo"] = false
+				var uid: int = int(tr.get("dragon_uid", -1))
+				player_state["entrenamiento"] = tr
+				_apply_training_bonus(uid)
+				summary["training_done"] = 1
+			else:
+				player_state["entrenamiento"] = tr
+			changed = true
+
+	# 6. Producción offline de oro en hábitats (con tope HabitatMaxGold)
+	var estructuras: Array = player_state.get("estructuras", [])
+	var total_dragones: int = player_state.get("dragones", []).size()
+	if not estructuras.is_empty() and total_dragones > 0:
+		var total_oro_min: float = 0.0
+		for d_var: Variant in player_state.get("dragones", []):
+			if d_var is Dictionary:
+				total_oro_min += get_dragon_gold_per_minute(d_var)
+		var per_hab_min: float = total_oro_min / float(estructuras.size())
+		var gold_caps: Dictionary = {1: 500, 2: 1200, 3: 2000, 4: 3500, 5: 6000, 6: 9000, 7: 14000, 8: 20000, 9: 35000}
+		for i: int in range(estructuras.size()):
+			if estructuras[i] is Dictionary:
+				var last_ts: float = float(estructuras[i].get("last_gold_timestamp", now_ts))
+				var elapsed_sec: float = maxf(0.0, now_ts - last_ts)
+				if elapsed_sec > 1.0:
+					var eid: int = int(estructuras[i].get("elemento_id", 1))
+					var cap_g: float = float(gold_caps.get(eid, 500))
+					var cur_g: float = float(estructuras[i].get("oro_acumulado", 0.0))
+					var added: float = minf(cap_g - cur_g, per_hab_min * (elapsed_sec / 60.0))
+					if added > 0.0:
+						estructuras[i]["oro_acumulado"] = minf(cap_g, cur_g + added)
+						summary["offline_habitat_gold"] = int(summary["offline_habitat_gold"]) + int(floor(added))
+						changed = true
+				estructuras[i]["last_gold_timestamp"] = now_ts
+		player_state["estructuras"] = estructuras
+
+	if changed:
+		save_game()
+	return summary

@@ -73,9 +73,9 @@ func start_chapter_data(chapter_data: Dictionary, arena: CombatArena) -> void:
 	var t_lvl: int = int(ally.get("entrenamiento_nivel", 0))
 	var bonus_txt: String = ""
 	if b_mult > 1.0:
-		bonus_txt += " [Tótem ×%.0f]" % b_mult
+		bonus_txt += " [Tótem +%d%%]" % int(round((b_mult - 1.0) * 100.0))
 	if t_lvl > 0:
-		bonus_txt += " [Entrenamiento +%d%%]" % (t_lvl * 10)
+		bonus_txt += " [Entrenamiento +%d%%]" % (t_lvl * 6)
 	_arena.set_combat_log("¡Combate directo! %s lidera tu equipo%s." % [str(ally.get("nombre", "Dragón")), bonus_txt])
 
 
@@ -86,21 +86,33 @@ func _build_teams() -> void:
 	var req_species_id: int = int(_chapter_data.get("especie_requerida_id", 1))
 
 	if _core:
-		var owned: Array = _core.player_state.get("dragones", [])
+		var owned: Array = _core.get_all_owned_dragons() if _core.has_method("get_all_owned_dragons") else _core.player_state.get("dragones", [])
 		var used_uids: Dictionary = {}
-		# 1. Colocar primero el dragón obligatorio del capítulo
+		# 1. Buscar la mejor copia del dragón obligatorio (incluyendo los alojados en la Guardería)
+		var best_req: Dictionary = {}
+		var best_req_lvl: int = -1
 		for d: Variant in owned:
 			if d is Dictionary and int(d.get("especie_id", 0)) == req_species_id:
-				_ally_team.append(_make_unit_from_owned(d))
-				used_uids[int(d.get("uid", -1))] = true
-				break
-		# 2. Completar hasta 3 dragones (1 activo + 2 en banca)
+				var d_lvl: int = int(d.get("nivel", 1))
+				if d_lvl > best_req_lvl:
+					best_req = d
+					best_req_lvl = d_lvl
+		if not best_req.is_empty():
+			_ally_team.append(_make_unit_from_owned(best_req))
+			used_uids[int(best_req.get("uid", -1))] = true
+		# 2. Completar hasta 3 dragones (1 activo + 2 en banca) priorizando mayor nivel
+		var candidates: Array[Dictionary] = []
 		for d: Variant in owned:
+			if d is Dictionary and not used_uids.has(int(d.get("uid", -1))):
+				candidates.append(d)
+		candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return int(a.get("nivel", 1)) > int(b.get("nivel", 1))
+		)
+		for cand: Dictionary in candidates:
 			if _ally_team.size() >= 3:
 				break
-			if d is Dictionary and not used_uids.has(int(d.get("uid", -1))):
-				_ally_team.append(_make_unit_from_owned(d))
-				used_uids[int(d.get("uid", -1))] = true
+			_ally_team.append(_make_unit_from_owned(cand))
+			used_uids[int(cand.get("uid", -1))] = true
 
 	if _ally_team.is_empty():
 		_ally_team.append(_make_unit_from_species_id(req_species_id, 1, 1))
@@ -148,12 +160,12 @@ func _make_unit_from_species_id(sp_id: int, nivel: int, uid: int) -> Dictionary:
 	var hp_base: float = float(sp.get("hp_base", 310))
 	var atk_base: float = float(sp.get("atk_base", 90))
 	var spd_base: float = float(sp.get("spd_base", 55))
-	var d_lvl: float = float(maxi(1, nivel) - 1)
-	var hp_poly: float = 1.0 + 0.12 * d_lvl + 0.015 * d_lvl * d_lvl
-	var atk_poly: float = 1.0 + 0.10 * d_lvl + 0.012 * d_lvl * d_lvl
-	var spd_poly: float = 1.0 + 0.06 * d_lvl
+	var d_lvl: float = float(clampi(nivel, 1, 30) - 1)
+	var hp_poly: float = 1.0 + 0.085 * d_lvl + 0.0028 * d_lvl * d_lvl
+	var atk_poly: float = 1.0 + 0.075 * d_lvl + 0.0022 * d_lvl * d_lvl
+	var spd_poly: float = 1.0 + 0.035 * d_lvl
 	var hp: int = roundi(hp_base * hp_poly)
-	var etapa_rival: String = "adulto" if nivel >= 7 else ("joven" if nivel >= 4 else "cria")
+	var etapa_rival: String = "adulto" if nivel >= 16 else ("joven" if nivel >= 8 else "cria")
 	return {
 		"uid": uid,
 		"especie_id": sp_id,
@@ -368,8 +380,13 @@ func _finish_battle(victory: bool) -> void:
 			if _core.has_method("record_dragon_combat_wins"):
 				_core.record_dragon_combat_wins(ally_uids)
 		else:
-			rewards = {"oro": oro_r, "comida": comida_r, "gemas": gemas_r, "exp": exp_r}
-		_arena.set_combat_log("¡VICTORIA Cap. %d! +%d Oro, +%d Comida, +%d Gemas, +%d EXP." % [_chapter_id, oro_r, comida_r, gemas_r, exp_r])
+			rewards = {"oro": oro_r, "comida": comida_r, "gemas": gemas_r, "exp": exp_r, "first_clear": true}
+		var actual_oro: int = int(rewards.get("oro", oro_r))
+		var actual_comida: int = int(rewards.get("comida", comida_r))
+		var actual_gemas: int = int(rewards.get("gemas", gemas_r))
+		var actual_exp: int = int(rewards.get("exp", exp_r))
+		var rep_tag: String = "" if bool(rewards.get("first_clear", true)) else " (Repetición — sin gemas)"
+		_arena.set_combat_log("¡VICTORIA Cap. %d! +%d Oro, +%d Comida, +%d Gemas, +%d EXP.%s" % [_chapter_id, actual_oro, actual_comida, actual_gemas, actual_exp, rep_tag])
 	else:
 		var am_lose: Node = get_node_or_null("/root/AudioManager")
 		if am_lose and am_lose.has_method("play_sfx"):
