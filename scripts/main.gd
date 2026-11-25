@@ -607,6 +607,7 @@ func _build_feed_info_list(core: Node, filter_uids: Array[int]) -> Array[Diction
 			"nombre": str(sp.get("nombre", "Dragón")),
 			"nivel": nivel,
 			"max_nivel": core.MAX_DRAGON_LEVEL,
+			"cap_nivel": core.get_current_dragon_level_cap(),
 			"feed_steps": int(d.get("feed_steps", 0)),
 			"etapa": str(d.get("etapa", "cria")),
 			"cost_comida": core.get_feed_cost(nivel),

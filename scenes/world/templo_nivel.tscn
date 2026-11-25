@@ -1,0 +1,59 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/estructura_especial.gd" id="1_est"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_BaseTemplo"]
+albedo_color = Color(0.76, 0.70, 0.58, 1)
+roughness = 0.88
+
+[sub_resource type="CylinderMesh" id="Mesh_BaseTemplo"]
+material = SubResource("Mat_BaseTemplo")
+top_radius = 1.05
+bottom_radius = 1.25
+height = 0.45
+radial_segments = 8
+
+[sub_resource type="StandardMaterial3D" id="Mat_EmblemaTemplo"]
+albedo_color = Color(0.95, 0.78, 0.28, 1)
+emission_enabled = true
+emission = Color(0.95, 0.74, 0.24, 1)
+emission_energy_multiplier = 0.85
+roughness = 0.3
+
+[sub_resource type="SphereMesh" id="Mesh_EmblemaTemplo"]
+material = SubResource("Mat_EmblemaTemplo")
+radius = 0.34
+height = 0.68
+radial_segments = 4
+rings = 2
+
+[sub_resource type="CylinderShape3D" id="Shape_Templo"]
+height = 2.2
+radius = 1.28
+
+[node name="TemploNivel" type="Node3D"]
+script = ExtResource("1_est")
+kind = "templo_nivel"
+spin_node_path = NodePath("EmblemaSolar")
+
+[node name="BaseTemplo" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.225, 0)
+mesh = SubResource("Mesh_BaseTemplo")
+
+[node name="EmblemaSolar" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
+mesh = SubResource("Mesh_EmblemaTemplo")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
+visible = false
+billboard = 1
+text = "Templos de Nivel"
+font_size = 22
+outline_size = 6
+
+[node name="AreaClick" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AreaClick"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+shape = SubResource("Shape_Templo")

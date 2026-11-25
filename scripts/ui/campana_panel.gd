@@ -94,7 +94,7 @@ func build_chapter_data(cap_num: int) -> Dictionary:
 	var comida_rew: int = 180 + cap_num * 95
 	var gemas_rew: int = 5 if (cap_num % 5 == 0 or cap_num == 1) else 1
 	var exp_rew: int = 60 + cap_num * 25
-	var enemy_lvl: int = maxi(1, 1 + int((cap_num - 1) / 3))
+	var enemy_lvl: int = clampi(1 + int(round(float(cap_num - 1) * 28.0 / 49.0)), 1, 29)
 	var elem_id: int = int(arc["elem_id"])
 	var e1: int = elem_id if elem_id <= 8 else 65
 	var e2: int = mini(68, req_id)

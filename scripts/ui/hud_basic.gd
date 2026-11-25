@@ -414,7 +414,8 @@ func _refresh_feed_panel_ui() -> void:
 	var especie_id: int = int(info.get("especie_id", 1))
 	var nombre: String = str(info.get("nombre", "Dragón"))
 	var nivel: int = int(info.get("nivel", 1))
-	var max_nivel: int = int(info.get("max_nivel", 10))
+	var max_nivel: int = int(info.get("max_nivel", 30))
+	var cap_nivel: int = int(info.get("cap_nivel", max_nivel))
 	var etapa_raw: String = str(info.get("etapa", "cria"))
 	var etapa: String = etapa_raw.capitalize()
 	var cost: int = int(info.get("cost_comida", 50))
@@ -431,16 +432,16 @@ func _refresh_feed_panel_ui() -> void:
 
 	var bonus_parts: PackedStringArray = []
 	if booster_mult > 1.0:
-		bonus_parts.append("Tótem ×%.0f" % booster_mult)
+		bonus_parts.append("Tótem +%d%%" % int(round((booster_mult - 1.0) * 100.0)))
 	if entr_lvl > 0:
-		bonus_parts.append("Entr. +%d%%" % (entr_lvl * 10))
+		bonus_parts.append("Entr. +%d%%" % (entr_lvl * 6))
 	var bonus_suffix: String = ("  |  " + " · ".join(bonus_parts)) if not bonus_parts.is_empty() else ""
 
 	var feed_steps: int = clampi(int(info.get("feed_steps", 0)), 0, 3)
-	lbl_dragon_titulo.text = "%s — Nv. %d/%d (%s)" % [nombre, nivel, max_nivel, etapa]
+	lbl_dragon_titulo.text = "%s — Nv. %d/%d (%s)" % [nombre, nivel, cap_nivel, etapa]
 	lbl_dragon_stats.text = "HP: %d  |  ATK: %d  |  SPD: %d\nProducción: %d Oro/min%s  |  Progreso nivel: %d/4" % [hp, atk, spd, oro_min, bonus_suffix, feed_steps]
 	if pb_dragon_xp:
-		var target_val: float = 100.0 if nivel >= max_nivel else float(feed_steps) * 25.0
+		var target_val: float = 100.0 if nivel >= cap_nivel else float(feed_steps) * 25.0
 		var tw_xp: Tween = create_tween()
 		tw_xp.tween_property(pb_dragon_xp, "value", target_val, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
@@ -449,7 +450,10 @@ func _refresh_feed_panel_ui() -> void:
 	btn_siguiente_dragon.visible = multiple
 
 	if nivel >= max_nivel:
-		btn_alimentar_dragon.text = "Nivel Máximo"
+		btn_alimentar_dragon.text = "Nivel Máximo (30)"
+		btn_alimentar_dragon.disabled = true
+	elif nivel >= cap_nivel:
+		btn_alimentar_dragon.text = "Requiere Templo (Tope Nv.%d)" % cap_nivel
 		btn_alimentar_dragon.disabled = true
 	else:
 		btn_alimentar_dragon.text = "Alimentar (%d Comida)" % cost

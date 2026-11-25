@@ -176,6 +176,34 @@ func _populate_especiales(core: Node, oro: int, gemas: int) -> void:
 	)
 	grid_especiales.add_child(c4)
 
+	# 5. Templos de Nivel (Desbloquean Nv.15 / 20 / 25 / 30)
+	var next_t: Dictionary = core.get_next_level_temple()
+	var cur_cap: int = core.get_current_dragon_level_cap()
+	if next_t.is_empty():
+		var c5_max: PanelContainer = _build_card("Templos de Nivel", "Tope máximo Nv.30 desbloqueado", Color(0.95, 0.78, 0.30), "Completado", false)
+		grid_especiales.add_child(c5_max)
+	else:
+		var t_tier: int = int(next_t["tier"])
+		var t_cost: int = int(next_t["costo_oro"])
+		var t_lvl: int = int(next_t["nivel_jugador_req"])
+		var t_cap: int = int(next_t["nivel_cap"])
+		var can_t: bool = oro >= t_cost and core.get_player_level() >= t_lvl
+		var c5: PanelContainer = _build_card(
+			str(next_t["nombre"]),
+			"Tope dragones: Nv.%d → Nv.%d\nRequiere Domador Nv.%d" % [cur_cap, t_cap, t_lvl],
+			Color(0.95, 0.78, 0.30),
+			"%d Oro" % t_cost,
+			can_t
+		)
+		(c5.get_meta("btn") as Button).pressed.connect(func() -> void:
+			var r: Dictionary = core.unlock_level_temple(t_tier)
+			if r.get("ok", false):
+				_play_sfx("level_up")
+			status_message.emit(str(r.get("msg", "")))
+			_refresh_all()
+		)
+		grid_especiales.add_child(c5)
+
 
 func _populate_potenciadores(core: Node, oro: int) -> void:
 	_clear_grid(grid_potenciadores)
@@ -186,9 +214,9 @@ func _populate_potenciadores(core: Node, oro: int) -> void:
 		var title: String = str(item["nombre"])
 		var active: bool = placed.has(eid)
 		var stored: bool = core.has_method("is_booster_in_warehouse") and core.is_booster_in_warehouse(eid)
-		var btn_label: String = "ACTIVO (×2/×3)" if active else ("EN ALMACÉN" if stored else ("%d Oro" % cost))
+		var btn_label: String = "ACTIVO (+20%/+35%)" if active else ("EN ALMACÉN" if stored else ("%d Oro" % cost))
 		var can_buy: bool = not active and not stored and oro >= cost
-		var card: PanelContainer = _build_card(title, "×2 (1 elem.) • ×3 (híbrido)\nExcluye Legendarios", ELEMENT_COLORS.get(eid, Color.WHITE), btn_label, can_buy)
+		var card: PanelContainer = _build_card(title, "+20% (1 elem.) • +35% (híbrido)\nExcluye Legendarios", ELEMENT_COLORS.get(eid, Color.WHITE), btn_label, can_buy)
 		(card.get_meta("btn") as Button).pressed.connect(func() -> void:
 			var r: Dictionary = core.buy_elemental_booster(eid, cost)
 			if r.get("ok", false):

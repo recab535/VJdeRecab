@@ -1,8 +1,6 @@
-# Roadmap de Fusión Definitiva (Estilo Clásico 2012 + 68 Especies / 50 Capítulos)
+# Roadmap de Pulido Profundo, Balance Nivel 30 y Estabilidad (VJdeRecab)
 
-- [x] **FASE 1:** Corrección radical de iluminación (sin fogonazo blanco), 5 islas flotantes orgánicas esculpidas sin césped cuadriculado, limpieza de etiquetas flotantes en reposo y enfoque suave de cámara (`Tween`) al clicar entidades.
-- [x] **FASE 2:** Arquitectura de cuadrícula discreta invisible (`Grid` 14×14 con `isUnlocked`/`isOccupied` y tamaños por estructura) + máquina de estados en dragones (`Idle`, `Walk`, `SpecialAnim` y evolución visual).
-- [x] **FASE 3:** Motor de cruces clásico adaptado a 68 especies (conjuntos de elementos, filtro de puros opuestos, bono por nivel, Weighted RNG), factor misterio en Adoratorio y huevos visuales distintivos en Torre Nido.
-- [x] **FASE 4:** Ciclo económico clásico (oro con tope `HabitatMaxGold` + moneda flotante, cultivos escalonados de Comida 30s/5m/1h/6h/24h, `feed_steps` 0–3 por nivel) y consolidación de estructuras especiales.
-- [x] **FASE 5:** Combate 1v1 con relevos estilo 2012 (fórmulas polinómicas por nivel, `MovePower`, varianza `0.90–1.10`, rango Bronce/Plata/Oro, 5% fallo) + carrusel horizontal de 50 capítulos con dragón obligatorio.
-- [x] **FASE 6:** Pulido integral del HUD clásico limpio, audio procedural refinado, verificación completa en Godot headless y documentación final.
+- [x] **Bloque 1 — Nivel Máximo 30, Templos de Nivel, Balance y Guardado Atómico:** Límite de dragones en 30 con 4 Templos de Nivel (15/20/25/30), estructura 3D `TemploNivel`, curvas polinómicas balanceadas, tótems (+20%/+35%), rangos Bronce/Plata/Oro (+8%/+16%/+25%), entrenamiento máx 5 (+30%), y guardado atómico con respaldo `.corrupt.bak` manteniendo `TEST_CLEAN_START_MODE = true`.
+- [ ] **Bloque 2 — Corrección Visual, Cámara, Nubes, Tema Cálido y Flecha Guía:** Frustum culling seguro, nubes ambientales 3D + manto denso sobre islas bloqueadas, bloqueo de avance a siguiente isla hasta comprar las 4 parcelas, tema fantasía cálido en `game_theme.tres`, eliminación del destello huérfano, intro destacada con flecha 3D/UI dinámica y clic fuera para cerrar menú contextual.
+- [ ] **Bloque 3 — Corrección de Bugs Críticos de Lógica y Economía:** Dragón obligatorio siempre incluido en combate (incluso desde Guardería), `uid` único global (`dragones` + `guarderia`), sin gemas infinitas al repetir capítulos, y temporizadores offline reales con `end_timestamp`.
+- [ ] **Bloque 4 — `data/campana_50.json` y Unificación de Documentación:** Extracción de los 50 capítulos a `data/campana_50.json` sin especies duplicadas y sincronización total de `GEMINI.md`, `docs/game_design_base.md` y `docs/contrato_datos_godot.md`.

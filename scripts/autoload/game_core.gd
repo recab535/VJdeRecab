@@ -9,7 +9,17 @@ const SAVE_PATH: String = "user://savegame.json"
 const TEST_CLEAN_START_MODE: bool = true
 const HABITAT_COST_ORO: int = 250
 const PASSIVE_TICK_SEC: float = 5.0
-const MAX_DRAGON_LEVEL: int = 10
+const MAX_DRAGON_LEVEL: int = 30
+const BASE_DRAGON_LEVEL_CAP: int = 10
+const MAX_TRAINING_LEVEL: int = 5
+const TRAINING_BONUS_PER_LEVEL: float = 0.06
+
+const LEVEL_TEMPLES: Array[Dictionary] = [
+	{"tier": 1, "nombre": "Templo del Alba", "nivel_cap": 15, "costo_oro": 1500, "nivel_jugador_req": 3, "exp": 90},
+	{"tier": 2, "nombre": "Templo de la Forja", "nivel_cap": 20, "costo_oro": 4500, "nivel_jugador_req": 6, "exp": 160},
+	{"tier": 3, "nombre": "Templo de las Mareas", "nivel_cap": 25, "costo_oro": 12000, "nivel_jugador_req": 10, "exp": 260},
+	{"tier": 4, "nombre": "Templo Ancestral", "nivel_cap": 30, "costo_oro": 30000, "nivel_jugador_req": 15, "exp": 400}
+]
 
 signal catalog_loaded(total_species: int)
 signal save_loaded
@@ -22,6 +32,7 @@ signal world_state_changed
 signal obstacles_updated
 signal storage_updated
 signal boosters_updated
+signal temples_updated
 
 const OBSTACLE_SPECS: Dictionary = {
 	"arbusto": {"nombre": "Arbusto", "duracion_seg": 600, "costo_oro": 150, "gemas_acelerar": 2, "exp": 20},
@@ -192,6 +203,7 @@ func _create_default_state() -> Dictionary:
 			"baldosas": {}
 		},
 		"potenciadores_colocados": [],
+		"templos_nivel": [],
 		"campana": {
 			"capitulo_desbloqueado": 1,
 			"completados": []
@@ -277,56 +289,95 @@ func load_game() -> void:
 		_emit_resources()
 		return
 
-	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if file == null:
+	var res: Dictionary = load_game_from_path(SAVE_PATH)
+	if not bool(res.get("ok", false)):
 		player_state = _create_default_state()
-		save_loaded.emit()
-		_emit_resources()
-		return
-
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if typeof(parsed) != TYPE_DICTIONARY:
-		player_state = _create_default_state()
+		save_game()
 	else:
-		player_state = parsed
-		if not player_state.has("nido_huevos"):
-			player_state["nido_huevos"] = []
-		else:
-			_normalize_nest_eggs()
-		if not player_state.has("estructuras"):
-			player_state["estructuras"] = []
-		if not player_state.has("islas_desbloqueadas"):
-			player_state["islas_desbloqueadas"] = [1]
-		if not player_state.has("tutorial_completado"):
-			player_state["tutorial_completado"] = false
-		if not player_state.has("exp_jugador"):
-			player_state["exp_jugador"] = 0
-		if not player_state.has("parcelas_desbloqueadas"):
-			player_state["parcelas_desbloqueadas"] = {"1": [0], "2": [0], "3": [0], "4": [0], "5": [0]}
-		if not player_state.has("obstaculos"):
-			player_state["obstaculos"] = _create_default_obstacles()
-		if not player_state.has("torre_nido_ranuras"):
-			player_state["torre_nido_ranuras"] = 1
-		if not player_state.has("segundo_adoratorio"):
-			player_state["segundo_adoratorio"] = false
-		if not player_state.has("minas_gemas"):
-			player_state["minas_gemas"] = {}
-		if not player_state.has("granjas_comida"):
-			player_state["granjas_comida"] = [{"id": 1, "produciendo": false, "restante_seg": 0.0, "cantidad": 150, "duracion_seg": 120}]
-		if not player_state.has("entrenamiento"):
-			player_state["entrenamiento"] = {"activo": false, "dragon_uid": -1, "restante_seg": 0.0, "duracion_seg": 600}
-		if not player_state.has("guarderia"):
-			player_state["guarderia"] = []
-		if not player_state.has("almacen"):
-			player_state["almacen"] = {"capacidad_estructuras": 5, "estructuras": [], "baldosas": {}}
-		if not player_state.has("potenciadores_colocados"):
-			player_state["potenciadores_colocados"] = []
-		if not player_state.has("campana"):
-			player_state["campana"] = {"capitulo_desbloqueado": int(player_state.get("capitulo_pve_actual", 1)), "completados": []}
-		_normalize_loaded_int_arrays()
+		player_state = res.get("state", _create_default_state())
+		_ensure_state_schema()
 
 	save_loaded.emit()
 	_emit_resources()
+
+
+func load_game_from_path(source_path: String) -> Dictionary:
+	if not FileAccess.file_exists(source_path):
+		return {"ok": false, "corrupted": false, "backup_path": "", "state": {}}
+
+	var file: FileAccess = FileAccess.open(source_path, FileAccess.READ)
+	if file == null:
+		return {"ok": false, "corrupted": false, "backup_path": "", "state": {}}
+
+	var raw_text: String = file.get_as_text()
+	file.close()
+
+	var json: JSON = JSON.new()
+	var err: Error = json.parse(raw_text)
+	if err != OK or typeof(json.data) != TYPE_DICTIONARY:
+		var backup_path: String = _backup_corrupt_save(source_path)
+		push_warning("[GameCore] Archivo de guardado corrupto en %s. Respaldo creado en: %s" % [source_path, backup_path])
+		return {"ok": false, "corrupted": true, "backup_path": backup_path, "state": {}}
+
+	return {"ok": true, "corrupted": false, "backup_path": "", "state": json.data as Dictionary}
+
+
+func _backup_corrupt_save(source_path: String) -> String:
+	var backup_path: String = source_path + ".corrupt.bak"
+	var src_abs: String = ProjectSettings.globalize_path(source_path)
+	var bak_abs: String = ProjectSettings.globalize_path(backup_path)
+	if FileAccess.file_exists(backup_path):
+		DirAccess.remove_absolute(bak_abs)
+	var err: Error = DirAccess.copy_absolute(src_abs, bak_abs)
+	if err != OK:
+		var f_in: FileAccess = FileAccess.open(source_path, FileAccess.READ)
+		var f_out: FileAccess = FileAccess.open(backup_path, FileAccess.WRITE)
+		if f_in and f_out:
+			f_out.store_string(f_in.get_as_text())
+			f_out.flush()
+			f_out.close()
+			f_in.close()
+	return backup_path
+
+
+func _ensure_state_schema() -> void:
+	if not player_state.has("nido_huevos"):
+		player_state["nido_huevos"] = []
+	else:
+		_normalize_nest_eggs()
+	if not player_state.has("estructuras"):
+		player_state["estructuras"] = []
+	if not player_state.has("islas_desbloqueadas"):
+		player_state["islas_desbloqueadas"] = [1]
+	if not player_state.has("tutorial_completado"):
+		player_state["tutorial_completado"] = false
+	if not player_state.has("exp_jugador"):
+		player_state["exp_jugador"] = 0
+	if not player_state.has("parcelas_desbloqueadas"):
+		player_state["parcelas_desbloqueadas"] = {"1": [0], "2": [0], "3": [0], "4": [0], "5": [0]}
+	if not player_state.has("obstaculos"):
+		player_state["obstaculos"] = _create_default_obstacles()
+	if not player_state.has("torre_nido_ranuras"):
+		player_state["torre_nido_ranuras"] = 1
+	if not player_state.has("segundo_adoratorio"):
+		player_state["segundo_adoratorio"] = false
+	if not player_state.has("minas_gemas"):
+		player_state["minas_gemas"] = {}
+	if not player_state.has("granjas_comida"):
+		player_state["granjas_comida"] = [{"id": 1, "produciendo": false, "restante_seg": 0.0, "cantidad": 150, "duracion_seg": 120}]
+	if not player_state.has("entrenamiento"):
+		player_state["entrenamiento"] = {"activo": false, "dragon_uid": -1, "restante_seg": 0.0, "duracion_seg": 600}
+	if not player_state.has("guarderia"):
+		player_state["guarderia"] = []
+	if not player_state.has("almacen"):
+		player_state["almacen"] = {"capacidad_estructuras": 5, "estructuras": [], "baldosas": {}}
+	if not player_state.has("potenciadores_colocados"):
+		player_state["potenciadores_colocados"] = []
+	if not player_state.has("templos_nivel"):
+		player_state["templos_nivel"] = []
+	if not player_state.has("campana"):
+		player_state["campana"] = {"capitulo_desbloqueado": int(player_state.get("capitulo_pve_actual", 1)), "completados": []}
+	_normalize_loaded_int_arrays()
 
 
 func _normalize_loaded_int_arrays() -> void:
@@ -343,6 +394,13 @@ func _normalize_loaded_int_arrays() -> void:
 		if v >= 1 and v <= 8 and not pot_norm.has(v):
 			pot_norm.append(v)
 	player_state["potenciadores_colocados"] = pot_norm
+
+	var temp_norm: Array = []
+	for item: Variant in player_state.get("templos_nivel", []):
+		var v: int = int(item)
+		if v >= 1 and v <= LEVEL_TEMPLES.size() and not temp_norm.has(v):
+			temp_norm.append(v)
+	player_state["templos_nivel"] = temp_norm
 
 	var parc_map: Dictionary = player_state.get("parcelas_desbloqueadas", {})
 	for key: Variant in parc_map.keys():
@@ -370,11 +428,32 @@ func _normalize_loaded_int_arrays() -> void:
 func save_game() -> bool:
 	if TEST_CLEAN_START_MODE:
 		return true
-	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	return save_game_to_path(SAVE_PATH)
+
+
+func save_game_to_path(target_path: String) -> bool:
+	var tmp_path: String = target_path + ".tmp"
+	var file: FileAccess = FileAccess.open(tmp_path, FileAccess.WRITE)
 	if file == null:
-		push_error("[GameCore] No se pudo escribir en: " + SAVE_PATH)
+		push_error("[GameCore] No se pudo escribir temporal en: " + tmp_path)
 		return false
 	file.store_string(JSON.stringify(player_state, "\t"))
+	file.flush()
+	file.close()
+
+	var tmp_abs: String = ProjectSettings.globalize_path(tmp_path)
+	var dst_abs: String = ProjectSettings.globalize_path(target_path)
+	var err: Error = DirAccess.rename_absolute(tmp_abs, dst_abs)
+	if err != OK:
+		if FileAccess.file_exists(target_path):
+			DirAccess.remove_absolute(dst_abs)
+			err = DirAccess.rename_absolute(tmp_abs, dst_abs)
+		if err != OK:
+			var cp_err: Error = DirAccess.copy_absolute(tmp_abs, dst_abs)
+			DirAccess.remove_absolute(tmp_abs)
+			if cp_err != OK:
+				push_error("[GameCore] Error en guardado atómico hacia: " + target_path)
+				return false
 	return true
 
 
@@ -796,7 +875,7 @@ func _get_breeding_candidates(parent_a_id: int, parent_b_id: int) -> Array[int]:
 
 func _resolve_breeding_species(parent_a_id: int, parent_b_id: int, parent_a_level: int = 1, parent_b_level: int = 1) -> int:
 	var avg_level: float = float(maxi(1, parent_a_level) + maxi(1, parent_b_level)) * 0.5
-	var high_level_bonus: float = 0.015 if (parent_a_level >= 7 and parent_b_level >= 7) else (0.008 if avg_level >= 4.0 else 0.0)
+	var high_level_bonus: float = 0.02 if (parent_a_level >= 15 and parent_b_level >= 15) else (0.01 if avg_level >= 8.0 else 0.0)
 
 	var leg_recipe: Dictionary = _get_legendary_recipe(parent_a_id, parent_b_id)
 	if not leg_recipe.is_empty():
@@ -818,9 +897,9 @@ func _resolve_breeding_species(parent_a_id: int, parent_b_id: int, parent_a_leve
 		var rareza: String = str(sp.get("rareza", "PURO")).to_upper()
 		var w: float = 1.0
 		if rareza == "OPUESTO":
-			w = 0.75 + (0.30 if avg_level >= 5.0 else 0.0)
+			w = 0.75 + (0.30 if avg_level >= 10.0 else 0.0)
 		elif rareza == "HIBRIDO":
-			w = 1.0 + (0.25 if avg_level >= 5.0 else 0.0)
+			w = 1.0 + (0.25 if avg_level >= 10.0 else 0.0)
 		else:
 			w = 1.0
 		weights.append(w)
@@ -844,7 +923,8 @@ func get_element(element_id: int) -> Dictionary:
 
 
 func get_feed_cost(nivel: int) -> int:
-	return maxi(15, int(round((40.0 + float(maxi(1, nivel) - 1) * 45.0) * 0.35)))
+	var d_lvl: float = float(maxi(1, nivel) - 1)
+	return maxi(15, int(round(14.0 + d_lvl * 18.0 + d_lvl * d_lvl * 2.2)))
 
 
 func start_food_crop(crop_idx: int) -> Dictionary:
@@ -854,56 +934,116 @@ func start_food_crop(crop_idx: int) -> Dictionary:
 
 
 func get_stage_for_level(nivel: int) -> String:
-	if nivel >= 7:
+	if nivel >= 16:
 		return "adulto"
-	if nivel >= 4:
+	if nivel >= 8:
 		return "joven"
 	return "cria"
+
+
+func get_current_dragon_level_cap() -> int:
+	var cap: int = BASE_DRAGON_LEVEL_CAP
+	var unlocked: Array = player_state.get("templos_nivel", [])
+	for t: Dictionary in LEVEL_TEMPLES:
+		if unlocked.has(int(t["tier"])):
+			cap = maxi(cap, int(t["nivel_cap"]))
+	return mini(cap, MAX_DRAGON_LEVEL)
+
+
+func is_level_temple_unlocked(tier: int) -> bool:
+	var unlocked: Array = player_state.get("templos_nivel", [])
+	return unlocked.has(tier)
+
+
+func get_next_level_temple() -> Dictionary:
+	for t: Dictionary in LEVEL_TEMPLES:
+		if not is_level_temple_unlocked(int(t["tier"])):
+			return t
+	return {}
+
+
+func unlock_level_temple(tier: int) -> Dictionary:
+	var target: Dictionary = {}
+	for t: Dictionary in LEVEL_TEMPLES:
+		if int(t["tier"]) == tier:
+			target = t
+			break
+	if target.is_empty():
+		return {"ok": false, "msg": "Templo inválido."}
+	if is_level_temple_unlocked(tier):
+		return {"ok": false, "msg": "El %s ya está construido." % str(target["nombre"])}
+	if tier > 1 and not is_level_temple_unlocked(tier - 1):
+		return {"ok": false, "msg": "Primero debes construir el Templo anterior (Nivel %d)." % (BASE_DRAGON_LEVEL_CAP + (tier - 1) * 5)}
+	var lvl_req: int = int(target["nivel_jugador_req"])
+	if get_player_level() < lvl_req:
+		return {"ok": false, "msg": "%s requiere Nivel de Domador %d (actual: %d)." % [str(target["nombre"]), lvl_req, get_player_level()]}
+	var cost: int = int(target["costo_oro"])
+	var res: Dictionary = get_resources()
+	if int(res.get("oro", 0)) < cost:
+		return {"ok": false, "msg": "Oro insuficiente (%d/%d)." % [int(res.get("oro", 0)), cost]}
+
+	res["oro"] = int(res.get("oro", 0)) - cost
+	player_state["recursos"] = res
+	var unlocked: Array = player_state.get("templos_nivel", [])
+	unlocked.append(tier)
+	player_state["templos_nivel"] = unlocked
+	save_game()
+	_emit_resources()
+	add_player_exp(int(target["exp"]))
+	temples_updated.emit()
+	world_state_changed.emit()
+	return {
+		"ok": true,
+		"tier": tier,
+		"nivel_cap": int(target["nivel_cap"]),
+		"msg": "¡%s construido! Tope de nivel de dragones ampliado a Nv.%d (-%d Oro)." % [str(target["nombre"]), int(target["nivel_cap"]), cost]
+	}
 
 
 func get_dragon_gold_per_minute(dragon_data: Dictionary) -> float:
 	var sp: Dictionary = get_species(int(dragon_data.get("especie_id", 0)))
 	var base_oro: float = float(sp.get("oro_por_minuto", 0))
-	var nivel: int = maxi(1, int(dragon_data.get("nivel", 1)))
-	return base_oro * (1.0 + float(nivel - 1) * 0.25)
+	var nivel: int = clampi(int(dragon_data.get("nivel", 1)), 1, MAX_DRAGON_LEVEL)
+	return base_oro * (1.0 + float(nivel - 1) * 0.14)
 
 
 func get_dragon_rank_info(dragon_data: Dictionary) -> Dictionary:
 	var wins: int = int(dragon_data.get("victorias_combate", 0))
-	if wins >= 10:
-		return {"nombre": "Oro ★★★", "mult": 1.35, "wins": wins}
-	if wins >= 6:
-		return {"nombre": "Plata ★★", "mult": 1.20, "wins": wins}
+	if wins >= 15:
+		return {"nombre": "Oro ★★★", "mult": 1.25, "wins": wins}
+	if wins >= 8:
+		return {"nombre": "Plata ★★", "mult": 1.16, "wins": wins}
 	if wins >= 3:
-		return {"nombre": "Bronce ★", "mult": 1.10, "wins": wins}
+		return {"nombre": "Bronce ★", "mult": 1.08, "wins": wins}
 	return {"nombre": "", "mult": 1.00, "wins": wins}
 
 
 func record_dragon_combat_wins(dragon_uids: Array) -> void:
-	var dragones: Array = player_state.get("dragones", [])
 	var changed: bool = false
-	for i: int in range(dragones.size()):
-		if dragones[i] is Dictionary:
-			var uid: int = int(dragones[i].get("uid", -1))
-			if dragon_uids.has(uid):
-				dragones[i]["victorias_combate"] = int(dragones[i].get("victorias_combate", 0)) + 1
-				changed = true
+	for key: String in ["dragones", "guarderia"]:
+		var lista: Array = player_state.get(key, [])
+		for i: int in range(lista.size()):
+			if lista[i] is Dictionary:
+				var uid: int = int(lista[i].get("uid", -1))
+				if dragon_uids.has(uid):
+					lista[i]["victorias_combate"] = int(lista[i].get("victorias_combate", 0)) + 1
+					changed = true
+		player_state[key] = lista
 	if changed:
-		player_state["dragones"] = dragones
 		save_game()
 
 
 func get_dragon_stats(dragon_data: Dictionary) -> Dictionary:
 	var sp: Dictionary = get_species(int(dragon_data.get("especie_id", 1)))
-	var lvl: float = float(maxi(1, int(dragon_data.get("nivel", 1))))
+	var lvl: float = float(clampi(int(dragon_data.get("nivel", 1)), 1, MAX_DRAGON_LEVEL))
 	var d_lvl: float = lvl - 1.0
-	# Escalado polinómico clásico por nivel L
-	var hp_poly: float = 1.0 + 0.12 * d_lvl + 0.015 * d_lvl * d_lvl
-	var atk_poly: float = 1.0 + 0.10 * d_lvl + 0.012 * d_lvl * d_lvl
-	var spd_poly: float = 1.0 + 0.06 * d_lvl
+	# Escalado polinómico balanceado para niveles 1..30 (sin explosión exponencial)
+	var hp_poly: float = 1.0 + 0.085 * d_lvl + 0.0028 * d_lvl * d_lvl
+	var atk_poly: float = 1.0 + 0.075 * d_lvl + 0.0022 * d_lvl * d_lvl
+	var spd_poly: float = 1.0 + 0.035 * d_lvl
 
-	var train_lvl: int = maxi(0, int(dragon_data.get("entrenamiento_nivel", 0)))
-	var train_mult: float = 1.0 + float(train_lvl) * 0.10
+	var train_lvl: int = clampi(int(dragon_data.get("entrenamiento_nivel", 0)), 0, MAX_TRAINING_LEVEL)
+	var train_mult: float = 1.0 + float(train_lvl) * TRAINING_BONUS_PER_LEVEL
 	var booster_mult: float = get_booster_multiplier_for_species(sp)
 	var rank_info: Dictionary = get_dragon_rank_info(dragon_data)
 	var rank_mult: float = float(rank_info["mult"])
@@ -936,9 +1076,9 @@ func get_booster_multiplier_for_species(sp: Dictionary) -> float:
 	if sec >= 1 and sec <= 8 and sec != prim and placed.has(sec):
 		matches += 1
 	if matches >= 2:
-		return 3.0
+		return 1.35
 	if matches == 1:
-		return 2.0
+		return 1.20
 	return 1.0
 
 
@@ -968,6 +1108,17 @@ func feed_dragon(dragon_uid: int) -> Dictionary:
 
 	if nivel_actual >= MAX_DRAGON_LEVEL:
 		return {"ok": false, "msg": "%s ya alcanzó el nivel máximo (%d)." % [nombre, MAX_DRAGON_LEVEL]}
+
+	var cur_cap: int = get_current_dragon_level_cap()
+	if nivel_actual >= cur_cap:
+		var next_t: Dictionary = get_next_level_temple()
+		var t_name: String = str(next_t.get("nombre", "Templo de Nivel"))
+		var next_cap: int = int(next_t.get("nivel_cap", MAX_DRAGON_LEVEL))
+		return {
+			"ok": false,
+			"cap_reached": true,
+			"msg": "%s llegó al tope actual (Nv.%d). Construye el %s para subir hasta Nv.%d." % [nombre, cur_cap, t_name, next_cap]
+		}
 
 	var cost_comida: int = get_feed_cost(nivel_actual)
 	var res: Dictionary = get_resources()
@@ -1373,6 +1524,12 @@ func start_training(dragon_uid: int, cost_oro: int = 300, duracion_seg: int = 30
 	var tr: Dictionary = player_state.get("entrenamiento", {})
 	if bool(tr.get("activo", false)):
 		return {"ok": false, "msg": "Ya hay un dragón entrenando en el Campo."}
+	var target_d: Dictionary = get_dragon_by_uid(dragon_uid)
+	if target_d.is_empty():
+		return {"ok": false, "msg": "Dragón no encontrado para entrenar."}
+	var cur_train: int = int(target_d.get("entrenamiento_nivel", 0))
+	if cur_train >= MAX_TRAINING_LEVEL:
+		return {"ok": false, "msg": "Este dragón ya alcanzó el máximo de entrenamiento (%d/%d)." % [cur_train, MAX_TRAINING_LEVEL]}
 	var res: Dictionary = get_resources()
 	if int(res.get("oro", 0)) < cost_oro:
 		return {"ok": false, "msg": "Oro insuficiente (%d/%d)." % [int(res.get("oro", 0)), cost_oro]}
@@ -1405,14 +1562,14 @@ func speedup_training_with_gems(cost_gems: int = 3) -> Dictionary:
 	_apply_training_bonus(uid)
 	save_game()
 	_emit_resources()
-	return {"ok": true, "msg": "¡Entrenamiento completado al instante! (+10%% stats, -%d Gemas)" % cost_gems}
+	return {"ok": true, "msg": "¡Entrenamiento completado al instante! (+6%% stats, -%d Gemas)" % cost_gems}
 
 
 func _apply_training_bonus(dragon_uid: int) -> void:
 	var dragones: Array = player_state.get("dragones", [])
 	for i: int in range(dragones.size()):
 		if dragones[i] is Dictionary and int(dragones[i].get("uid", -1)) == dragon_uid:
-			dragones[i]["entrenamiento_nivel"] = int(dragones[i].get("entrenamiento_nivel", 0)) + 1
+			dragones[i]["entrenamiento_nivel"] = mini(MAX_TRAINING_LEVEL, int(dragones[i].get("entrenamiento_nivel", 0)) + 1)
 			player_state["dragones"] = dragones
 			add_player_exp(40)
 			return
@@ -1488,7 +1645,7 @@ func buy_elemental_booster(elem_id: int, cost_oro: int) -> Dictionary:
 	_emit_resources()
 	add_player_exp(120)
 	boosters_updated.emit()
-	return {"ok": true, "msg": "¡Potenciador Elemental activado (×2 / ×3 stats)! (+120 EXP)"}
+	return {"ok": true, "msg": "¡Potenciador Elemental activado (+20%% / +35%% stats)! (+120 EXP)"}
 
 
 func store_booster_in_warehouse(elem_id: int) -> Dictionary:

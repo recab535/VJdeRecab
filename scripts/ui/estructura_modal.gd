@@ -71,6 +71,8 @@ func _refresh() -> void:
 			_render_nursery(core)
 		"granja_comida":
 			_render_food_farm(core)
+		"templo_nivel":
+			_render_level_temples(core)
 		_:
 			lbl_titulo.text = "Estructura"
 			lbl_detalle.text = ""
@@ -119,7 +121,7 @@ func _render_training_camp(core: Node) -> void:
 		var d: Dictionary = core.get_dragon_by_uid(uid)
 		var sp: Dictionary = core.get_species(int(d.get("especie_id", 1)))
 		var rem: int = int(ceil(float(tr.get("restante_seg", 0.0))))
-		lbl_detalle.text = "Entrenando a %s (+10%% stats de combate).\nTiempo restante: %02d:%02d." % [str(sp.get("nombre", "Dragón")), rem / 60, rem % 60]
+		lbl_detalle.text = "Entrenando a %s (+6%% stats de combate, máx. %d/5).\nTiempo restante: %02d:%02d." % [str(sp.get("nombre", "Dragón")), core.MAX_TRAINING_LEVEL, rem / 60, rem % 60]
 		_add_action_button("Acelerar entrenamiento (3 💎)", func() -> void:
 			var r: Dictionary = core.speedup_training_with_gems(3)
 			status_message.emit(str(r.get("msg", "")))
@@ -128,7 +130,7 @@ func _render_training_camp(core: Node) -> void:
 			_refresh()
 		)
 	else:
-		lbl_detalle.text = "Selecciona un dragón para entrenar (300 Oro • 5 min) y aumentar permanentemente +10%% sus estadísticas de combate."
+		lbl_detalle.text = "Selecciona un dragón para entrenar (300 Oro • 5 min) y ganar +6%% permanente en combate (máx. 5 rangos = +30%%)."
 		for d_var: Variant in core.player_state.get("dragones", []):
 			if d_var is Dictionary:
 				var d: Dictionary = d_var
@@ -137,16 +139,19 @@ func _render_training_camp(core: Node) -> void:
 				var sp: Dictionary = core.get_species(sp_id)
 				var t_lvl: int = int(d.get("entrenamiento_nivel", 0))
 				var etapa: String = str(d.get("etapa", "cria"))
+				var at_max: bool = t_lvl >= core.MAX_TRAINING_LEVEL
+				var label_txt: String = "%s (Entr. MÁX %d/%d)" % [str(sp.get("nombre", "Dragón")), t_lvl, core.MAX_TRAINING_LEVEL] if at_max else "Entrenar %s (%d/%d) — 300 Oro" % [str(sp.get("nombre", "Dragón")), t_lvl, core.MAX_TRAINING_LEVEL]
 				_add_dragon_action_row(
 					sp_id,
 					etapa,
-					"Entrenar %s (Rango +%d) — 300 Oro" % [str(sp.get("nombre", "Dragón")), t_lvl],
+					label_txt,
 					func() -> void:
 						var r: Dictionary = core.start_training(uid, 300, 300)
 						status_message.emit(str(r.get("msg", "")))
 						if r.get("ok", false):
 							_play_sfx("click")
-						_refresh()
+						_refresh(),
+					at_max
 				)
 
 
@@ -239,7 +244,33 @@ func _render_food_farm(core: Node) -> void:
 			)
 
 
-func _add_dragon_action_row(sp_id: int, etapa: String, btn_text: String, cb: Callable) -> void:
+func _render_level_temples(core: Node) -> void:
+	var cap: int = core.get_current_dragon_level_cap()
+	lbl_titulo.text = "🏛 Templos de Nivel — Tope actual: Nv. %d / %d" % [cap, core.MAX_DRAGON_LEVEL]
+	lbl_detalle.text = "Construye los Templos antiguos en orden para elevar el nivel máximo de tus dragones hasta 30.\nEtapas visuales: Cría (1–7) • Joven (8–15) • Adulto (16–30)."
+	var oro_actual: int = int(core.get_resources().get("oro", 0))
+	var player_lvl: int = core.get_player_level()
+
+	for t: Dictionary in core.LEVEL_TEMPLES:
+		var tier: int = int(t["tier"])
+		var nombre: String = str(t["nombre"])
+		var target_cap: int = int(t["nivel_cap"])
+		var cost: int = int(t["costo_oro"])
+		var lvl_req: int = int(t["nivel_jugador_req"])
+		var unlocked: bool = core.is_level_temple_unlocked(tier)
+		var prev_ok: bool = tier == 1 or core.is_level_temple_unlocked(tier - 1)
+		var btn_txt: String = "✔ %s (Hasta Nv.%d) — Construido" % [nombre, target_cap] if unlocked else "%s (Nv.%d) — %d Oro • Domador Nv.%d" % [nombre, target_cap, cost, lvl_req]
+		var btn: Button = _add_action_button(btn_txt, func() -> void:
+			var r: Dictionary = core.unlock_level_temple(tier)
+			status_message.emit(str(r.get("msg", "")))
+			if r.get("ok", false):
+				_play_sfx("level_up")
+			_refresh()
+		)
+		btn.disabled = unlocked or not prev_ok or oro_actual < cost or player_lvl < lvl_req
+
+
+func _add_dragon_action_row(sp_id: int, etapa: String, btn_text: String, cb: Callable, disabled: bool = false) -> void:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	var icon: TextureRect = TextureRect.new()
@@ -251,6 +282,7 @@ func _add_dragon_action_row(sp_id: int, etapa: String, btn_text: String, cb: Cal
 
 	var btn: Button = Button.new()
 	btn.text = btn_text
+	btn.disabled = disabled
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.custom_minimum_size = Vector2(0, 44)
 	btn.pressed.connect(cb)

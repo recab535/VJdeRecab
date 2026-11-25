@@ -42,6 +42,8 @@ func _apply_detailed_visuals() -> void:
 			_enrich_training_camp()
 		"guarderia_crias":
 			_enrich_nursery()
+		"templo_nivel":
+			_enrich_level_temple()
 
 
 func _enrich_gem_mine() -> void:
@@ -147,6 +149,30 @@ func _enrich_nursery() -> void:
 		for sz: float in [-0.72, 0.72]:
 			_add_cylinder(Vector3(sx, 0.66, sz), 0.07, 0.08, 1.12, wood_mat)
 	_add_cylinder(Vector3(0.0, 1.48, 0.0), 0.08, 1.18, 0.65, roof_mat)
+
+
+func _enrich_level_temple() -> void:
+	var stone_mat: ShaderMaterial = VisualShaders.make_toon(Color(0.80, 0.74, 0.60), Color(0.32, 0.27, 0.22), 0.30, 0.86)
+	var bronze_mat: ShaderMaterial = VisualShaders.make_toon(Color(0.74, 0.52, 0.24), Color(0.32, 0.20, 0.12), 0.42, 0.55)
+	var gold_mat: ShaderMaterial = VisualShaders.make_toon(Color(0.98, 0.82, 0.32), Color(0.46, 0.30, 0.12), 0.56, 0.28, 0.40, Color(0.98, 0.80, 0.28), 0.55)
+
+	var base_m: MeshInstance3D = get_node_or_null("BaseTemplo") as MeshInstance3D
+	if base_m:
+		base_m.material_override = stone_mat
+	var emblem: MeshInstance3D = get_node_or_null("EmblemaSolar") as MeshInstance3D
+	if emblem:
+		emblem.material_override = gold_mat
+		_pulse_nodes.append(emblem)
+
+	# Escalonado ceremonial + 4 obeliscos (uno por cada Templo de Nivel 15/20/25/30)
+	_add_cylinder(Vector3(0.0, 0.56, 0.0), 0.76, 0.92, 0.26, stone_mat)
+	for i: int in range(4):
+		var ang: float = float(i) * PI * 0.5 + PI * 0.25
+		var px: float = cos(ang) * 0.82
+		var pz: float = sin(ang) * 0.82
+		_add_cylinder(Vector3(px, 0.96, pz), 0.09, 0.14, 0.96, stone_mat)
+		_add_sphere(Vector3(px, 1.48, pz), 0.12, gold_mat if i < 2 else bronze_mat)
+	_add_cylinder(Vector3(0.0, 0.84, 0.0), 0.34, 0.42, 0.36, bronze_mat)
 
 
 func _refresh_status_label() -> void:

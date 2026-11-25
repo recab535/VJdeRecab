@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/world/camera_rig.gd" id="2_cam"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/guarderia_crias.tscn" id="9_guarderia"]
 [ext_resource type="PackedScene" path="res://scenes/world/mina_gemas.tscn" id="10_mina"]
 [ext_resource type="Shader" path="res://assets/shaders/sky_gradient.gdshader" id="11_sky_shader"]
+[ext_resource type="PackedScene" path="res://scenes/world/templo_nivel.tscn" id="12_templo"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_Sky"]
 shader = ExtResource("11_sky_shader")
@@ -83,6 +84,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 0.56, 5.2)
 
 [node name="MinaGemas1" parent="Archipielago/Isla1" instance=ExtResource("10_mina")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0.56, -5.2)
+island_id = 1
+
+[node name="TemploNivel" parent="Archipielago/Isla1" instance=ExtResource("12_templo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.9, 0.56, 4.7)
 island_id = 1
 
 [node name="Isla2" type="Node3D" parent="Archipielago"]
