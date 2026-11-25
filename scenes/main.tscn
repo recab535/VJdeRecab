@@ -133,5 +133,7 @@ script = ExtResource("2_cam")
 transform = Transform3D(1, 0, 0, 0, 0.788011, 0.615661, 0, -0.615661, 0.788011, 0, 14, 17)
 current = true
 fov = 50.0
+near = 0.25
+far = 450.0
 
 [node name="HUD" parent="." instance=ExtResource("4_hud_scene")]

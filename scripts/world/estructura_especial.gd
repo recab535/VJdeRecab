@@ -211,6 +211,7 @@ func _add_box(pos: Vector3, sz: Vector3, mat: Material) -> void:
 	bm.size = sz
 	mi.mesh = bm
 	mi.material_override = mat
+	mi.extra_cull_margin = 6.0
 	mi.position = pos
 	add_child(mi)
 
@@ -224,6 +225,7 @@ func _add_cylinder(pos: Vector3, top_r: float, bot_r: float, h: float, mat: Mate
 	cm.radial_segments = 8
 	mi.mesh = cm
 	mi.material_override = mat
+	mi.extra_cull_margin = 6.0
 	mi.position = pos
 	add_child(mi)
 
@@ -237,6 +239,7 @@ func _add_sphere(pos: Vector3, r: float, mat: Material) -> void:
 	sm.rings = 6
 	mi.mesh = sm
 	mi.material_override = mat
+	mi.extra_cull_margin = 6.0
 	mi.position = pos
 	add_child(mi)
 
@@ -250,6 +253,7 @@ func _add_crystal(pos: Vector3, r: float, h: float, rot: Vector3, mat: Material)
 	cm.radial_segments = 6
 	mi.mesh = cm
 	mi.material_override = mat
+	mi.extra_cull_margin = 6.0
 	mi.position = pos
 	mi.rotation = rot
 	add_child(mi)

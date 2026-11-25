@@ -5,6 +5,7 @@ class_name CameraRig
 ## y enfoque cinematográfico (Tween) sobre cualquier entidad clicada.
 
 signal focused_island_changed(island_id: int)
+signal island_navigation_blocked(target_island_id: int, reason: String)
 
 @export var rotation_step_deg: float = 45.0
 @export var rotation_smooth_speed: float = 8.0
@@ -132,8 +133,18 @@ func clear_entity_focus() -> void:
 		_focus_tween.tween_property(camera, "position", dir * default_zoom, 0.36).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
+func is_entity_focused() -> bool:
+	return _is_entity_focused
+
+
 func focus_next_island() -> void:
-	focus_island(current_island_index + 1)
+	var next_idx: int = mini(total_islands - 1, current_island_index + 1)
+	var target_id: int = next_idx + 1
+	var core: Node = get_node_or_null("/root/GameCore")
+	if target_id > 1 and core and core.has_method("can_explore_island") and not bool(core.call("can_explore_island", target_id)):
+		island_navigation_blocked.emit(target_id, "Compra las 4 parcelas de la Isla %d antes de explorar la Isla %d." % [target_id - 1, target_id])
+		return
+	focus_island(next_idx)
 
 
 func focus_prev_island() -> void:

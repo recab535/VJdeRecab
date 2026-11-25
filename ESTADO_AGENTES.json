@@ -1,7 +1,7 @@
 {
   "estado": "EN_PROGRESO",
-  "turno_actual": "A1",
-  "rondas_completadas": 7,
+  "turno_actual": "A2",
+  "rondas_completadas": 8,
   "max_rondas_limite": 12,
   "orden_agentes": [
     "G1",
@@ -10,6 +10,7 @@
     "A2"
   ],
   "ultimo_ciclo": {
-    "Bloque_1_Nivel30_Templos_Balance_AtomicSave": "Nivel máximo 30 con 4 Templos de Nivel (10->15->20->25->30), etapas Cría(1-7)/Joven(8-15)/Adulto(16-30), curvas polinómicas balanceadas, Tótems (+20%/+35%), Rangos Bronce/Plata/Oro (+8%/+16%/+25%), entrenamiento acotado a máx 5 (+6% c/u), TemploNivel 3D + Tienda/Modal, y guardado atómico (.tmp + respaldo .corrupt.bak) preservando TEST_CLEAN_START_MODE=true."
+    "Bloque_1_Nivel30_Templos_Balance_AtomicSave": "Nivel máximo 30 con 4 Templos de Nivel (10->15->20->25->30), etapas Cría(1-7)/Joven(8-15)/Adulto(16-30), curvas polinómicas balanceadas, Tótems (+20%/+35%), Rangos Bronce/Plata/Oro (+8%/+16%/+25%), entrenamiento acotado a máx 5 (+6% c/u), TemploNivel 3D + Tienda/Modal, y guardado atómico (.tmp + respaldo .corrupt.bak) preservando TEST_CLEAN_START_MODE=true.",
+    "Bloque_2_Visuales_Nubes_TemaCalido_FlechaDinamica": "Frustum culling seguro (near/far + extra_cull_margin), nubes ambientales 3D + manto denso en islas bloqueadas, bloqueo estricto de avance a siguiente isla hasta comprar las 4 parcelas previas, tema fantasía cálido (madera/oro/pergamino) en game_theme.tres y loading_screen, eliminación de destello huérfano, flecha guía proyectada dinámicamente en 3D/UI y clic fuera para cerrar menú contextual y volver a vista principal."
   }
 }

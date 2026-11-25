@@ -54,6 +54,10 @@ func _ready() -> void:
 	hud.move_habitat_requested.connect(_on_move_habitat_requested)
 	hud.context_panel_closed.connect(camera_rig.clear_entity_focus)
 	camera_rig.focused_island_changed.connect(_on_focused_island_changed)
+	if camera_rig.has_signal("island_navigation_blocked"):
+		camera_rig.connect("island_navigation_blocked", func(_target_id: int, reason: String) -> void:
+			hud.show_status_message(reason)
+		)
 
 	if adoratorio_cria and adoratorio_cria.has_signal("adoratorio_clicked"):
 		adoratorio_cria.connect("adoratorio_clicked", func() -> void:
@@ -118,6 +122,8 @@ func _ready() -> void:
 		_sync_booster_totems()
 		_restore_world_from_save(core)
 		if tutorial_dialog and core.has_method("is_tutorial_completed") and not core.is_tutorial_completed():
+			if tutorial_dialog.has_method("set_target_resolver"):
+				tutorial_dialog.call("set_target_resolver", _resolve_tutorial_target)
 			tutorial_dialog.tutorial_finished.connect(core.complete_tutorial)
 			tutorial_dialog.start_tutorial()
 	else:
@@ -293,9 +299,13 @@ func _on_player_level_changed(level: int, exp_cur: int, exp_needed: int) -> void
 
 
 func _on_island_preview_requested(info: Dictionary) -> void:
+	var core: Node = get_node_or_null("/root/GameCore")
+	var target_id: int = int(info.get("id", 1))
+	if core and core.has_method("can_explore_island") and not bool(core.call("can_explore_island", target_id)):
+		hud.show_status_message("Compra las 4 parcelas de la Isla %d antes de explorar la Isla %d." % [target_id - 1, target_id])
+		return
 	if info.has("world_pos") and info["world_pos"] is Vector3:
 		camera_rig.focus_on_target(info["world_pos"], 18.5)
-	var core: Node = get_node_or_null("/root/GameCore")
 	var oro_actual: int = int(core.get_resources().get("oro", 0)) if core else 0
 	var lvl: int = core.get_player_level() if core else 1
 	hud.show_island_preview(info, oro_actual, lvl)
@@ -720,7 +730,75 @@ func _play_sfx(kind: String) -> void:
 		am.call("play_sfx", kind)
 
 
+func _resolve_tutorial_target(target_key: String) -> Dictionary:
+	var world_node: Node3D = null
+	var fallback_btn_name: String = ""
+	match target_key:
+		"hud_level":
+			if hud and hud.lbl_nivel_jugador:
+				var rect: Rect2 = hud.lbl_nivel_jugador.get_global_rect()
+				return {"valid": true, "pos": Vector2(rect.position.x + rect.size.x * 0.5, rect.position.y + rect.size.y + 18.0)}
+			return {"valid": false}
+		"habitat_1":
+			if _built_habitats.has(0) and is_instance_valid(_built_habitats[0]):
+				world_node = _built_habitats[0]
+			fallback_btn_name = "BtnAlimentar"
+		"adoratorio":
+			world_node = adoratorio_cria
+			fallback_btn_name = "BtnCruce"
+		"torre_nido":
+			world_node = torre_nido
+			fallback_btn_name = "BtnNido"
+		"portal_historia":
+			world_node = get_node_or_null("Archipielago/Isla1/PortalHistoria") as Node3D
+			fallback_btn_name = "BtnCombate"
+
+	if world_node and is_instance_valid(world_node) and camera_rig and camera_rig.camera:
+		var cam: Camera3D = camera_rig.camera
+		var target_pos: Vector3 = world_node.global_position + Vector3(0.0, 2.35, 0.0)
+		if not cam.is_position_behind(target_pos):
+			var screen_pos: Vector2 = cam.unproject_position(target_pos)
+			return {"valid": true, "pos": screen_pos - Vector2(0.0, 48.0)}
+
+	if not fallback_btn_name.is_empty() and hud:
+		var btn: Control = hud.find_child(fallback_btn_name, true, false) as Control
+		if btn:
+			var r: Rect2 = btn.get_global_rect()
+			return {"valid": true, "pos": Vector2(r.position.x + r.size.x * 0.5, r.position.y - 54.0)}
+	return {"valid": false}
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var context_open: bool = hud != null and (
+			(hud.panel_habitat_menu and hud.panel_habitat_menu.visible)
+			or (hud.panel_isla_preview and hud.panel_isla_preview.visible)
+			or (hud.panel_obstaculo and hud.panel_obstaculo.visible)
+		)
+		var entity_focused: bool = camera_rig != null and camera_rig.has_method("is_entity_focused") and bool(camera_rig.call("is_entity_focused"))
+		if (context_open or entity_focused) and _pending_habitat_purchase.is_empty() and _moving_habitat_slot_idx < 0 and not is_instance_valid(_active_combat_arena):
+			var hit_interactive: bool = false
+			if camera_rig and camera_rig.camera:
+				var cam: Camera3D = camera_rig.camera
+				var ray_origin: Vector3 = cam.project_ray_origin(event.position)
+				var ray_end: Vector3 = ray_origin + cam.project_ray_normal(event.position) * 260.0
+				var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
+				query.collide_with_areas = true
+				query.collide_with_bodies = false
+				var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+				var result: Dictionary = space.intersect_ray(query)
+				if not result.is_empty():
+					hit_interactive = true
+			if not hit_interactive:
+				_selected_habitat = null
+				if hud:
+					hud.hide_habitat_menu()
+					hud.hide_obstacle_panel()
+					hud.hide_island_preview()
+				if camera_rig:
+					camera_rig.clear_entity_focus()
+		return
+
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
 			if not _pending_habitat_purchase.is_empty() or _moving_habitat_slot_idx >= 0:

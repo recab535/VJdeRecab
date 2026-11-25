@@ -103,6 +103,8 @@ var obstacle_nodes: Dictionary = {}
 var floor_tile_root: Node3D = null
 var _grid_overlay_root: Node3D = null
 var _floating_satellites: Array[Node3D] = []
+var _ambient_clouds: Array[Node3D] = []
+var _locked_cloud_cover: Node3D = null
 
 var _base_y: float = 0.0
 var _bob_time: float = 0.0
@@ -124,6 +126,15 @@ func _process(delta: float) -> void:
 			var base_sy: float = float(sat.get_meta("base_y", sat.position.y))
 			sat.position.y = base_sy + sin(_bob_time * 1.35 + float(i) * 1.7) * 0.20
 			sat.rotation.y += delta * (0.14 + float(i % 2) * 0.10)
+	for c_idx: int in range(_ambient_clouds.size()):
+		var cl: Node3D = _ambient_clouds[c_idx]
+		if is_instance_valid(cl):
+			var base_cx: float = float(cl.get_meta("base_x", cl.position.x))
+			var base_cy: float = float(cl.get_meta("base_y", cl.position.y))
+			cl.position.x = base_cx + sin(_bob_time * 0.35 + float(c_idx) * 2.1) * 1.35
+			cl.position.y = base_cy + cos(_bob_time * 0.55 + float(c_idx) * 1.4) * 0.24
+	if _locked_cloud_cover and _locked_cloud_cover.visible:
+		_locked_cloud_cover.rotation.y += delta * 0.045
 
 
 func _organic_radius(angle: float, base_r: float) -> float:
@@ -219,6 +230,7 @@ func _build_island_geometry() -> void:
 	cliff_node.name = "AcantiladoOrganico"
 	cliff_node.mesh = _create_organic_cliff_mesh(cliff_rings, 28)
 	cliff_node.material_override = rock_mat
+	cliff_node.extra_cull_margin = 12.0
 	add_child(cliff_node)
 
 	# 2. Pradera superior continua orgánica con borde de césped colgante (sin plato circular)
@@ -231,6 +243,7 @@ func _build_island_geometry() -> void:
 	meadow_mesh_node.name = "PraderaOrganica"
 	meadow_mesh_node.mesh = _create_organic_cliff_mesh(meadow_rings, 28)
 	meadow_mesh_node.material_override = meadow_mat
+	meadow_mesh_node.extra_cull_margin = 12.0
 	add_child(meadow_mesh_node)
 
 	# Estalactitas asimétricas esculpidas bajo el acantilado
@@ -289,8 +302,9 @@ func _build_island_geometry() -> void:
 		add_child(sat_root)
 		_floating_satellites.append(sat_root)
 
-	# 3. Detalles ambientales de bioma y puente inter-isla
+	# 3. Detalles ambientales de bioma, nubes 3D y puente inter-isla
 	_build_biome_features(cfg)
+	_build_sky_and_locked_clouds()
 	if island_id < 5:
 		_build_inter_island_bridge(rock_mat, rim_mat)
 
@@ -455,6 +469,77 @@ func _build_biome_features(cfg: Dictionary) -> void:
 		add_child(spire)
 
 
+func _build_sky_and_locked_clouds() -> void:
+	_ambient_clouds.clear()
+	var cloud_mat: StandardMaterial3D = StandardMaterial3D.new()
+	cloud_mat.albedo_color = Color(0.99, 0.97, 0.93, 0.90)
+	cloud_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	cloud_mat.roughness = 0.96
+
+	# Nubes ambientales 3D flotando alrededor del cielo de la isla
+	var sky_positions: Array[Vector3] = [
+		Vector3(-15.5, 4.4, -7.2),
+		Vector3(16.2, 5.2, 5.4),
+		Vector3(-13.8, -3.2, 9.6),
+		Vector3(14.5, 3.8, -9.8)
+	]
+	for i: int in range(sky_positions.size()):
+		var cluster: Node3D = _make_cloud_cluster(cloud_mat, 1.0 + float(i % 2) * 0.25)
+		cluster.position = sky_positions[i]
+		cluster.set_meta("base_x", sky_positions[i].x)
+		cluster.set_meta("base_y", sky_positions[i].y)
+		add_child(cluster)
+		_ambient_clouds.append(cluster)
+
+	# Manto denso de nubes cubriendo islas bloqueadas (Islas 2..5)
+	_locked_cloud_cover = Node3D.new()
+	_locked_cloud_cover.name = "MantoNubesBloqueo"
+	var dense_mat: StandardMaterial3D = StandardMaterial3D.new()
+	dense_mat.albedo_color = Color(0.93, 0.92, 0.95, 0.94)
+	dense_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dense_mat.roughness = 0.95
+	var cover_offsets: Array[Vector3] = [
+		Vector3(0.0, 2.2, 0.0),
+		Vector3(-5.2, 1.8, -4.4),
+		Vector3(5.4, 1.9, -4.0),
+		Vector3(-5.0, 1.7, 4.6),
+		Vector3(5.2, 1.8, 4.2),
+		Vector3(0.0, 1.5, -7.2),
+		Vector3(0.0, 1.5, 7.2)
+	]
+	for off: Vector3 in cover_offsets:
+		var c_node: Node3D = _make_cloud_cluster(dense_mat, 1.85)
+		c_node.position = off
+		_locked_cloud_cover.add_child(c_node)
+	_locked_cloud_cover.visible = island_id > 1
+	add_child(_locked_cloud_cover)
+
+
+func _make_cloud_cluster(mat: Material, scale_mult: float) -> Node3D:
+	var root: Node3D = Node3D.new()
+	var puffs: Array[Dictionary] = [
+		{"pos": Vector3(0.0, 0.15, 0.0), "r": 1.35},
+		{"pos": Vector3(-1.15, -0.05, 0.25), "r": 1.02},
+		{"pos": Vector3(1.18, -0.02, -0.20), "r": 1.06},
+		{"pos": Vector3(0.25, 0.05, 0.95), "r": 0.92},
+		{"pos": Vector3(-0.35, -0.08, -0.92), "r": 0.88}
+	]
+	for p: Dictionary in puffs:
+		var mi: MeshInstance3D = MeshInstance3D.new()
+		var sm: SphereMesh = SphereMesh.new()
+		var r: float = float(p["r"]) * scale_mult
+		sm.radius = r
+		sm.height = r * 1.25
+		sm.radial_segments = 10
+		sm.rings = 6
+		mi.mesh = sm
+		mi.material_override = mat
+		mi.extra_cull_margin = 10.0
+		mi.position = (p["pos"] as Vector3) * scale_mult
+		root.add_child(mi)
+	return root
+
+
 func _build_inter_island_bridge(rock_mat: Material, rim_mat: Material) -> void:
 	var bridge_z: Array[float] = [-10.4, -12.1, -13.8]
 	for i: int in range(bridge_z.size()):
@@ -486,6 +571,9 @@ func apply_state(island_unlocked: bool, unlocked_parcel_list: Array, obstacles_d
 	unlocked_parcels = unlocked_parcel_list.duplicate()
 	var cfg: Dictionary = ISLAND_CONFIGS.get(island_id, ISLAND_CONFIGS[1])
 	var active_color: Color = cfg["color"]
+
+	if _locked_cloud_cover:
+		_locked_cloud_cover.visible = not is_island_unlocked
 
 	if meadow_mesh_node:
 		if is_island_unlocked:

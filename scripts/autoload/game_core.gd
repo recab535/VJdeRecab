@@ -1223,11 +1223,29 @@ func get_unlocked_parcels(island_id: int) -> Array:
 	return map.get(str(island_id), [0])
 
 
+func are_all_parcels_unlocked(island_id: int) -> bool:
+	var parcels: Array = get_unlocked_parcels(island_id)
+	for idx: int in range(4):
+		if not parcels.has(idx):
+			return false
+	return true
+
+
+func can_explore_island(island_id: int) -> bool:
+	if island_id <= 1:
+		return true
+	if is_island_unlocked(island_id):
+		return true
+	return is_island_unlocked(island_id - 1) and are_all_parcels_unlocked(island_id - 1)
+
+
 func unlock_island_with_level(island_id: int, cost_oro: int, level_req: int) -> Dictionary:
 	if is_island_unlocked(island_id):
 		return {"ok": false, "msg": "La Isla %d ya está desbloqueada." % island_id}
 	if island_id > 1 and not is_island_unlocked(island_id - 1):
 		return {"ok": false, "msg": "Debes desbloquear la Isla %d primero." % (island_id - 1)}
+	if island_id > 1 and not are_all_parcels_unlocked(island_id - 1):
+		return {"ok": false, "msg": "Compra las 4 parcelas de la Isla %d antes de desbloquear la Isla %d." % [island_id - 1, island_id]}
 	var cur_lvl: int = get_player_level()
 	if cur_lvl < level_req:
 		return {"ok": false, "msg": "Requiere Nivel de Jugador %d (actual: %d)." % [level_req, cur_lvl]}

@@ -16,43 +16,49 @@ signal tutorial_finished
 const STEPS: Array[Dictionary] = [
 	{
 		"mode": "button",
-		"text": "¡Bienvenido, Domador! Soy el Maestro Kael. Ante ti se extienden 5 Islas Flotantes consecutivas, cada una con 4 parcelas ampliables y obstáculos que podrás despejar con Oro o Gemas.",
-		"arrow_pos": Vector2(460, 120),
-		"arrow_text": "✨"
+		"text": "¡Bienvenido, Domador! Soy el Maestro Kael. Ante ti se extienden 5 Islas Flotantes consecutivas: completa las 4 parcelas de cada isla para disipar las nubes de la siguiente.",
+		"target_key": "",
+		"arrow_pos": Vector2.ZERO,
+		"arrow_text": ""
 	},
 	{
 		"mode": "button",
-		"text": "Tu isla ya cuenta con un Hábitat inicial, el Adoratorio de Cría, la Torre Nido y estructuras especiales. Sube tu Nivel ganando EXP para desbloquear parcelas, islas y capítulos.",
+		"text": "Tu isla ya cuenta con tu Hábitat inicial, el Adoratorio de Cría, la Torre Nido y el Templo de Nivel (hasta Nv.30). Sube tu Nivel de Domador ganando EXP.",
+		"target_key": "hud_level",
 		"arrow_pos": Vector2(220, 96),
-		"arrow_text": "⬆"
+		"arrow_text": "⬆ Tu Nivel"
 	},
 	{
 		"mode": "action",
 		"action": "oro_o_alimentar",
 		"text": "Paso 1/4: Clica tu Hábitat de Tierra para recoger oro o usa Alimentar para fortalecer a tu Dragón Terracota.",
-		"arrow_pos": Vector2(930, 910),
-		"arrow_text": "⬇"
+		"target_key": "habitat_1",
+		"arrow_pos": Vector2(930, 900),
+		"arrow_text": "⬇ Hábitat"
 	},
 	{
 		"mode": "action",
 		"action": "cruce",
 		"text": "Paso 2/4: ¡Bien hecho! Clica el Adoratorio de cristales (o el botón Cruce) para cruzar a Terracota y Ascua.",
-		"arrow_pos": Vector2(650, 910),
-		"arrow_text": "⬇"
+		"target_key": "adoratorio",
+		"arrow_pos": Vector2(650, 900),
+		"arrow_text": "⬇ Adoratorio"
 	},
 	{
 		"mode": "action",
 		"action": "eclosion",
 		"text": "Paso 3/4: Un nuevo huevo descansa en la Torre Nido. ¡Clícala (o pulsa Nido) para incubarlo y eclosionarlo!",
-		"arrow_pos": Vector2(790, 910),
-		"arrow_text": "⬇"
+		"target_key": "torre_nido",
+		"arrow_pos": Vector2(790, 900),
+		"arrow_text": "⬇ Torre Nido"
 	},
 	{
 		"mode": "action",
 		"action": "combate",
 		"text": "Paso 4/4: ¡Listo para la historia! Pulsa Combate o el Portal de Historia para entrar al carrusel de 50 capítulos.",
-		"arrow_pos": Vector2(1210, 910),
-		"arrow_text": "⬇"
+		"target_key": "portal_historia",
+		"arrow_pos": Vector2(1210, 900),
+		"arrow_text": "⬇ Portal"
 	}
 ]
 
@@ -61,6 +67,11 @@ var _active: bool = false
 var _char_accum: float = 0.0
 var _arrow_time: float = 0.0
 var _arrow_base_pos: Vector2 = Vector2.ZERO
+var _target_resolver: Callable = Callable()
+
+
+func set_target_resolver(resolver: Callable) -> void:
+	_target_resolver = resolver
 
 
 func _ready() -> void:
@@ -98,11 +109,26 @@ func _process(delta: float) -> void:
 				lbl_text.get_total_character_count()
 			)
 
-	if arrow_hint and arrow_hint.visible:
-		_arrow_time += delta * 5.0
-		arrow_hint.position = _arrow_base_pos + Vector2(0.0, sin(_arrow_time) * 11.0)
-		var pulse: float = 1.0 + sin(_arrow_time * 1.5) * 0.12
-		arrow_hint.scale = Vector2(pulse, pulse)
+	if arrow_hint and _step_idx >= 0 and _step_idx < STEPS.size():
+		var data: Dictionary = STEPS[_step_idx]
+		var t_key: String = str(data.get("target_key", ""))
+		if t_key.is_empty():
+			arrow_hint.visible = false
+		else:
+			var resolved_pos: Vector2 = _arrow_base_pos
+			var show_arrow: bool = true
+			if _target_resolver.is_valid():
+				var info: Variant = _target_resolver.call(t_key)
+				if info is Dictionary and bool(info.get("valid", false)):
+					resolved_pos = info.get("pos", _arrow_base_pos)
+			var vp_size: Vector2 = get_viewport_rect().size
+			resolved_pos.x = clampf(resolved_pos.x - arrow_hint.size.x * 0.5, 24.0, maxf(24.0, vp_size.x - arrow_hint.size.x - 24.0))
+			resolved_pos.y = clampf(resolved_pos.y, 74.0, maxf(74.0, vp_size.y - 130.0))
+			arrow_hint.visible = show_arrow
+			_arrow_time += delta * 5.0
+			arrow_hint.position = resolved_pos + Vector2(0.0, sin(_arrow_time) * 10.0)
+			var pulse: float = 1.0 + sin(_arrow_time * 1.5) * 0.10
+			arrow_hint.scale = Vector2(pulse, pulse)
 
 
 func _show_step(idx: int) -> void:
@@ -126,10 +152,11 @@ func _show_step(idx: int) -> void:
 		tw.tween_property(dialog_box, "scale", Vector2.ONE, 0.20).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 	if arrow_hint:
+		var t_key: String = str(data.get("target_key", ""))
 		_arrow_base_pos = data.get("arrow_pos", Vector2(960, 900))
 		arrow_hint.position = _arrow_base_pos
 		arrow_hint.text = str(data.get("arrow_text", "⬇"))
-		arrow_hint.visible = true
+		arrow_hint.visible = not t_key.is_empty()
 
 
 func _on_next_pressed() -> void:
@@ -157,10 +184,10 @@ func _complete_all() -> void:
 
 func _create_kael_portrait_48() -> ImageTexture:
 	var img: Image = Image.create(48, 48, false, Image.FORMAT_RGBA8)
-	# Fondo degradado nocturno del retrato
+	# Fondo cálido pergamino/ámbar del retrato
 	for y: int in range(48):
 		var t: float = float(y) / 47.0
-		var bg: Color = Color(0.08, 0.14, 0.28).lerp(Color(0.16, 0.24, 0.44), t)
+		var bg: Color = Color(0.24, 0.15, 0.08).lerp(Color(0.42, 0.27, 0.14), t)
 		for x: int in range(48):
 			img.set_pixel(x, y, bg)
 
